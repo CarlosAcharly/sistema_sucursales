@@ -1,0 +1,33 @@
+{% extends 'superadmin/base.html' %}
+
+{% block content %}
+
+<h2>{{ title }}</h2>
+
+<form method="post" style="background:white; padding:20px; border-radius:10px; width:400px;">
+    {% csrf_token %}
+
+    <div style="margin-bottom:15px;">
+        <label>Nombre:</label><br>
+        {{ form.name }}
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>Dirección:</label><br>
+        {{ form.address }}
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>
+            {{ form.is_active }} Activa
+        </label>
+    </div>
+
+    <button type="submit"
+        style="background:#2563eb; color:white; padding:8px 12px; border:none; border-radius:5px;">
+        Guardar
+    </button>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'superadmin/base.html' %}
+
+{% block content %}
+
+<h3>📊 Dashboard Global</h3>
+<hr>
+
+<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:20px;">
+
+    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
+        <h4>Sucursales</h4>
+        <h2>{{ total_branches }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
+        <h4>Usuarios</h4>
+        <h2>{{ total_users }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
+        <h4>Productos</h4>
+        <h2>{{ total_products }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#d4edda; border-radius:10px;">
+        <h4>Total Ventas</h4>
+        <h2>{{ total_sales }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#cce5ff; border-radius:10px;">
+        <h4>Total Vendido</h4>
+        <h2>${{ total_revenue }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#fff3cd; border-radius:10px;">
+        <h4>Ventas Hoy</h4>
+        <h2>${{ sales_today }}</h2>
+    </div>
+
+    <div style="padding:20px; background:#f8d7da; border-radius:10px;">
+        <h4>Inventario Bajo</h4>
+        <h2>{{ low_stock }}</h2>
+    </div>
+
+</div>
+
+<hr>
+
+<h3>💰 Ventas por Sucursal</h3>
+
+<table border="1" cellpadding="8" style="width:100%; margin-top:15px;">
+    <tr>
+        <th>Sucursal</th>
+        <th>Total Vendido</th>
+    </tr>
+    {% for branch in sales_by_branch %}
+    <tr>
+        <td>{{ branch.branch__name }}</td>
+        <td>${{ branch.total }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="2">No hay ventas registradas</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

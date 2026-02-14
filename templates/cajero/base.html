@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cajero</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #1f2937;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .brand {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #60a5fa;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .logout {
+            background: #ef4444;
+            padding: 8px 14px;
+            border-radius: 6px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logout:hover {
+            background: #dc2626;
+        }
+
+        /* BOTÓN HAMBURGUESA */
+        .menu-toggle {
+            display: none;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        /* CONTENIDO */
+        .container {
+            padding: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                background: #1f2937;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                padding: 15px 0;
+            }
+
+            .nav-links a {
+                padding: 10px 20px;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-right span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+
+    <div style="display:flex; align-items:center; gap:15px;">
+        <span class="menu-toggle" onclick="toggleMenu()">☰</span>
+        <span class="brand">💵 Cajero</span>
+    </div>
+
+    <div class="nav-links" id="navLinks">
+        <a href="{% url 'cajero_dashboard' %}">Dashboard</a>
+        <a href="{% url 'pos' %}">Punto de Venta</a>
+        <a href="{% url 'sales_list' %}">Ventas</a>
+    </div>
+
+    <div class="nav-right">
+        <span>Sucursal: {{ request.user.branch.name }}</span>
+        <span>{{ request.user.username }}</span>
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" style="background:none; border:none; cursor:pointer;">
+        Salir
+    </button>
+</form>
+    </div>
+
+</div>
+
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+<script>
+    function toggleMenu() {
+        document.getElementById("navLinks").classList.toggle("active");
+    }
+</script>
+
+</body>
+</html>

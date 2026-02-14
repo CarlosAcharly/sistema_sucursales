@@ -1,0 +1,22 @@
+{% extends 'cajero/base.html' %}
+{% block content %}
+
+<h2>Ventas</h2>
+
+<table border="1" width="100%">
+    <tr>
+        <th>ID</th>
+        <th>Total</th>
+        <th>Fecha</th>
+    </tr>
+
+    {% for sale in sales %}
+    <tr>
+        <td>{{ sale.id }}</td>
+        <td>${{ sale.total }}</td>
+        <td>{{ sale.created_at }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

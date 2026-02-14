@@ -1,0 +1,36 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+<h1>Dashboard Administrativo</h1>
+
+<div class="cards">
+
+    <div class="card">
+        <h3>📦 Productos</h3>
+        <div class="card-number">
+            {{ total_products }}
+        </div>
+        <a href="{% url 'product_list' %}">Ver todos</a>
+    </div>
+
+    <div class="card">
+        <h3>🏬 Inventario</h3>
+        <div class="card-number">
+            {{ total_inventory }}
+        </div>
+        <a href="{% url 'inventory_list' %}">Ver inventario</a>
+    </div>
+
+</div>
+
+<hr>
+
+<h2>Acciones rápidas</h2>
+
+<ul>
+    <li><a href="{% url 'product_create' %}">➕ Crear producto</a></li>
+    <li><a href="{% url 'inventory_create' %}">📥 Agregar a sucursal</a></li>
+</ul>
+
+{% endblock %}

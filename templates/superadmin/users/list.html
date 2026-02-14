@@ -1,0 +1,68 @@
+{% extends 'superadmin/base.html' %}
+{% block content %}
+
+<h2 style="margin-bottom:20px;">Usuarios</h2>
+
+<a href="{% url 'users:user_create' %}"
+   style="background:#16a34a; color:white; padding:8px 12px; border-radius:5px; text-decoration:none;">
+   + Nuevo Usuario
+</a>
+
+<table style="width:100%; margin-top:20px; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
+
+    <thead style="background:#1e293b; color:white;">
+        <tr>
+            <th style="padding:10px;">Username</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Sucursal</th>
+            <th>Activo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for user in users %}
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:10px;">{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+                {% if user.role == 'SUPERADMIN' %}
+                    <span style="color:#dc2626; font-weight:bold;">Super Admin</span>
+                {% elif user.role == 'ADMIN' %}
+                    <span style="color:#2563eb;">Admin</span>
+                {% else %}
+                    <span style="color:#16a34a;">Cajero</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if user.branch %}
+                    {{ user.branch.name }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_active %}
+                    ✅
+                {% else %}
+                    ❌
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'users:user_update' user.id %}"
+                   style="color:#2563eb; text-decoration:none;">Editar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" style="padding:20px; text-align:center;">
+                No hay usuarios registrados.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+
+{% endblock %}

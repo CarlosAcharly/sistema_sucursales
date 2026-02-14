@@ -1,0 +1,46 @@
+{% extends 'superadmin/base.html' %}
+
+{% block content %}
+
+<h2>Sucursales</h2>
+
+<a href="{% url 'branch_create' %}"
+   style="background:#16a34a; color:white; padding:8px 12px; border-radius:5px; text-decoration:none;">
+   + Nueva Sucursal
+</a>
+
+<table border="1" cellpadding="10" style="width:100%; margin-top:20px; background:white;">
+    <tr>
+        <th>Nombre</th>
+        <th>Dirección</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+    </tr>
+
+    {% for branch in branches %}
+    <tr>
+        <td>{{ branch.name }}</td>
+        <td>{{ branch.address }}</td>
+        <td>
+            {% if branch.is_active %}
+                Activa
+            {% else %}
+                Inactiva
+            {% endif %}
+        </td>
+        <td>
+            <a href="{% url 'branch_edit' branch.id %}">Editar</a> |
+            <a href="{% url 'branch_toggle' branch.id %}">
+                {% if branch.is_active %}
+                    Desactivar
+                {% else %}
+                    Activar
+                {% endif %}
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+{% endblock %}

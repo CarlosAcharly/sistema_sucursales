@@ -1,0 +1,43 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+<h1 style="margin-bottom:20px;">📥 Agregar Inventario</h1>
+
+<div style="background:white;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);max-width:600px;">
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:bold;">Sucursal</label>
+            {{ form.branch }}
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="font-weight:bold;">Producto</label>
+            {{ form.product }}
+        </div>
+
+        <div style="margin-bottom:25px;">
+            <label style="font-weight:bold;">Stock Inicial</label>
+            {{ form.stock }}
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button type="submit"
+                style="background:#16a34a;color:white;padding:10px 18px;border:none;border-radius:8px;">
+                💾 Guardar
+            </button>
+
+            <a href="{% url 'inventory_list' %}"
+               style="background:#6b7280;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;">
+                Cancelar
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

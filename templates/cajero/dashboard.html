@@ -1,0 +1,36 @@
+{% extends 'cajero/base.html' %}
+{% block content %}
+
+<h2>📊 Dashboard</h2>
+
+<div class="card">
+    <h3>Ventas del día</h3>
+    <p style="font-size: 24px;">
+        ${{ total_today }}
+    </p>
+</div>
+
+<div class="card">
+    <h3>Productos vendidos hoy</h3>
+    <p style="font-size: 24px;">
+        {{ items_today }}
+    </p>
+</div>
+
+<div class="card">
+    <h3>Productos con stock bajo</h3>
+
+    {% if low_stock %}
+        <ul>
+            {% for item in low_stock %}
+                <li>
+                    {{ item.product.name }} — Stock: {{ item.stock }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay productos con stock bajo 🎉</p>
+    {% endif %}
+</div>
+
+{% endblock %}

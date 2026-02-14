@@ -1,0 +1,67 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">📦 Productos</h1>
+
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'product_create' %}" 
+       style="
+        background-color: #2563eb;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+       ">
+        ➕ Crear Producto
+    </a>
+</div>
+
+<div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #f3f4f6; text-align: left;">
+                <th style="padding: 12px;">Nombre</th>
+                <th style="padding: 12px;">Código</th>
+                <th style="padding: 12px;">Precio</th>
+                <th style="padding: 12px;">Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for product in products %}
+            <tr style="border-top: 1px solid #e5e7eb;">
+                <td style="padding: 12px;">{{ product.name }}</td>
+                <td style="padding: 12px;">{{ product.barcode }}</td>
+                <td style="padding: 12px; font-weight: bold;">
+                    ${{ product.price }}
+                </td>
+                <td style="padding: 12px;">
+                    <a href="{% url 'product_edit' product.id %}"
+                       style="
+                        background-color: #f59e0b;
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        text-decoration: none;
+                        font-size: 13px;
+                       ">
+                        ✏ Editar
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="padding: 20px; text-align: center; color: #6b7280;">
+                    No hay productos registrados.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

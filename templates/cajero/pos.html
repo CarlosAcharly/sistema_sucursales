@@ -1,0 +1,162 @@
+{% extends 'cajero/base.html' %}
+{% block content %}
+
+<h2>Punto de Venta</h2>
+
+{% csrf_token %}
+
+<div style="display:flex; gap:20px;">
+
+    <!-- ================= TICKET ================= -->
+    <div style="width:40%; background:#f8f9fa; padding:20px; border-radius:10px;">
+
+        <h3>🧾 Ticket</h3>
+
+        <table style="width:100%; margin-top:15px;" id="ticket-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cant</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <hr>
+
+        <h4>Total: $<span id="total">0.00</span></h4>
+
+        <button onclick="checkout()"
+            style="margin-top:15px; width:100%; padding:12px;
+                   background:green; color:white; border:none;
+                   border-radius:5px; font-weight:bold;">
+            Finalizar venta
+        </button>
+
+    </div>
+
+
+    <!-- ================= PRODUCTOS ================= -->
+    <div style="width:60%;">
+
+        <h3>Productos</h3>
+
+        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:15px; margin-top:15px;">
+
+            {% for item in inventory %}
+                <div onclick="addProduct('{{ item.product.id }}',
+                                         '{{ item.product.name }}',
+                                         '{{ item.product.price }}')"
+
+                     style="cursor:pointer;
+                            border:1px solid #ddd;
+                            padding:15px;
+                            border-radius:8px;
+                            text-align:center;
+                            background:white;">
+
+                    <strong>{{ item.product.name }}</strong><br>
+                    ${{ item.product.price }}<br>
+                    <small>Stock: {{ item.stock }}</small>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let cart = {};
+
+function addProduct(id, name, price) {
+
+    price = parseFloat(price);
+
+    if (cart[id]) {
+        cart[id].quantity += 1;
+    } else {
+        cart[id] = {
+            name: name,
+            price: price,
+            quantity: 1
+        };
+    }
+
+    renderTicket();
+}
+
+function renderTicket() {
+
+    let tbody = document.querySelector("#ticket-table tbody");
+    tbody.innerHTML = "";
+
+    let total = 0;
+
+    for (let id in cart) {
+
+        let item = cart[id];
+        let rowTotal = item.price * item.quantity;
+        total += rowTotal;
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>$${rowTotal.toFixed(2)}</td>
+            </tr>
+        `;
+    }
+
+    document.getElementById("total").innerText = total.toFixed(2);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+function checkout() {
+
+    if (Object.keys(cart).length === 0) {
+        alert("El carrito está vacío");
+        return;
+    }
+
+    let cartArray = [];
+
+    for (let id in cart) {
+        cartArray.push({
+            id: id,
+            quantity: cart[id].quantity
+        });
+    }
+
+    fetch("", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({
+            cart: cartArray
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Venta realizada correctamente");
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+    });
+}
+
+</script>
+
+{% endblock %}

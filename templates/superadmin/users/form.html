@@ -1,0 +1,74 @@
+{% extends 'superadmin/base.html' %}
+{% block content %}
+
+<h2>{{ title }}</h2>
+
+<form method="post" style="background:white; padding:20px; border-radius:10px; width:400px;">
+    {% csrf_token %}
+
+    <div style="margin-bottom:15px;">
+        <label>Username:</label><br>
+        {{ form.username }}
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>Email:</label><br>
+        {{ form.email }}
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>Rol:</label><br>
+        {{ form.role }}
+    </div>
+
+    <div style="margin-bottom:15px;" id="branch-field">
+        <label>Sucursal:</label><br>
+        {{ form.branch }}
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>Password:</label><br>
+        {{ form.password }}
+        <small>Déjalo vacío si no quieres cambiarlo</small>
+    </div>
+
+    <div style="margin-bottom:15px;">
+        <label>
+            {{ form.is_active }} Activo
+        </label>
+    </div>
+
+    <button type="submit"
+        style="background:#2563eb; color:white; padding:8px 12px; border:none; border-radius:5px;">
+        Guardar
+    </button>
+
+</form>
+
+<script>
+
+function toggleBranchField() {
+
+    let role = document.getElementById("id_role").value;
+    let branchField = document.getElementById("branch-field");
+
+    if (role === "SUPERADMIN") {
+        branchField.style.display = "none";
+    } else {
+        branchField.style.display = "block";
+    }
+}
+
+// Ejecutar al cargar
+document.addEventListener("DOMContentLoaded", function() {
+    toggleBranchField();
+});
+
+// Ejecutar cuando cambie el rol
+document.getElementById("id_role").addEventListener("change", function() {
+    toggleBranchField();
+});
+
+</script>
+
+{% endblock %}

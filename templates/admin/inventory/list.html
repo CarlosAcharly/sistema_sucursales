@@ -1,0 +1,55 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">🏬 Inventario</h1>
+
+{% if request.user.role != 'CASHIER' %}
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'inventory_create' %}"
+       style="background-color:#2563eb;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;">
+        ➕ Agregar Inventario
+    </a>
+</div>
+{% endif %}
+
+<div style="background:white;padding:25px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+
+    <table style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr style="background:#f3f4f6;text-align:left;">
+                <th style="padding:12px;">Sucursal</th>
+                <th style="padding:12px;">Producto</th>
+                <th style="padding:12px;">Stock</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for item in inventory %}
+            <tr style="border-top:1px solid #e5e7eb;">
+                <td style="padding:12px;">{{ item.branch.name }}</td>
+                <td style="padding:12px;">{{ item.product.name }}</td>
+
+                <td style="padding:12px;font-weight:bold;">
+                    {% if item.stock <= 5 %}
+                        <span style="color:#dc2626;">⚠ {{ item.stock }}</span>
+                    {% elif item.stock <= 10 %}
+                        <span style="color:#f59e0b;">{{ item.stock }}</span>
+                    {% else %}
+                        <span style="color:#16a34a;">{{ item.stock }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="padding:20px;text-align:center;color:#6b7280;">
+                    No hay inventario registrado.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

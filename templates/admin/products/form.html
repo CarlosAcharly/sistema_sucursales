@@ -1,0 +1,92 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">
+    {% if form.instance.pk %}
+        ✏ Editar Producto
+    {% else %}
+        ➕ Nuevo Producto
+    {% endif %}
+</h1>
+
+<div style="
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    max-width: 600px;
+">
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Nombre -->
+        <div style="margin-bottom: 20px;">
+            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
+                Nombre
+            </label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div style="color: red; font-size: 13px;">
+                    {{ form.name.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Código -->
+        <div style="margin-bottom: 20px;">
+            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
+                Código de barras
+            </label>
+            {{ form.barcode }}
+            {% if form.barcode.errors %}
+                <div style="color: red; font-size: 13px;">
+                    {{ form.barcode.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Precio -->
+        <div style="margin-bottom: 25px;">
+            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
+                Precio
+            </label>
+            {{ form.price }}
+            {% if form.price.errors %}
+                <div style="color: red; font-size: 13px;">
+                    {{ form.price.errors }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit"
+                style="
+                    background-color: #2563eb;
+                    color: white;
+                    padding: 10px 18px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                ">
+                💾 Guardar
+            </button>
+
+            <a href="{% url 'product_list' %}"
+               style="
+                background-color: #6b7280;
+                color: white;
+                padding: 10px 18px;
+                border-radius: 8px;
+                text-decoration: none;
+               ">
+                Cancelar
+            </a>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}
