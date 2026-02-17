@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+{% block content %}
+
+<div class="card">
+
+    <h2>Nueva Dieta</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="background:#fee2e2; padding:10px; margin-bottom:15px; border-radius:6px;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin-bottom:15px;">
+            <label><strong>Nombre:</strong></label><br>
+            <input type="text" name="name" required 
+                   style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label><strong>Descripción:</strong></label><br>
+            <textarea name="description" rows="3"
+                      style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label><strong>Asignar a sucursales:</strong></label><br>
+            {% for branch in branches %}
+                <label style="display:block; margin-top:5px;">
+                    <input type="checkbox" name="branches" value="{{ branch.id }}">
+                    {{ branch.name }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <h3>Ingredientes Base (deben sumar 1000 kg)</h3>
+
+        {{ formset.management_form }}
+
+        <table width="100%" cellpadding="8" style="border-collapse:collapse; margin-bottom:20px;">
+            <thead style="background:#f1f5f9;">
+                <tr>
+                    <th align="left">Producto</th>
+                    <th align="left">Kilos</th>
+                    <th align="left">Eliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for form in formset %}
+                <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td>{{ form.product }}</td>
+                    <td>{{ form.kilos }}</td>
+                    <td>{{ form.DELETE }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="submit"
+                style="background:#1e293b; color:white; padding:10px 18px; border:none; border-radius:6px; cursor:pointer;">
+            Guardar Dieta
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

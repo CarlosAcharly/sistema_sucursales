@@ -1,0 +1,31 @@
+{% extends 'cajero/base.html' %}
+
+{% block content %}
+<h2>Dietas disponibles para {{ request.user.branch.name }}</h2>
+
+{% if diets %}
+<table style="width:100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background: #1f2937; color: white;">
+            <th style="padding:8px;">Nombre</th>
+            <th style="padding:8px;">Creado por</th>
+            <th style="padding:8px;">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for diet in diets %}
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:8px;">{{ diet.diet_base.name }}</td>
+            <td style="padding:8px;">{{ diet.created_by.username }}</td>
+            <td style="padding:8px;">
+                <a href="{% url 'diets:diet_cajero_view' diet.id diet.branch.id %}" 
+                   style="color:#3b82f6; text-decoration:none;">Ver / Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No hay dietas asignadas a tu sucursal.</p>
+{% endif %}
+{% endblock %}

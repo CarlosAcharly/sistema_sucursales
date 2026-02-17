@@ -1,0 +1,39 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<h2>Dietas</h2>
+<a href="{% url 'diets:diet_create' %}" style="background:#16a34a; color:white; padding:8px 12px; border-radius:5px; text-decoration:none;">
+    + Nueva Dieta
+</a>
+<table style="width:100%; margin-top:20px; border-collapse:collapse; background:white; border-radius:10px;">
+    <thead style="background:#1e293b; color:white;">
+        <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Sucursales</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for diet in diets %}
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td>{{ diet.name }}</td>
+            <td>{{ diet.description }}</td>
+            <td>
+                {% for branch in diet.branches.all %}
+                    {{ branch.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    -
+                {% endfor %}
+            </td>
+            <td>
+                <a href="#">Editar</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" style="text-align:center;">No hay dietas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

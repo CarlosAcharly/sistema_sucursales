@@ -59,6 +59,20 @@
                 </div>
             {% endif %}
         </div>
+        <!-- Activo -->
+        <div style="margin-bottom: 25px;">
+            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
+                Activo
+            </label>
+            {{ form.is_active }}
+        </div>
+        <!-- Ingrediente -->
+        <div style="margin-bottom: 25px;">
+            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
+                Ingrediente
+            </label>
+            {{ form.is_ingredient }}
+        </div>
 
         <div style="display: flex; gap: 10px;">
             <button type="submit"
