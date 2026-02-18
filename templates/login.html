@@ -1,17 +1,512 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | SABIX Punto de venta</title>
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Elementos decorativos de fondo */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            top: -150px;
+            left: -150px;
+            backdrop-filter: blur(5px);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            bottom: -200px;
+            right: -200px;
+            backdrop-filter: blur(5px);
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Tarjeta Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 35px;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Logo o ícono */
+        .login-icon {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-icon .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-icon .icon-circle i {
+            font-size: 40px;
+            color: white;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2));
+        }
+
+        .login-icon h2 {
+            color: white;
+            font-size: 28px;
+            font-weight: 600;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            letter-spacing: 1px;
+        }
+
+        .login-icon p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Estilos del formulario */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.5px;
+        }
+
+        .form-group label i {
+            margin-right: 5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            color: #667eea; /* Color más visible */
+            font-size: 18px;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            background: rgba(255, 255, 255, 0.95); /* Fondo más claro */
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            color: #333; /* Texto más oscuro */
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-input::placeholder {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .glass-input:hover {
+            background: white;
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Ojo para ver contraseña */
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.9);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .password-toggle:hover {
+            color: #764ba2;
+            transform: translateY(-50%) scale(1.1);
+            background: white;
+        }
+
+        /* Opciones adicionales */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .remember-me i {
+            color: white;
+            font-size: 16px;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .forgot-password {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .forgot-password i {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .forgot-password:hover {
+            border-bottom-color: white;
+            transform: translateY(-1px);
+        }
+
+        .forgot-password:hover i {
+            color: white;
+        }
+
+        /* Botón glass */
+        .glass-button {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .glass-button i {
+            font-size: 18px;
+        }
+
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .glass-button:active {
+            transform: translateY(0);
+        }
+
+        /* Mensajes de error */
+        .error-message {
+            background: rgba(255, 75, 75, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 75, 75, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: shake 0.5s ease;
+        }
+
+        .error-message i {
+            font-size: 18px;
+            color: #ff6b6b;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        /* Footer */
+        .login-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+
+        .login-footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .login-footer a i {
+            font-size: 12px;
+        }
+
+        .login-footer a:hover {
+            border-bottom-color: white;
+        }
+
+        .login-footer p i {
+            margin-right: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .glass-card {
+                padding: 30px 20px;
+            }
+
+            .login-icon h2 {
+                font-size: 24px;
+            }
+
+            .form-options {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="glass-card">
+            <!-- Icono de login con Font Awesome -->
+            <div class="login-icon">
+                <div class="icon-circle">
+                    <i class="fas fa-laptop"></i>
+                </div>
+                <h2>Bienvenido a:</h2>
+                <p>SABIX Punto de venta</p>
+            </div>
 
-<h2>Iniciar Sesión</h2>
+            <!-- Formulario de login -->
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Mostrar errores si existen -->
+                {% if form.non_field_errors %}
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Entrar</button>
-</form>
+                <!-- Campo Usuario -->
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}">
+                        <i class="fas fa-user"></i> Usuario
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" 
+                               name="{{ form.username.name }}" 
+                               id="{{ form.username.id_for_label }}" 
+                               class="glass-input"
+                               placeholder="Ingresa tu usuario"
+                               {% if form.username.value %}value="{{ form.username.value }}"{% endif %}
+                               required>
+                    </div>
+                    {% if form.username.errors %}
+                        <div style="color: #ffb8b8; font-size: 13px; margin-top: 5px;">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.username.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
 
+                <!-- Campo Contraseña con OJO -->
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}">
+                        <i class="fas fa-lock"></i> Contraseña
+                    </label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" 
+                               name="{{ form.password.name }}" 
+                               id="{{ form.password.id_for_label }}" 
+                               class="glass-input"
+                               placeholder="Ingresa tu contraseña"
+                               required>
+                        <i class="fas fa-eye password-toggle" id="togglePassword" onclick="togglePasswordVisibility()"></i>
+                    </div>
+                    {% if form.password.errors %}
+                        <div style="color: #ffb8b8; font-size: 13px; margin-top: 5px;">
+                            <i class="fas fa-exclamation-circle"></i> {{ form.password.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Opciones de formulario -->
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember">
+                        <i class="far fa-check-circle"></i> Recordarme
+                    </label>
+                    <a href="#" class="forgot-password">
+                        <i class="fas fa-question-circle"></i> ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+
+                <!-- Botón de submit -->
+                <button type="submit" class="glass-button">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Iniciar Sesión
+                </button>
+            </form>
+
+            <!-- Footer -->
+            <div class="login-footer">
+                <p>
+                    <i class="fas fa-user-plus"></i> ¿No tienes una cuenta? 
+                    <a href="#">
+                        <i class="fas fa-envelope"></i> Contacta al administrador
+                    </a>
+                </p>
+                <p style="margin-top: 10px;">
+                    <i class="far fa-copyright"></i> 2024 Sistema Sucursales. v1.0
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+            const toggleIcon = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+    </script>
 </body>
 </html>

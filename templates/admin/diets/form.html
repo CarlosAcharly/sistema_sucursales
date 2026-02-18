@@ -1,73 +1,243 @@
-{% extends "admin/base.html" %}
+{% extends 'admin/base.html' %}
+
 {% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <!-- Header -->
+    <div class="fb-card" style="margin-bottom: 20px;">
+        <div class="fb-card-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: #1877f220; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-plus" style="font-size: 30px; color: #1877f2;"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 24px;">Nueva Dieta Base</h2>
+                    <p style="color: #606770; margin: 5px 0 0 0;">Configura la dieta y sus ingredientes (debe sumar 1000 kg)</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="card">
-
-    <h2>Nueva Dieta</h2>
-
+    <!-- Mensajes -->
     {% if messages %}
         {% for message in messages %}
-            <div style="background:#fee2e2; padding:10px; margin-bottom:15px; border-radius:6px;">
+            <div class="fb-alert fb-alert-danger" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-triangle-exclamation" style="color: #fa383e;"></i>
                 {{ message }}
             </div>
         {% endfor %}
     {% endif %}
 
-    <form method="post">
-        {% csrf_token %}
+    <!-- Formulario principal -->
+    <div class="fb-card">
+        <form method="post">
+            {% csrf_token %}
 
-        <div style="margin-bottom:15px;">
-            <label><strong>Nombre:</strong></label><br>
-            <input type="text" name="name" required 
-                   style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
-        </div>
+            <!-- Información básica -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div class="fb-form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                        Nombre de la dieta
+                        <span style="color: #fa383e;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-piggy-bank" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                        <input type="text" name="name" required 
+                               class="fb-input"
+                               placeholder="Ej: Dieta de engorda"
+                               style="padding-left: 40px;">
+                    </div>
+                </div>
 
-        <div style="margin-bottom:15px;">
-            <label><strong>Descripción:</strong></label><br>
-            <textarea name="description" rows="3"
-                      style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;"></textarea>
-        </div>
+                <div class="fb-form-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                        Descripción
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-note-sticky" style="position: absolute; left: 12px; top: 12px; color: #606770;"></i>
+                        <textarea name="description" rows="1"
+                                  class="fb-input"
+                                  placeholder="Descripción opcional de la dieta"
+                                  style="padding-left: 40px;"></textarea>
+                    </div>
+                </div>
+            </div>
 
-        <div style="margin-bottom:20px;">
-            <label><strong>Asignar a sucursales:</strong></label><br>
-            {% for branch in branches %}
-                <label style="display:block; margin-top:5px;">
-                    <input type="checkbox" name="branches" value="{{ branch.id }}">
-                    {{ branch.name }}
+            <!-- Asignación de sucursales -->
+            <div class="fb-form-group" style="margin-bottom: 30px;">
+                <label style="display: block; margin-bottom: 12px; font-weight: 600; color: #050505;">
+                    Asignar a sucursales
+                    <span style="color: #fa383e;">*</span>
                 </label>
-            {% endfor %}
-        </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; background: #f5f6f7; padding: 20px; border-radius: 10px;">
+                    {% for branch in branches %}
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: white; border-radius: 6px; border: 1px solid #e4e6eb;">
+                            <input type="checkbox" name="branches" value="{{ branch.id }}" style="width: 16px; height: 16px; accent-color: #1877f2;">
+                            <span style="color: #050505;">{{ branch.name }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                <small style="color: #606770; display: block; margin-top: 8px;">
+                    Selecciona las sucursales donde estará disponible esta dieta
+                </small>
+            </div>
 
-        <h3>Ingredientes Base (deben sumar 1000 kg)</h3>
+            <!-- Ingredientes base -->
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #050505;">Ingredientes Base</h3>
+                    <div style="background: #e7f3ff; padding: 6px 12px; border-radius: 20px; color: #1877f2; font-size: 13px;">
+                        Total debe ser: <strong>1000 kg</strong>
+                    </div>
+                </div>
 
-        {{ formset.management_form }}
+                {{ formset.management_form }}
 
-        <table width="100%" cellpadding="8" style="border-collapse:collapse; margin-bottom:20px;">
-            <thead style="background:#f1f5f9;">
-                <tr>
-                    <th align="left">Producto</th>
-                    <th align="left">Kilos</th>
-                    <th align="left">Eliminar</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for form in formset %}
-                <tr style="border-bottom:1px solid #e5e7eb;">
-                    <td>{{ form.product }}</td>
-                    <td>{{ form.kilos }}</td>
-                    <td>{{ form.DELETE }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                <div style="background: #f5f6f7; border-radius: 10px; padding: 20px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 10px; color: #606770; font-weight: 600; font-size: 13px;">Producto</th>
+                                <th style="text-align: left; padding: 10px; color: #606770; font-weight: 600; font-size: 13px;">Kilos</th>
+                                <th style="text-align: center; padding: 10px; color: #606770; font-weight: 600; font-size: 13px;">Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ingredients-tbody">
+                            {% for form in formset %}
+                            <tr style="border-bottom: 1px solid #e4e6eb;" class="ingredient-row">
+                                <td style="padding: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-drumstick-bite" style="color: #1877f2;"></i>
+                                        {{ form.product }}
+                                    </div>
+                                </td>
+                                <td style="padding: 10px;">
+                                    <div style="position: relative; width: 150px;">
+                                        <i class="fa-solid fa-scale-unbalanced" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                                        <input type="number" name="{{ form.kilos.html_name }}" value="{{ form.kilos.value|default:'' }}" 
+                                               class="fb-input kilos-input"
+                                               step="0.01" min="0"
+                                               style="padding-left: 35px;"
+                                               onchange="updateTotal()">
+                                    </div>
+                                </td>
+                                <td style="padding: 10px; text-align: center;">
+                                    <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 5px 10px; background: #ffebe9; border-radius: 6px;">
+                                        {{ form.DELETE }}
+                                        <i class="fa-solid fa-trash" style="color: #b92b27; font-size: 13px;"></i>
+                                    </label>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
 
-        <button type="submit"
-                style="background:#1e293b; color:white; padding:10px 18px; border:none; border-radius:6px; cursor:pointer;">
-            Guardar Dieta
-        </button>
+                    <!-- Botón para agregar más ingredientes -->
+                    <button type="button" onclick="addIngredientRow()" class="fb-btn fb-btn-secondary" style="margin-top: 15px; background: white; border: 1px dashed #1877f2; color: #1877f2;">
+                        <i class="fa-solid fa-plus"></i> Agregar ingrediente
+                    </button>
 
-    </form>
+                    <!-- Total actual -->
+                    <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: #050505;">Total actual:</span>
+                        <span id="total-kilos" style="font-size: 20px; font-weight: 700; color: #1877f2;">0.00 kg</span>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Botones de acción -->
+            <div style="display: flex; gap: 15px; border-top: 1px solid #e4e6eb; padding-top: 25px;">
+                <button type="submit" class="fb-btn fb-btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px;">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Guardar Dieta
+                </button>
+                <a href="{% url 'diets:diet_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: white; border: 1px solid #e4e6eb; color: #050505; text-decoration: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 
+<!-- Scripts para manejo dinámico -->
+<script>
+let formCount = {{ formset.total_form_count }};
+let maxForms = {{ formset.max_num }};
+
+function addIngredientRow() {
+    if (formCount >= maxForms) {
+        alert('Máximo de ingredientes alcanzado');
+        return;
+    }
+
+    const tbody = document.getElementById('ingredients-tbody');
+    const newRow = document.createElement('tr');
+    newRow.className = 'ingredient-row';
+    newRow.style.borderBottom = '1px solid #e4e6eb';
+    
+    const newFormHtml = `
+        <td style="padding: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-drumstick-bite" style="color: #1877f2;"></i>
+                <select name="dietbaseingredient_set-${formCount}-product" id="id_dietbaseingredient_set-${formCount}-product">
+                    <option value="" selected>---------</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </td>
+        <td style="padding: 10px;">
+            <div style="position: relative; width: 150px;">
+                <i class="fa-solid fa-scale-unbalanced" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                <input type="number" name="dietbaseingredient_set-${formCount}-kilos" 
+                       class="fb-input kilos-input"
+                       step="0.01" min="0"
+                       style="padding-left: 35px;"
+                       onchange="updateTotal()">
+            </div>
+        </td>
+        <td style="padding: 10px; text-align: center;">
+            <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 5px 10px; background: #ffebe9; border-radius: 6px;">
+                <input type="checkbox" name="dietbaseingredient_set-${formCount}-DELETE" id="id_dietbaseingredient_set-${formCount}-DELETE">
+                <i class="fa-solid fa-trash" style="color: #b92b27; font-size: 13px;"></i>
+            </label>
+        </td>
+    `;
+    
+    newRow.innerHTML = newFormHtml;
+    tbody.appendChild(newRow);
+    
+    formCount++;
+    document.getElementById('id_dietbaseingredient_set-TOTAL_FORMS').value = formCount;
+    updateTotal();
+}
+
+function updateTotal() {
+    let total = 0;
+    document.querySelectorAll('.kilos-input').forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    const totalElement = document.getElementById('total-kilos');
+    totalElement.textContent = total.toFixed(2) + ' kg';
+    
+    // Cambiar color si es 1000
+    if (Math.abs(total - 1000) < 0.01) {
+        totalElement.style.color = '#42b72a';
+    } else {
+        totalElement.style.color = '#1877f2';
+    }
+}
+
+// Actualizar total al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    updateTotal();
+    
+    document.querySelectorAll('.kilos-input').forEach(input => {
+        input.addEventListener('input', updateTotal);
+    });
+});
+</script>
 {% endblock %}

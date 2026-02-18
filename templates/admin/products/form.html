@@ -1,106 +1,211 @@
 {% extends 'admin/base.html' %}
 
 {% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+    <!-- Header del formulario -->
+    <div class="fb-card" style="margin-bottom: 20px;">
+        <div class="fb-card-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: {% if form.instance.pk %}#f59e0b20{% else %}#1877f220{% endif %}; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="{% if form.instance.pk %}fa-solid fa-pen{% else %}fa-solid fa-plus{% endif %}" 
+                       style="font-size: 30px; color: {% if form.instance.pk %}#f59e0b{% else %}#1877f2{% endif %};"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 24px;">
+                        {% if form.instance.pk %}
+                            Editar Producto
+                        {% else %}
+                            Nuevo Producto
+                        {% endif %}
+                    </h2>
+                    <p style="color: #606770; margin: 5px 0 0 0;">
+                        {% if form.instance.pk %}
+                            Modifica los datos del producto "{{ form.instance.name }}"
+                        {% else %}
+                            Completa los datos para registrar un nuevo producto
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<h1 style="margin-bottom: 20px;">
+    <!-- Formulario -->
+    <div class="fb-card">
+        <form method="POST">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-bottom: 25px;">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Nombre -->
+            <div class="fb-form-group" style="margin-bottom: 25px;">
+                <label for="{{ form.name.id_for_label }}" style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                    Nombre del producto
+                    <span style="color: #fa383e;">*</span>
+                </label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-box" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                    <input type="text" 
+                           name="{{ form.name.name }}" 
+                           id="{{ form.name.id_for_label }}"
+                           value="{{ form.name.value|default:'' }}"
+                           class="fb-input"
+                           placeholder="Ej: Pan francés, Leche, etc."
+                           style="padding-left: 40px;"
+                           required>
+                </div>
+                {% if form.name.help_text %}
+                    <small style="color: #606770; display: block; margin-top: 5px;">{{ form.name.help_text }}</small>
+                {% endif %}
+                {% if form.name.errors %}
+                    <div style="color: #fa383e; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ form.name.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Código de barras -->
+            <div class="fb-form-group" style="margin-bottom: 25px;">
+                <label for="{{ form.barcode.id_for_label }}" style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                    Código de barras
+                </label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-barcode" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                    <input type="text" 
+                           name="{{ form.barcode.name }}" 
+                           id="{{ form.barcode.id_for_label }}"
+                           value="{{ form.barcode.value|default:'' }}"
+                           class="fb-input"
+                           placeholder="Ej: 7501234567890"
+                           style="padding-left: 40px; font-family: monospace;">
+                </div>
+                {% if form.barcode.help_text %}
+                    <small style="color: #606770; display: block; margin-top: 5px;">{{ form.barcode.help_text }}</small>
+                {% endif %}
+                {% if form.barcode.errors %}
+                    <div style="color: #fa383e; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ form.barcode.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Precio -->
+            <div class="fb-form-group" style="margin-bottom: 25px;">
+                <label for="{{ form.price.id_for_label }}" style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                    Precio
+                    <span style="color: #fa383e;">*</span>
+                </label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-money-bill-wave" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                    <input type="number" 
+                           name="{{ form.price.name }}" 
+                           id="{{ form.price.id_for_label }}"
+                           value="{{ form.price.value|default:'' }}"
+                           class="fb-input"
+                           placeholder="0.00"
+                           step="0.01"
+                           min="0"
+                           style="padding-left: 40px;"
+                           required>
+                    <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #606770; font-size: 14px;">MXN</span>
+                </div>
+                {% if form.price.help_text %}
+                    <small style="color: #606770; display: block; margin-top: 5px;">{{ form.price.help_text }}</small>
+                {% endif %}
+                {% if form.price.errors %}
+                    <div style="color: #fa383e; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ form.price.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Switches para opciones -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <!-- Activo -->
+                <div style="background: #f5f6f7; padding: 15px; border-radius: 10px;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <input type="checkbox" 
+                               name="{{ form.is_active.name }}" 
+                               id="{{ form.is_active.id_for_label }}"
+                               {% if form.is_active.value %}checked{% endif %}
+                               style="width: 18px; height: 18px; accent-color: #1877f2;">
+                        <div>
+                            <strong style="display: block; color: #050505;">Producto activo</strong>
+                            <small style="color: #606770;">Disponible para venta</small>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Ingrediente -->
+                <div style="background: #f5f6f7; padding: 15px; border-radius: 10px;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <input type="checkbox" 
+                               name="{{ form.is_ingredient.name }}" 
+                               id="{{ form.is_ingredient.id_for_label }}"
+                               {% if form.is_ingredient.value %}checked{% endif %}
+                               style="width: 18px; height: 18px; accent-color: #42b72a;">
+                        <div>
+                            <strong style="display: block; color: #050505;">Es ingrediente</strong>
+                            <small style="color: #606770;">Se usa en recetas/dietas</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div style="display: flex; gap: 15px; border-top: 1px solid #e4e6eb; padding-top: 25px;">
+                <button type="submit" class="fb-btn fb-btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px;">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    {% if form.instance.pk %}Actualizar producto{% else %}Guardar producto{% endif %}
+                </button>
+                <a href="{% url 'product_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: white; border: 1px solid #e4e6eb; color: #050505; text-decoration: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Vista previa (solo en edición) -->
     {% if form.instance.pk %}
-        ✏ Editar Producto
-    {% else %}
-        ➕ Nuevo Producto
+    <div class="fb-card" style="margin-top: 20px; background: #f5f6f7;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: white; width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <i class="fa-solid fa-box" style="font-size: 30px;"></i>
+            </div>
+            <div>
+                <h4 style="margin: 0; color: #050505;">{{ form.instance.name }}</h4>
+                <p style="margin: 5px 0 0 0; color: #606770; font-size: 13px;">
+                    Código: {{ form.instance.barcode|default:"Sin código" }} | 
+                    Precio: <strong>${{ form.instance.price }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
     {% endif %}
-</h1>
-
-<div style="
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    max-width: 600px;
-">
-
-    <form method="POST">
-        {% csrf_token %}
-
-        <!-- Nombre -->
-        <div style="margin-bottom: 20px;">
-            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
-                Nombre
-            </label>
-            {{ form.name }}
-            {% if form.name.errors %}
-                <div style="color: red; font-size: 13px;">
-                    {{ form.name.errors }}
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Código -->
-        <div style="margin-bottom: 20px;">
-            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
-                Código de barras
-            </label>
-            {{ form.barcode }}
-            {% if form.barcode.errors %}
-                <div style="color: red; font-size: 13px;">
-                    {{ form.barcode.errors }}
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Precio -->
-        <div style="margin-bottom: 25px;">
-            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
-                Precio
-            </label>
-            {{ form.price }}
-            {% if form.price.errors %}
-                <div style="color: red; font-size: 13px;">
-                    {{ form.price.errors }}
-                </div>
-            {% endif %}
-        </div>
-        <!-- Activo -->
-        <div style="margin-bottom: 25px;">
-            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
-                Activo
-            </label>
-            {{ form.is_active }}
-        </div>
-        <!-- Ingrediente -->
-        <div style="margin-bottom: 25px;">
-            <label style="display:block; font-weight: bold; margin-bottom: 5px;">
-                Ingrediente
-            </label>
-            {{ form.is_ingredient }}
-        </div>
-
-        <div style="display: flex; gap: 10px;">
-            <button type="submit"
-                style="
-                    background-color: #2563eb;
-                    color: white;
-                    padding: 10px 18px;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                ">
-                💾 Guardar
-            </button>
-
-            <a href="{% url 'product_list' %}"
-               style="
-                background-color: #6b7280;
-                color: white;
-                padding: 10px 18px;
-                border-radius: 8px;
-                text-decoration: none;
-               ">
-                Cancelar
-            </a>
-        </div>
-
-    </form>
-
 </div>
 
+<!-- Script para formatear precio (opcional) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const priceInput = document.getElementById('{{ form.price.id_for_label }}');
+    if (priceInput) {
+        priceInput.addEventListener('blur', function() {
+            if (this.value) {
+                const value = parseFloat(this.value).toFixed(2);
+                this.value = value;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

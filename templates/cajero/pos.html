@@ -1,81 +1,309 @@
 {% extends 'cajero/base.html' %}
-{% block content %}
+{% load static %}
 
-<h2>Punto de Venta</h2>
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #1877f220; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-cash-register" style="font-size: 24px; color: #1877f2;"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0; font-size: 24px;">Punto de Venta</h2>
+                <p style="color: #606770; margin: 5px 0 0 0;">
+                    <i class="fas fa-map-marker-alt" style="margin-right: 5px; color: #1877f2;"></i>
+                    Sucursal: <strong>{{ request.user.branch.name }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% csrf_token %}
 
-<div style="display:flex; gap:20px;">
-
-    <!-- ================= TICKET ================= -->
-    <div style="width:40%; background:#f8f9fa; padding:20px; border-radius:10px;">
-
-        <h3>🧾 Ticket</h3>
-
-        <table style="width:100%; margin-top:15px;" id="ticket-table">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cant</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <hr>
-
-        <h4>Total: $<span id="total">0.00</span></h4>
-
-        <button onclick="checkout()"
-            style="margin-top:15px; width:100%; padding:12px;
-                   background:green; color:white; border:none;
-                   border-radius:5px; font-weight:bold;">
-            Finalizar venta
-        </button>
-
-    </div>
-
-
-    <!-- ================= PRODUCTOS ================= -->
-    <div style="width:60%;">
-
-        <h3>Productos</h3>
-
-        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:15px; margin-top:15px;">
-
-            {% for item in inventory %}
-                <div onclick="addProduct('{{ item.product.id }}',
-                                         '{{ item.product.name }}',
-                                         '{{ item.product.price }}')"
-
-                     style="cursor:pointer;
-                            border:1px solid #ddd;
-                            padding:15px;
-                            border-radius:8px;
-                            text-align:center;
-                            background:white;">
-
-                    <strong>{{ item.product.name }}</strong><br>
-                    ${{ item.product.price }}<br>
-                    <small>Stock: {{ item.stock }}</small>
-
-                </div>
-            {% endfor %}
-
+<div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 25px;">
+    <!-- ================= TICKET (IZQUIERDA) ================= -->
+    <div class="fb-card" style="padding: 0; overflow: hidden; height: fit-content; position: sticky; top: 90px;">
+        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 20px; color: white;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <i class="fas fa-receipt" style="font-size: 24px;"></i>
+                <h3 style="margin: 0;">Ticket de Venta</h3>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
+                <span><i class="fas fa-clock"></i> {{ now|date:"d/m/Y H:i" }}</span>
+                <span><i class="fas fa-hashtag"></i> #{{ ticket_number|default:"Nuevo" }}</span>
+            </div>
         </div>
 
+        <div style="padding: 20px;">
+            <!-- Tabla de productos en ticket -->
+            <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;" id="ticket-scroll">
+                <table style="width: 100%; border-collapse: collapse;" id="ticket-table">
+                    <thead style="position: sticky; top: 0; background: #f5f6f7;">
+                        <tr>
+                            <th style="padding: 12px; text-align: left; color: #606770; font-size: 12px;">Producto</th>
+                            <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Cant</th>
+                            <th style="padding: 12px; text-align: right; color: #606770; font-size: 12px;">Total</th>
+                            <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticket-body">
+                        <!-- Los items se agregan dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Resumen del ticket -->
+            <div style="border-top: 2px dashed #e4e6eb; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #606770;">
+                    <span>Subtotal:</span>
+                    <span>$<span id="subtotal">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: #606770;">
+                    <span>IVA (16%):</span>
+                    <span>$<span id="iva">0.00</span></span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; color: #050505;">
+                    <span>Total:</span>
+                    <span>$<span id="total">0.00</span></span>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button onclick="clearCart()" class="fb-btn fb-btn-secondary" style="justify-content: center; padding: 12px;">
+                    <i class="fas fa-trash"></i>
+                    Limpiar
+                </button>
+                <button onclick="checkout()" class="fb-btn fb-btn-success" style="justify-content: center; padding: 12px; background: #42b72a;">
+                    <i class="fas fa-check-circle"></i>
+                    Cobrar
+                </button>
+            </div>
+        </div>
     </div>
 
+    <!-- ================= PRODUCTOS (DERECHA) ================= -->
+    <div>
+        <!-- Buscador predictivo -->
+        <div class="fb-card" style="margin-bottom: 20px; padding: 15px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div style="flex: 1; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                    <input type="text" 
+                           id="product-search" 
+                           class="fb-input" 
+                           placeholder="Buscar producto por nombre o código..."
+                           style="padding-left: 45px; padding-right: 100px; height: 48px;"
+                           autocomplete="off">
+                    <span style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #606770; font-size: 12px;" id="search-count">
+                        <i class="fas fa-box"></i> <span id="product-count">{{ inventory|length }}</span>
+                    </span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="fb-btn fb-btn-secondary" onclick="filterProducts('all')" id="filter-all">
+                        <i class="fas fa-th-large"></i> Todos
+                    </button>
+                    <button class="fb-btn fb-btn-secondary" onclick="filterProducts('lowstock')" id="filter-lowstock">
+                        <i class="fas fa-exclamation-triangle"></i> Stock bajo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados del buscador (autocomplete) -->
+        <div id="search-results" style="display: none; margin-bottom: 20px;">
+            <div class="fb-card" style="padding: 0; overflow: hidden;">
+                <div class="fb-card-header" style="padding: 15px; margin: 0; background: #f5f6f7;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 style="margin: 0;"><i class="fas fa-search"></i> Resultados de búsqueda</h4>
+                        <span id="results-count" style="color: #606770;">0 productos</span>
+                    </div>
+                </div>
+                <div style="padding: 15px; max-height: 400px; overflow-y: auto;" id="results-container">
+                    <!-- Resultados dinámicos -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid de productos -->
+        <div class="fb-card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-boxes" style="color: #1877f2;"></i>
+                    Catálogo de Productos
+                </h3>
+                <div style="color: #606770; font-size: 14px;">
+                    <i class="fas fa-sync-alt"></i> <span id="displayed-count">{{ inventory|length }}</span> productos
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;" id="products-grid">
+                {% for item in inventory %}
+                <div class="product-card {% if item.stock < 5 %}low-stock{% endif %}" 
+                     data-product-id="{{ item.product.id }}"
+                     data-product-name="{{ item.product.name|lower }}"
+                     data-product-code="{{ item.product.barcode|default:''|lower }}"
+                     data-product-price="{{ item.product.price }}"
+                     data-stock="{{ item.stock }}"
+                     onclick="addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', '{{ item.product.price }}')"
+                     style="cursor: pointer; border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; text-align: center; background: white; transition: all 0.2s; position: relative;"
+                     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+
+                    {% if item.stock < 5 %}
+                    <span style="position: absolute; top: 10px; right: 10px; color: #fa383e;">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                    {% endif %}
+
+                    <div style="background: #e7f3ff; width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                        <i class="fas fa-box" style="font-size: 24px; color: #1877f2;"></i>
+                    </div>
+
+                    <strong style="display: block; margin-bottom: 5px; color: #050505;">{{ item.product.name }}</strong>
+                    
+                    <div style="color: #1877f2; font-weight: 700; font-size: 18px; margin-bottom: 5px;">
+                        ${{ item.product.price }}
+                    </div>
+                    
+                    <div style="font-size: 12px; color: #606770;">
+                        <i class="fas fa-cubes"></i> Stock: 
+                        <span style="color: {% if item.stock < 5 %}#fa383e{% else %}#42b72a{% endif %}; font-weight: 600;">
+                            {{ item.stock }}
+                        </span>
+                    </div>
+
+                    {% if item.product.barcode %}
+                    <div style="font-size: 10px; color: #606770; margin-top: 5px;">
+                        <i class="fas fa-barcode"></i> {{ item.product.barcode }}
+                    </div>
+                    {% endif %}
+
+                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', '{{ item.product.price }}')">
+                        <i class="fas fa-plus"></i> Agregar
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
 
-
 <script>
-
 let cart = {};
+let products = [];
+let searchTimeout;
 
+// Inicializar productos
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar productos en array para búsqueda
+    document.querySelectorAll('.product-card').forEach(card => {
+        products.push({
+            id: card.dataset.productId,
+            name: card.dataset.productName,
+            code: card.dataset.productCode || '',
+            price: parseFloat(card.dataset.productPrice),
+            stock: parseInt(card.dataset.stock),
+            element: card
+        });
+    });
+
+    // Configurar buscador
+    const searchInput = document.getElementById('product-search');
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchProducts(e.target.value), 300);
+    });
+
+    // Cerrar resultados al hacer click fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#product-search') && !e.target.closest('#search-results')) {
+            document.getElementById('search-results').style.display = 'none';
+        }
+    });
+});
+
+// Función de búsqueda predictiva
+function searchProducts(query) {
+    query = query.toLowerCase().trim();
+    const resultsContainer = document.getElementById('results-container');
+    const searchResults = document.getElementById('search-results');
+    const resultsCount = document.getElementById('results-count');
+
+    if (query.length < 2) {
+        searchResults.style.display = 'none';
+        filterProducts('all');
+        return;
+    }
+
+    const matches = products.filter(p => 
+        p.name.includes(query) || p.code.includes(query)
+    );
+
+    if (matches.length > 0) {
+        resultsContainer.innerHTML = matches.map(p => `
+            <div onclick="addProduct('${p.id}', '${p.name}', ${p.price})" 
+                 style="display: flex; align-items: center; gap: 15px; padding: 12px; border-bottom: 1px solid #e4e6eb; cursor: pointer; transition: background 0.2s;"
+                 onmouseover="this.style.background='#f5f6f7'"
+                 onmouseout="this.style.background='transparent'">
+                <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-box" style="color: #1877f2;"></i>
+                </div>
+                <div style="flex: 1;">
+                    <strong>${p.name}</strong>
+                    ${p.code ? `<div style="font-size: 11px; color: #606770;"><i class="fas fa-barcode"></i> ${p.code}</div>` : ''}
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 700; color: #1877f2;">$${p.price.toFixed(2)}</div>
+                    <div style="font-size: 11px; color: ${p.stock < 5 ? '#fa383e' : '#42b72a'};">
+                        <i class="fas fa-cubes"></i> ${p.stock} uds
+                    </div>
+                </div>
+                <i class="fas fa-plus-circle" style="color: #1877f2; font-size: 20px;"></i>
+            </div>
+        `).join('');
+        
+        resultsCount.textContent = `${matches.length} productos`;
+        searchResults.style.display = 'block';
+        
+        // Ocultar grid de productos
+        document.getElementById('products-grid').style.display = 'none';
+    } else {
+        resultsContainer.innerHTML = `
+            <div style="text-align: center; padding: 30px;">
+                <i class="fas fa-search" style="font-size: 40px; color: #e4e6eb; margin-bottom: 15px;"></i>
+                <h4 style="color: #050505;">No se encontraron productos</h4>
+                <p style="color: #606770;">Intenta con otro término de búsqueda</p>
+            </div>
+        `;
+        resultsCount.textContent = '0 productos';
+        searchResults.style.display = 'block';
+    }
+}
+
+// Filtrar productos
+function filterProducts(filter) {
+    const grid = document.getElementById('products-grid');
+    const searchResults = document.getElementById('search-results');
+    
+    searchResults.style.display = 'none';
+    grid.style.display = 'grid';
+    document.getElementById('product-search').value = '';
+
+    if (filter === 'lowstock') {
+        products.forEach(p => {
+            p.element.style.display = p.stock < 5 ? 'block' : 'none';
+        });
+        document.getElementById('displayed-count').textContent = products.filter(p => p.stock < 5).length;
+    } else {
+        products.forEach(p => p.element.style.display = 'block');
+        document.getElementById('displayed-count').textContent = products.length;
+    }
+}
+
+// Funciones del carrito (manteniendo la lógica original)
 function addProduct(id, name, price) {
-
     price = parseFloat(price);
 
     if (cart[id]) {
@@ -89,31 +317,116 @@ function addProduct(id, name, price) {
     }
 
     renderTicket();
+    
+    // Feedback visual
+    showNotification(`✓ ${name} agregado al ticket`, 'success');
 }
 
 function renderTicket() {
-
-    let tbody = document.querySelector("#ticket-table tbody");
+    let tbody = document.getElementById("ticket-body");
     tbody.innerHTML = "";
 
-    let total = 0;
+    let subtotal = 0;
 
     for (let id in cart) {
-
         let item = cart[id];
         let rowTotal = item.price * item.quantity;
-        total += rowTotal;
+        subtotal += rowTotal;
 
         tbody.innerHTML += `
-            <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity}</td>
-                <td>$${rowTotal.toFixed(2)}</td>
+            <tr style="border-bottom: 1px solid #e4e6eb;">
+                <td style="padding: 12px 8px;">
+                    <div><strong>${item.name}</strong></div>
+                    <div style="font-size: 11px; color: #606770;">$${item.price.toFixed(2)} c/u</div>
+                </td>
+                <td style="padding: 12px 8px; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <button onclick="updateQuantity('${id}', -1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <span style="font-weight: 600; min-width: 30px;">${item.quantity}</span>
+                        <button onclick="updateQuantity('${id}', 1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </td>
+                <td style="padding: 12px 8px; text-align: right;">
+                    <strong>$${rowTotal.toFixed(2)}</strong>
+                </td>
+                <td style="padding: 12px 8px; text-align: center;">
+                    <button onclick="removeFromCart('${id}')" style="background: none; border: none; color: #fa383e; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         `;
     }
 
+    let iva = subtotal * 0.16;
+    let total = subtotal + iva;
+
+    document.getElementById("subtotal").innerText = subtotal.toFixed(2);
+    document.getElementById("iva").innerText = iva.toFixed(2);
     document.getElementById("total").innerText = total.toFixed(2);
+    
+    // Scroll automático al último item
+    let ticketScroll = document.getElementById('ticket-scroll');
+    if (ticketScroll) {
+        ticketScroll.scrollTop = ticketScroll.scrollHeight;
+    }
+}
+
+function updateQuantity(id, change) {
+    if (cart[id]) {
+        cart[id].quantity += change;
+        if (cart[id].quantity <= 0) {
+            delete cart[id];
+        }
+        renderTicket();
+    }
+}
+
+function removeFromCart(id) {
+    delete cart[id];
+    renderTicket();
+}
+
+function clearCart() {
+    if (Object.keys(cart).length > 0 && confirm('¿Limpiar todo el ticket?')) {
+        cart = {};
+        renderTicket();
+    }
+}
+
+function showNotification(message, type) {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${type === 'success' ? '#42b72a' : '#1877f2'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
 
 function getCSRFToken() {
@@ -121,9 +434,8 @@ function getCSRFToken() {
 }
 
 function checkout() {
-
     if (Object.keys(cart).length === 0) {
-        alert("El carrito está vacío");
+        showNotification('El carrito está vacío', 'error');
         return;
     }
 
@@ -149,14 +461,45 @@ function checkout() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert("Venta realizada correctamente");
-            location.reload();
+            showNotification('✅ Venta realizada correctamente', 'success');
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert(data.error);
+            showNotification(data.error || 'Error al procesar la venta', 'error');
         }
+    })
+    .catch(error => {
+        showNotification('Error de conexión', 'error');
     });
 }
 
+// Agregar animaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+    
+    .product-card.low-stock {
+        border-left: 4px solid #fa383e !important;
+    }
+    
+    .product-card {
+        transition: all 0.2s ease;
+    }
+    
+    #search-results {
+        animation: slideIn 0.3s ease;
+    }
+`;
+document.head.appendChild(style);
 </script>
 
+<!-- Agregar Font Awesome si no está en base.html -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

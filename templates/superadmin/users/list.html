@@ -1,68 +1,198 @@
 {% extends 'superadmin/base.html' %}
+{% load static %}
+
 {% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-users" style="font-size: 28px; color: #1877f2;"></i>
+                Usuarios del Sistema
+            </h2>
+            <p style="color: #606770; margin: 5px 0 0 0;">
+                <i class="fas fa-user-circle"></i> Total de usuarios: {{ users|length }}
+            </p>
+        </div>
+        <a href="{% url 'users:user_create' %}" class="fb-btn fb-btn-success" style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-user-plus"></i>
+            Nuevo Usuario
+        </a>
+    </div>
+</div>
 
-<h2 style="margin-bottom:20px;">Usuarios</h2>
+<div class="fb-card" style="padding: 0; overflow: hidden;">
+    {% if users %}
+        <table class="fb-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;"><i class="fas fa-user"></i> Usuario</th>
+                    <th style="width: 20%;"><i class="fas fa-envelope"></i> Email</th>
+                    <th style="width: 15%;"><i class="fas fa-tag"></i> Rol</th>
+                    <th style="width: 20%;"><i class="fas fa-store"></i> Sucursal</th>
+                    <th style="width: 10%;"><i class="fas fa-circle"></i> Estado</th>
+                    <th style="width: 20%;"><i class="fas fa-cog"></i> Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="background: {% if user.role == 'SUPERADMIN' %}#fa383e20{% elif user.role == 'ADMIN' %}#1877f220{% else %}#42b72a20{% endif %}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: {% if user.role == 'SUPERADMIN' %}#fa383e{% elif user.role == 'ADMIN' %}#1877f2{% else %}#42b72a{% endif %};">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <div>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.first_name %}
+                                    <div style="font-size: 11px; color: #606770;">
+                                        <i class="fas fa-user-tag"></i> {{ user.first_name }} {{ user.last_name }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="color: #050505; display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-envelope" style="color: #606770;"></i>
+                            {{ user.email }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.role == 'SUPERADMIN' %}
+                            <span style="background: #fa383e20; color: #b92b27; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-crown"></i> Super Admin
+                            </span>
+                        {% elif user.role == 'ADMIN' %}
+                            <span style="background: #e7f3ff; color: #1877f2; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-user-tie"></i> Administrador
+                            </span>
+                        {% else %}
+                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-cash-register"></i> Cajero
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.branch %}
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="background: #e7f3ff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1877f2;">
+                                    <i class="fas fa-store"></i>
+                                </span>
+                                <span>{{ user.branch.name }}</span>
+                            </div>
+                        {% else %}
+                            <span style="color: #606770; display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-times-circle"></i> No asignada
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-circle" style="color: #42b72a; font-size: 8px;"></i>
+                                <span class="fb-badge fb-badge-success">
+                                    <i class="fas fa-check"></i> Activo
+                                </span>
+                            </div>
+                        {% else %}
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-circle" style="color: #fa383e; font-size: 8px;"></i>
+                                <span class="fb-badge fb-badge-danger">
+                                    <i class="fas fa-times"></i> Inactivo
+                                </span>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fb-actions" style="display: flex; gap: 5px;">
+                            <a href="{% url 'users:user_update' user.id %}" class="fb-btn fb-btn-secondary" style="padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-edit"></i>
+                                Editar
+                            </a>
+                            {% if user.role != 'SUPERADMIN' or request.user != user %}
+                            <a href="#" onclick="confirmToggle('{{ user.id }}', '{{ user.username }}', '{{ user.is_active|yesno:"desactivar,activar" }}')" 
+                               class="fb-btn" 
+                               style="padding: 6px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 4px; background: {% if user.is_active %}#ffebe9; color: #b92b27;{% else %}#e3f2e8; color: #1b7e3f;{% endif %} border: none;">
+                                <i class="fas {% if user.is_active %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                                {% if user.is_active %}Desactivar{% else %}Activar{% endif %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 60px 40px; text-align: center;">
+            <div style="background: #e7f3ff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fas fa-users" style="font-size: 40px; color: #1877f2;"></i>
+            </div>
+            <h3 style="color: #050505; margin-bottom: 10px;">No hay usuarios registrados</h3>
+            <p style="color: #606770; margin-bottom: 20px; max-width: 300px; margin-left: auto; margin-right: auto;">
+                <i class="fas fa-info-circle"></i> Comienza creando el primer usuario del sistema
+            </p>
+            <a href="{% url 'users:user_create' %}" class="fb-btn fb-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
+                <i class="fas fa-user-plus"></i>
+                Crear primer usuario
+            </a>
+        </div>
+    {% endif %}
+</div>
 
-<a href="{% url 'users:user_create' %}"
-   style="background:#16a34a; color:white; padding:8px 12px; border-radius:5px; text-decoration:none;">
-   + Nuevo Usuario
-</a>
+<!-- Script para confirmación de toggle -->
+<script>
+function confirmToggle(userId, username, action) {
+    if (confirm(`¿Estás seguro de que quieres ${action} al usuario "${username}"?`)) {
+        window.location.href = `/users/${userId}/toggle/`;
+    }
+}
 
-<table style="width:100%; margin-top:20px; border-collapse:collapse; background:white; border-radius:10px; overflow:hidden;">
+// Animación al cargar la tabla
+document.addEventListener('DOMContentLoaded', function() {
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+        row.style.animation = `slideIn 0.3s ease ${index * 0.05}s both`;
+    });
+});
+</script>
 
-    <thead style="background:#1e293b; color:white;">
-        <tr>
-            <th style="padding:10px;">Username</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>Sucursal</th>
-            <th>Activo</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
+<style>
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
 
-    <tbody>
-        {% for user in users %}
-        <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:10px;">{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>
-                {% if user.role == 'SUPERADMIN' %}
-                    <span style="color:#dc2626; font-weight:bold;">Super Admin</span>
-                {% elif user.role == 'ADMIN' %}
-                    <span style="color:#2563eb;">Admin</span>
-                {% else %}
-                    <span style="color:#16a34a;">Cajero</span>
-                {% endif %}
-            </td>
-            <td>
-                {% if user.branch %}
-                    {{ user.branch.name }}
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td>
-                {% if user.is_active %}
-                    ✅
-                {% else %}
-                    ❌
-                {% endif %}
-            </td>
-            <td>
-                <a href="{% url 'users:user_update' user.id %}"
-                   style="color:#2563eb; text-decoration:none;">Editar</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6" style="padding:20px; text-align:center;">
-                No hay usuarios registrados.
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
+.fb-table tbody tr {
+    transition: background-color 0.2s ease;
+}
 
-</table>
+.fb-table tbody tr:hover {
+    background-color: #f5f6f7 !important;
+}
 
+.fb-btn {
+    transition: all 0.2s ease;
+}
+
+.fb-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Estilo para iconos en encabezados */
+.fb-table th i {
+    margin-right: 5px;
+    color: #606770;
+}
+</style>
+
+<!-- Font Awesome (si no está en base.html) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

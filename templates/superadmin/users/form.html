@@ -1,74 +1,342 @@
 {% extends 'superadmin/base.html' %}
+{% load static %}
+
 {% block content %}
-
-<h2>{{ title }}</h2>
-
-<form method="post" style="background:white; padding:20px; border-radius:10px; width:400px;">
-    {% csrf_token %}
-
-    <div style="margin-bottom:15px;">
-        <label>Username:</label><br>
-        {{ form.username }}
+<div class="fb-card" style="max-width: 600px; margin: 0 auto;">
+    <!-- Header con ícono y efecto de gradiente -->
+    <div class="fb-card-header" style="background: linear-gradient(135deg, #f5f6f7 0%, #ffffff 100%); border-radius: 8px 8px 0 0;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: {% if 'Crear' in title %}#42b72a{% else %}#1877f2{% endif %}; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <i class="fas {% if 'Crear' in title %}fa-user-plus{% else %}fa-user-edit{% endif %}" style="font-size: 28px; color: white;"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0; font-size: 24px;">{{ title }}</h2>
+                <p style="color: #606770; margin: 5px 0 0 0; font-size: 14px;">
+                    {% if 'Crear' in title %}
+                        <i class="fas fa-user-plus"></i> Complete los datos para registrar un nuevo usuario
+                    {% else %}
+                        <i class="fas fa-user-edit"></i> Modifique los datos del usuario
+                    {% endif %}
+                </p>
+            </div>
+        </div>
     </div>
 
-    <div style="margin-bottom:15px;">
-        <label>Email:</label><br>
-        {{ form.email }}
-    </div>
+    <form method="post" style="padding: 20px;">
+        {% csrf_token %}
 
-    <div style="margin-bottom:15px;">
-        <label>Rol:</label><br>
-        {{ form.role }}
-    </div>
+        {% if form.non_field_errors %}
+            <div class="fb-alert fb-alert-danger" style="margin-bottom: 25px; animation: slideIn 0.3s ease;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 20px; background: #fa383e20; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fa383e;"></i>
+                    <div style="flex: 1;">
+                        {% for error in form.non_field_errors %}
+                            <strong>{{ error }}</strong>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
 
-    <div style="margin-bottom:15px;" id="branch-field">
-        <label>Sucursal:</label><br>
-        {{ form.branch }}
-    </div>
+        <!-- Campo: Username -->
+        <div class="fb-form-group" style="margin-bottom: 20px;">
+            <label for="{{ form.username.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-user-circle" style="color: #1877f2;"></i>
+                Nombre de usuario
+                <span style="color: #fa383e; font-size: 16px;">*</span>
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-user" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                {{ form.username }}
+            </div>
+            {% if form.username.help_text %}
+                <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                    <i class="fas fa-info-circle"></i> {{ form.username.help_text }}
+                </small>
+            {% endif %}
+            {% if form.username.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-times-circle" style="color: #fa383e;"></i>
+                        {{ form.username.errors.0 }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
-    <div style="margin-bottom:15px;">
-        <label>Password:</label><br>
-        {{ form.password }}
-        <small>Déjalo vacío si no quieres cambiarlo</small>
-    </div>
+        <!-- Campo: Email -->
+        <div class="fb-form-group" style="margin-bottom: 20px;">
+            <label for="{{ form.email.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-envelope" style="color: #1877f2;"></i>
+                Correo electrónico
+                <span style="color: #fa383e; font-size: 16px;">*</span>
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                {{ form.email }}
+            </div>
+            {% if form.email.help_text %}
+                <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                    <i class="fas fa-info-circle"></i> {{ form.email.help_text }}
+                </small>
+            {% endif %}
+            {% if form.email.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-times-circle" style="color: #fa383e;"></i>
+                        {{ form.email.errors.0 }}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
-    <div style="margin-bottom:15px;">
-        <label>
-            {{ form.is_active }} Activo
-        </label>
-    </div>
+        <!-- Campo: Rol -->
+        <div class="fb-form-group" style="margin-bottom: 20px;">
+            <label for="{{ form.role.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-tag" style="color: #1877f2;"></i>
+                Rol del usuario
+                <span style="color: #fa383e; font-size: 16px;">*</span>
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-user-tag" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
+                {{ form.role }}
+            </div>
+            {% if form.role.help_text %}
+                <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                    <i class="fas fa-info-circle"></i> {{ form.role.help_text }}
+                </small>
+            {% endif %}
+            {% if form.role.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.role.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
 
-    <button type="submit"
-        style="background:#2563eb; color:white; padding:8px 12px; border:none; border-radius:5px;">
-        Guardar
-    </button>
+        <!-- Campo: Sucursal (dinámico) -->
+        <div class="fb-form-group" id="branch-field" style="margin-bottom: 20px; transition: all 0.3s ease;">
+            <label for="{{ form.branch.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-store" style="color: #1877f2;"></i>
+                Sucursal asignada
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-building" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
+                {{ form.branch }}
+            </div>
+            <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                <i class="fas fa-info-circle"></i> Selecciona la sucursal donde trabajará el usuario
+            </small>
+            {% if form.branch.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.branch.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
 
-</form>
+        <!-- Campo: Password -->
+        <div class="fb-form-group" style="margin-bottom: 20px;">
+            <label for="{{ form.password.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-lock" style="color: #1877f2;"></i>
+                Contraseña
+                {% if not 'Crear' in title %}
+                    <span style="background: #e7f3ff; color: #1877f2; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                        <i class="fas fa-info-circle"></i> Opcional
+                    </span>
+                {% endif %}
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+                {{ form.password }}
+                <i class="fas fa-eye" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #606770; font-size: 18px;" onclick="togglePassword()"></i>
+            </div>
+            {% if not 'Crear' in title %}
+                <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 6px; background: #f5f6f7; padding: 8px 12px; border-radius: 6px;">
+                    <i class="fas fa-info-circle"></i>
+                    Déjalo vacío si no quieres cambiar la contraseña
+                </small>
+            {% endif %}
+            {% if form.password.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.password.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
 
+        <!-- Campo: Estado (Checkbox) -->
+        <div class="fb-form-group" style="margin-bottom: 20px;">
+            <div style="background: linear-gradient(135deg, #f5f6f7 0%, #ffffff 100%); padding: 16px; border-radius: 10px; border: 1px solid #e4e6eb;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-bolt" style="color: #1877f2;"></i>
+                    </span>
+                    <div style="flex: 1;">
+                        <label for="{{ form.is_active.id_for_label }}" style="font-weight: 600; color: #050505; cursor: pointer;">
+                            Usuario activo
+                        </label>
+                        <p style="color: #606770; font-size: 13px; margin: 2px 0 0 0;">
+                            <i class="fas fa-info-circle"></i> Determina si el usuario puede acceder al sistema
+                        </p>
+                    </div>
+                    <div class="fb-checkbox-group" style="transform: scale(1.2);">
+                        {{ form.is_active }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos requeridos note -->
+        <div style="margin: 25px 0; padding: 14px; background: linear-gradient(135deg, #e7f3ff 0%, #d9ebff 100%); border-radius: 10px; display: flex; align-items: center; gap: 12px;">
+            <span style="background: #1877f2; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-info" style="font-size: 14px;"></i>
+            </span>
+            <span style="color: #1877f2; font-weight: 500;">
+                <i class="fas fa-asterisk" style="color: #fa383e; font-size: 10px;"></i> 
+                Los campos marcados con <span style="color: #fa383e; font-weight: 700;">*</span> son obligatorios
+            </span>
+        </div>
+
+        <!-- Botones de acción -->
+        <div style="display: flex; gap: 15px; margin-top: 30px; border-top: 2px solid #f0f2f5; padding-top: 25px;">
+            <button type="submit" class="fb-btn fb-btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; font-size: 16px; background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%); box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);">
+                <i class="fas fa-save"></i>
+                Guardar cambios
+            </button>
+            <a href="{% url 'users:user_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-size: 16px; background: white; border: 1px solid #e4e6eb;">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Script mejorado para el campo sucursal -->
 <script>
-
 function toggleBranchField() {
-
-    let role = document.getElementById("id_role").value;
+    let roleSelect = document.getElementById("id_role");
     let branchField = document.getElementById("branch-field");
+    
+    if (roleSelect) {
+        let role = roleSelect.value;
+        
+        if (role === "SUPERADMIN") {
+            branchField.style.opacity = "0.5";
+            branchField.style.pointerEvents = "none";
+            // Deshabilitar el campo branch para superadmin
+            let branchInput = document.getElementById("id_branch");
+            if (branchInput) branchInput.disabled = true;
+        } else {
+            branchField.style.opacity = "1";
+            branchField.style.pointerEvents = "auto";
+            // Habilitar el campo branch para otros roles
+            let branchInput = document.getElementById("id_branch");
+            if (branchInput) branchInput.disabled = false;
+        }
+    }
+}
 
-    if (role === "SUPERADMIN") {
-        branchField.style.display = "none";
+// Función para mostrar/ocultar contraseña
+function togglePassword() {
+    let passwordField = document.getElementById("id_password");
+    let eyeIcon = document.querySelector('.fa-eye');
+    
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
     } else {
-        branchField.style.display = "block";
+        passwordField.type = "password";
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
     }
 }
 
 // Ejecutar al cargar
 document.addEventListener("DOMContentLoaded", function() {
     toggleBranchField();
+    
+    // Ejecutar cuando cambie el rol
+    let roleSelect = document.getElementById("id_role");
+    if (roleSelect) {
+        roleSelect.addEventListener("change", function() {
+            toggleBranchField();
+        });
+    }
+    
+    // Añadir animación al campo de rol
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            this.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 200);
+        });
+    }
 });
 
-// Ejecutar cuando cambie el rol
-document.getElementById("id_role").addEventListener("change", function() {
-    toggleBranchField();
+// Validación en tiempo real para email
+document.addEventListener('DOMContentLoaded', function() {
+    let emailField = document.getElementById('id_email');
+    if (emailField) {
+        emailField.addEventListener('input', function() {
+            if (this.value.includes('@') && this.value.includes('.')) {
+                this.style.borderColor = '#42b72a';
+            } else if (this.value.length > 0) {
+                this.style.borderColor = '#fa383e';
+            } else {
+                this.style.borderColor = '#e4e6eb';
+            }
+        });
+    }
 });
-
 </script>
 
+<!-- Estilos adicionales -->
+<style>
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fb-input, select, textarea {
+        transition: all 0.3s ease;
+        border: 2px solid #e4e6eb;
+        padding: 10px 12px 10px 40px !important;
+        border-radius: 8px;
+        width: 100%;
+        font-size: 15px;
+    }
+    
+    .fb-input:focus, select:focus, textarea:focus {
+        border-color: #1877f2;
+        box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.1);
+        outline: none;
+    }
+    
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 16px;
+        padding-right: 40px;
+    }
+    
+    /* Estilo para el ojo de contraseña */
+    .fa-eye, .fa-eye-slash {
+        transition: color 0.2s;
+    }
+    
+    .fa-eye:hover, .fa-eye-slash:hover {
+        color: #1877f2 !important;
+    }
+</style>
+
+<!-- Font Awesome (si no está en base.html) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

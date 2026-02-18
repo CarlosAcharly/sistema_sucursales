@@ -1,46 +1,60 @@
 {% extends 'superadmin/base.html' %}
 
 {% block content %}
+<div class="fb-card">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Sucursales</h2>
+        <a href="{% url 'branch_create' %}" class="fb-btn fb-btn-success">
+            + Nueva Sucursal
+        </a>
+    </div>
 
-<h2>Sucursales</h2>
-
-<a href="{% url 'branch_create' %}"
-   style="background:#16a34a; color:white; padding:8px 12px; border-radius:5px; text-decoration:none;">
-   + Nueva Sucursal
-</a>
-
-<table border="1" cellpadding="10" style="width:100%; margin-top:20px; background:white;">
-    <tr>
-        <th>Nombre</th>
-        <th>Dirección</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-    </tr>
-
-    {% for branch in branches %}
-    <tr>
-        <td>{{ branch.name }}</td>
-        <td>{{ branch.address }}</td>
-        <td>
-            {% if branch.is_active %}
-                Activa
-            {% else %}
-                Inactiva
-            {% endif %}
-        </td>
-        <td>
-            <a href="{% url 'branch_edit' branch.id %}">Editar</a> |
-            <a href="{% url 'branch_toggle' branch.id %}">
-                {% if branch.is_active %}
-                    Desactivar
-                {% else %}
-                    Activar
-                {% endif %}
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-
-</table>
-
+    {% if branches %}
+        <table class="fb-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for branch in branches %}
+                <tr>
+                    <td>
+                        <strong>{{ branch.name }}</strong>
+                    </td>
+                    <td>{{ branch.address|truncatechars:50 }}</td>
+                    <td>
+                        {% if branch.is_active %}
+                            <span class="fb-badge fb-badge-success">Activa</span>
+                        {% else %}
+                            <span class="fb-badge fb-badge-danger">Inactiva</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="fb-actions">
+                            <a href="{% url 'branch_edit' branch.id %}" class="fb-action-link">
+                                Editar
+                            </a>
+                            <a href="{% url 'branch_toggle' branch.id %}" class="fb-action-link {% if branch.is_active %}warning{% endif %}">
+                                {% if branch.is_active %}
+                                    Desactivar
+                                {% else %}
+                                    Activar
+                                {% endif %}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="fb-alert fb-alert-info">
+            No hay sucursales registradas. ¡Crea la primera!
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

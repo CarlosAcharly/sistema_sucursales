@@ -1,68 +1,243 @@
 {% extends 'superadmin/base.html' %}
+{% load static %}
 
 {% block content %}
-
-<h3>📊 Dashboard Global</h3>
-<hr>
-
-<div style="display:grid; grid-template-columns: repeat(3,1fr); gap:20px;">
-
-    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
-        <h4>Sucursales</h4>
-        <h2>{{ total_branches }}</h2>
+<!-- Header del Dashboard -->
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chart-pie" style="font-size: 28px; color: #1877f2;"></i>
+            <h2 style="margin: 0;">Dashboard Global</h2>
+        </div>
+        <p style="color: #606770; margin-top: 5px;">
+            <i class="fas fa-globe-americas" style="margin-right: 5px;"></i>
+            Resumen general del sistema
+        </p>
     </div>
-
-    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
-        <h4>Usuarios</h4>
-        <h2>{{ total_users }}</h2>
-    </div>
-
-    <div style="padding:20px; background:#f2f2f2; border-radius:10px;">
-        <h4>Productos</h4>
-        <h2>{{ total_products }}</h2>
-    </div>
-
-    <div style="padding:20px; background:#d4edda; border-radius:10px;">
-        <h4>Total Ventas</h4>
-        <h2>{{ total_sales }}</h2>
-    </div>
-
-    <div style="padding:20px; background:#cce5ff; border-radius:10px;">
-        <h4>Total Vendido</h4>
-        <h2>${{ total_revenue }}</h2>
-    </div>
-
-    <div style="padding:20px; background:#fff3cd; border-radius:10px;">
-        <h4>Ventas Hoy</h4>
-        <h2>${{ sales_today }}</h2>
-    </div>
-
-    <div style="padding:20px; background:#f8d7da; border-radius:10px;">
-        <h4>Inventario Bajo</h4>
-        <h2>{{ low_stock }}</h2>
-    </div>
-
 </div>
 
-<hr>
+<!-- Grid de Estadísticas -->
+<div class="fb-grid">
+    <!-- Sucursales -->
+    <div class="fb-stat-card stat-blue">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-store-alt" style="margin-right: 5px;"></i>
+                Sucursales
+            </h4>
+            <i class="fas fa-building" style="font-size: 24px; color: #1877f2;"></i>
+        </div>
+        <h2>{{ total_branches|default:"0" }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-map-marker-alt"></i> Total de sucursales registradas
+        </div>
+    </div>
 
-<h3>💰 Ventas por Sucursal</h3>
+    <!-- Usuarios -->
+    <div class="fb-stat-card stat-green">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-users" style="margin-right: 5px;"></i>
+                Usuarios
+            </h4>
+            <i class="fas fa-user-circle" style="font-size: 24px; color: #42b72a;"></i>
+        </div>
+        <h2>{{ total_users|default:"0" }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-user-check"></i> Usuarios activos en el sistema
+        </div>
+    </div>
 
-<table border="1" cellpadding="8" style="width:100%; margin-top:15px;">
-    <tr>
-        <th>Sucursal</th>
-        <th>Total Vendido</th>
-    </tr>
-    {% for branch in sales_by_branch %}
-    <tr>
-        <td>{{ branch.branch__name }}</td>
-        <td>${{ branch.total }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="2">No hay ventas registradas</td>
-    </tr>
-    {% endfor %}
-</table>
+    <!-- Productos -->
+    <div class="fb-stat-card stat-yellow">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-box" style="margin-right: 5px;"></i>
+                Productos
+            </h4>
+            <i class="fas fa-cubes" style="font-size: 24px; color: #f7b928;"></i>
+        </div>
+        <h2>{{ total_products|default:"0" }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-tag"></i> Productos en catálogo
+        </div>
+    </div>
 
+    <!-- Total Ventas -->
+    <div class="fb-stat-card stat-green">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-shopping-cart" style="margin-right: 5px;"></i>
+                Total Ventas
+            </h4>
+            <i class="fas fa-receipt" style="font-size: 24px; color: #42b72a;"></i>
+        </div>
+        <h2>{{ total_sales|default:"0" }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-hashtag"></i> Número de transacciones
+        </div>
+    </div>
+
+    <!-- Total Vendido -->
+    <div class="fb-stat-card stat-blue">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-dollar-sign" style="margin-right: 5px;"></i>
+                Total Vendido
+            </h4>
+            <i class="fas fa-chart-line" style="font-size: 24px; color: #1877f2;"></i>
+        </div>
+        <h2>${{ total_revenue|default:"0"|floatformat:2 }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-coins"></i> Ingresos totales
+        </div>
+    </div>
+
+    <!-- Ventas Hoy -->
+    <div class="fb-stat-card stat-yellow">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-calendar-day" style="margin-right: 5px;"></i>
+                Ventas Hoy
+            </h4>
+            <i class="fas fa-sun" style="font-size: 24px; color: #f7b928;"></i>
+        </div>
+        <h2>${{ sales_today|default:"0"|floatformat:2 }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-clock"></i> Ventas del día actual
+        </div>
+    </div>
+
+    <!-- Inventario Bajo -->
+    <div class="fb-stat-card stat-red">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>
+                <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i>
+                Inventario Bajo
+            </h4>
+            <i class="fas fa-box-open" style="font-size: 24px; color: #fa383e;"></i>
+        </div>
+        <h2>{{ low_stock|default:"0" }}</h2>
+        <div style="color: #606770; font-size: 13px; margin-top: 10px;">
+            <i class="fas fa-exclamation-circle"></i> Productos con stock crítico
+        </div>
+    </div>
+</div>
+
+<!-- Ventas por Sucursal -->
+<div class="fb-card" style="margin-top: 30px;">
+    <div class="fb-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-chart-bar" style="font-size: 24px; color: #1877f2;"></i>
+            <h3 style="margin: 0;">Ventas por Sucursal</h3>
+        </div>
+        <p style="color: #606770; margin-top: 5px;">
+            <i class="fas fa-store"></i> Desglose de ventas por cada sucursal
+        </p>
+    </div>
+
+    {% if sales_by_branch %}
+        <table class="fb-table">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-store"></i> Sucursal</th>
+                    <th><i class="fas fa-dollar-sign"></i> Total Vendido</th>
+                    <th><i class="fas fa-chart-pie"></i> Participación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for branch in sales_by_branch %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-store-alt" style="color: #1877f2;"></i>
+                            <strong>{{ branch.branch__name }}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <strong style="color: #1877f2;">${{ branch.total|floatformat:2 }}</strong>
+                    </td>
+                    <td>
+                        {% if total_revenue and total_revenue > 0 %}
+                            {% with percentage=branch.total|floatformat:2 %}
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 100px; height: 6px; background: #e4e6eb; border-radius: 3px;">
+                                        <div style="width: {% widthratio branch.total total_revenue 100 %}%; height: 6px; background: #1877f2; border-radius: 3px;"></div>
+                                    </div>
+                                    <span style="color: #606770; font-size: 13px;">
+                                        <i class="fas fa-percent"></i> {% widthratio branch.total total_revenue 100 %}%
+                                    </span>
+                                </div>
+                            {% endwith %}
+                        {% else %}
+                            <span style="color: #606770;"><i class="fas fa-minus-circle"></i> 0%</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot style="background: #f5f6f7; font-weight: bold;">
+                <tr>
+                    <td><i class="fas fa-calculator"></i> Total General</td>
+                    <td>${{ total_revenue|default:"0"|floatformat:2 }}</td>
+                    <td><i class="fas fa-check-circle" style="color: #42b72a;"></i> 100%</td>
+                </tr>
+            </tfoot>
+        </table>
+    {% else %}
+        <div class="fb-alert fb-alert-info">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-chart-line" style="font-size: 20px; color: #1877f2;"></i>
+                <div>
+                    <strong><i class="fas fa-info-circle"></i> No hay ventas registradas</strong>
+                    <p style="color: #606770; margin-top: 5px;">
+                        <i class="fas fa-clock"></i> Las ventas aparecerán aquí cuando se realicen transacciones.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Últimas actividades -->
+<div class="fb-card" style="margin-top: 20px;">
+    <div class="fb-card-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-clipboard-list" style="font-size: 20px; color: #1877f2;"></i>
+            <h3>Resumen Rápido</h3>
+        </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div>
+            <div style="color: #606770; font-size: 13px;">
+                <i class="fas fa-calculator"></i> Promedio por venta
+            </div>
+            <div style="font-size: 18px; font-weight: 600;">
+                <i class="fas fa-dollar-sign" style="color: #1877f2;"></i>
+                ${{ total_revenue|default:0|divisibleby:total_sales|default:1|floatformat:2 }}
+            </div>
+        </div>
+        <div>
+            <div style="color: #606770; font-size: 13px;">
+                <i class="fas fa-store"></i> Sucursales activas
+            </div>
+            <div style="font-size: 18px; font-weight: 600;">
+                <i class="fas fa-check-circle" style="color: #42b72a;"></i>
+                {{ active_branches|default:total_branches }}
+            </div>
+        </div>
+        <div>
+            <div style="color: #606770; font-size: 13px;">
+                <i class="fas fa-users"></i> Usuarios activos
+            </div>
+            <div style="font-size: 18px; font-weight: 600;">
+                <i class="fas fa-user-check" style="color: #42b72a;"></i>
+                {{ active_users|default:total_users }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Agregar Font Awesome si no está en base.html -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

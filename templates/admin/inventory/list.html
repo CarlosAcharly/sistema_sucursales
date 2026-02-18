@@ -1,55 +1,305 @@
 {% extends 'admin/base.html' %}
+{% load static %}
 
 {% block content %}
-
-<h1 style="margin-bottom: 20px;">🏬 Inventario</h1>
-
-{% if request.user.role != 'CASHIER' %}
-<div style="margin-bottom: 20px;">
-    <a href="{% url 'inventory_create' %}"
-       style="background-color:#2563eb;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;">
-        ➕ Agregar Inventario
-    </a>
-</div>
-{% endif %}
-
-<div style="background:white;padding:25px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
-
-    <table style="width:100%;border-collapse:collapse;">
-        <thead>
-            <tr style="background:#f3f4f6;text-align:left;">
-                <th style="padding:12px;">Sucursal</th>
-                <th style="padding:12px;">Producto</th>
-                <th style="padding:12px;">Stock</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for item in inventory %}
-            <tr style="border-top:1px solid #e5e7eb;">
-                <td style="padding:12px;">{{ item.branch.name }}</td>
-                <td style="padding:12px;">{{ item.product.name }}</td>
-
-                <td style="padding:12px;font-weight:bold;">
-                    {% if item.stock <= 5 %}
-                        <span style="color:#dc2626;">⚠ {{ item.stock }}</span>
-                    {% elif item.stock <= 10 %}
-                        <span style="color:#f59e0b;">{{ item.stock }}</span>
-                    {% else %}
-                        <span style="color:#16a34a;">{{ item.stock }}</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" style="padding:20px;text-align:center;color:#6b7280;">
-                    No hay inventario registrado.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-warehouse" style="font-size: 28px; color: #1877f2;"></i>
+                Inventario
+            </h1>
+            <p style="color: #606770; margin: 5px 0 0 0;">Gestiona el stock de productos por sucursal</p>
+        </div>
+        
+        {% if request.user.role != 'CASHIER' %}
+        <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
+            <i class="fa-solid fa-plus"></i>
+            Agregar Inventario
+        </a>
+        {% endif %}
+    </div>
 </div>
 
+<!-- Filtros y búsqueda -->
+<div class="fb-card" style="margin-bottom: 20px; padding: 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: center;">
+        
+        <!-- Buscador por producto -->
+        <div style="position: relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+            <input type="text" 
+                   id="search-input"
+                   class="fb-input"
+                   placeholder="Buscar por producto..."
+                   style="padding-left: 45px; width: 100%;">
+        </div>
+        
+        <!-- Filtro por sucursal -->
+        <div style="position: relative;">
+            <i class="fa-solid fa-store" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
+            <select id="branch-filter" class="fb-input" style="padding-left: 45px; width: 100%;">
+                <option value="all">Todas las sucursales</option>
+                {% for branch in branches %}
+                    <option value="{{ branch.id }}">{{ branch.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Contador y limpiar filtros -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="color: #606770; font-size: 14px;" id="items-count">
+                <i class="fa-solid fa-cubes"></i> <strong>{{ inventory|length }}</strong> items
+            </span>
+            <button onclick="clearFilters()" class="fb-btn fb-btn-secondary" style="padding: 8px 12px;" title="Limpiar filtros">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de inventario -->
+<div class="fb-card" style="padding: 0; overflow: hidden;">
+    {% if inventory %}
+        <table style="width:100%;border-collapse:collapse;" id="inventory-table">
+            <thead>
+                <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-store"></i> Sucursal
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-box"></i> Producto
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-cubes"></i> Stock
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="inventory-tbody">
+                {% for item in inventory %}
+                <tr class="inventory-row" 
+                    data-branch="{{ item.branch.id }}"
+                    data-branch-name="{{ item.branch.name|lower }}"
+                    data-product="{{ item.product.name|lower }}"
+                    data-stock="{{ item.stock }}"
+                    style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;"
+                    onmouseover="this.style.background='#f5f6f7'"
+                    onmouseout="this.style.background='transparent'">
+                    
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-store" style="color: #1877f2;"></i>
+                            </div>
+                            <strong>{{ item.branch.name }}</strong>
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="background: {% if item.product.is_ingredient %}#e3f2e8{% else %}#e7f3ff{% endif %}; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid {% if item.product.is_ingredient %}fa-leaf{% else %}fa-box{% endif %}" 
+                                   style="color: {% if item.product.is_ingredient %}#1b7e3f{% else %}#1877f2{% endif %};"></i>
+                            </div>
+                            <div>
+                                <strong>{{ item.product.name }}</strong>
+                                {% if item.product.is_ingredient %}
+                                    <span style="background: #e3f2e8; color: #1b7e3f; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">
+                                        Ingrediente
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <!-- Número con color según nivel (sin barra de progreso) -->
+                            <span style="font-weight: 700; font-size: 18px; 
+                                {% if item.stock <= 5 %}
+                                    color: #fa383e;
+                                {% elif item.stock <= 10 %}
+                                    color: #f7b928;
+                                {% else %}
+                                    color: #42b72a;
+                                {% endif %}">
+                                {{ item.stock }}
+                            </span>
+                            
+                            <!-- Badge de alerta para stock bajo -->
+                            {% if item.stock <= 5 %}
+                                <span style="background: #ffebe9; color: #b92b27; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-exclamation-triangle"></i>
+                                    Stock crítico
+                                </span>
+                            {% elif item.stock <= 10 %}
+                                <span style="background: #fff4e5; color: #bd7b13; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-clock"></i>
+                                    Stock medio
+                                </span>
+                            {% else %}
+                                <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-check-circle"></i>
+                                    Stock óptimo
+                                </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 60px 20px; text-align: center;">
+            <div style="background: #e7f3ff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-warehouse" style="font-size: 40px; color: #1877f2;"></i>
+            </div>
+            <h3 style="color: #050505; margin-bottom: 10px;">No hay inventario registrado</h3>
+            <p style="color: #606770; margin-bottom: 20px;">Agrega productos al inventario para comenzar</p>
+            {% if request.user.role != 'CASHIER' %}
+            <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
+                <i class="fa-solid fa-plus"></i>
+                Agregar Inventario
+            </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Resumen de stock simplificado -->
+<div class="fb-card" style="margin-top: 20px; padding: 15px; background: #f5f6f7;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 25px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 12px; height: 12px; background: #42b72a; border-radius: 50%;"></span>
+                <span style="color: #606770; font-size: 13px;">Stock óptimo (>10)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 12px; height: 12px; background: #f7b928; border-radius: 50%;"></span>
+                <span style="color: #606770; font-size: 13px;">Stock medio (6-10)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 12px; height: 12px; background: #fa383e; border-radius: 50%;"></span>
+                <span style="color: #606770; font-size: 13px;">Stock crítico (≤5)</span>
+            </div>
+        </div>
+        <div style="color: #606770; font-size: 13px;">
+            <i class="fa-solid fa-chart-simple"></i> Total items: <strong id="total-items">{{ inventory|length }}</strong>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables para los filtros
+let searchInput = document.getElementById('search-input');
+let branchFilter = document.getElementById('branch-filter');
+let rows = document.querySelectorAll('.inventory-row');
+let itemsCount = document.getElementById('items-count');
+let totalItemsSpan = document.getElementById('total-items');
+
+// Función para filtrar la tabla
+function filterTable() {
+    let searchTerm = searchInput.value.toLowerCase();
+    let branchValue = branchFilter.value;
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let productName = row.dataset.product;
+        let branchId = row.dataset.branch;
+        
+        // Verificar filtro de sucursal
+        let matchesBranch = branchValue === 'all' || branchId === branchValue;
+        
+        // Verificar búsqueda por producto
+        let matchesSearch = searchTerm === '' || productName.includes(searchTerm);
+        
+        // Mostrar u ocultar la fila
+        if (matchesBranch && matchesSearch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Actualizar contador
+    itemsCount.innerHTML = `<i class="fa-solid fa-cubes"></i> <strong>${visibleCount}</strong> de ${rows.length} items`;
+    if (totalItemsSpan) {
+        totalItemsSpan.textContent = rows.length;
+    }
+    
+    // Mostrar mensaje si no hay resultados
+    let tbody = document.getElementById('inventory-tbody');
+    let noResultsRow = document.getElementById('no-results-row');
+    
+    if (visibleCount === 0 && rows.length > 0) {
+        if (!noResultsRow) {
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'no-results-row';
+            noResultsRow.innerHTML = `
+                <td colspan="3" style="padding: 40px; text-align: center;">
+                    <i class="fa-solid fa-search" style="font-size: 30px; color: #e4e6eb; margin-bottom: 10px;"></i>
+                    <h4 style="color: #050505;">No se encontraron resultados</h4>
+                    <p style="color: #606770;">Intenta con otros filtros</p>
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+    } else if (noResultsRow) {
+        noResultsRow.remove();
+    }
+}
+
+// Función para limpiar filtros
+function clearFilters() {
+    searchInput.value = '';
+    branchFilter.value = 'all';
+    filterTable();
+    
+    // Quitar mensaje de no resultados
+    let noResultsRow = document.getElementById('no-results-row');
+    if (noResultsRow) {
+        noResultsRow.remove();
+    }
+}
+
+// Event listeners
+searchInput.addEventListener('input', filterTable);
+branchFilter.addEventListener('change', filterTable);
+
+// Animación al cargar
+document.addEventListener('DOMContentLoaded', function() {
+    rows.forEach((row, index) => {
+        row.style.animation = `fadeIn 0.3s ease ${index * 0.03}s both`;
+    });
+});
+
+// Estilos adicionales
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fb-input {
+        transition: all 0.3s ease;
+    }
+    
+    .fb-input:focus {
+        border-color: #1877f2;
+        box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

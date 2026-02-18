@@ -5,28 +5,32 @@ from .forms import InventoryForm, TransferForm
 from .models import Inventory, InventoryMovement
 from django.db import transaction
 from .models import Transfer
+from branches.models import Branch
+
 
 
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN', 'CASHIER'])
 def inventory_list(request):
-
     user = request.user
-
+    branches = Branch.objects.filter(is_active=True)  # Obtener todas las sucursales activas para el filtro
+    
+    # Filtrar inventario según el rol del usuario
     if user.role in ['ADMIN', 'SUPERADMIN']:
-        inventory = Inventory.objects.select_related('product', 'branch')
-
+        inventory = Inventory.objects.select_related('product', 'branch').all()
     elif user.role == 'CASHIER':
-        inventory = Inventory.objects.select_related(
-            'product', 'branch'
-        ).filter(branch=user.branch)
-
+        inventory = Inventory.objects.select_related('product', 'branch').filter(branch=user.branch)
+        # Los cajeros solo ven su propia sucursal, así que el filtro no aplica
+        branches = branches.filter(id=user.branch.id) if user.branch else branches
     else:
         inventory = Inventory.objects.none()
+        branches = Branch.objects.none()
 
     return render(request, 'admin/inventory/list.html', {
-        'inventory': inventory
+        'inventory': inventory,
+        'branches': branches
     })
+
 
 
 @login_required

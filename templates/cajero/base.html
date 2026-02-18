@@ -2,102 +2,369 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Cajero</title>
+    <title>Cajero - Sistema Sucursales</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
-        body {
+        * {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f3f4f6;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* NAVBAR */
+        body {
+            background-color: #f0f2f5;
+        }
+
+        /* NAVBAR AZUL */
         .navbar {
-            background: #1f2937;
+            background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 0 25px;
+            height: 64px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: relative;
+            box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .brand {
-            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
             font-size: 18px;
         }
 
-        .nav-links {
+        .brand i {
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
-            gap: 20px;
             align-items: center;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .nav-links a:hover {
-            color: #60a5fa;
-        }
-
-        .nav-right {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .logout {
-            background: #ef4444;
-            padding: 8px 14px;
-            border-radius: 6px;
-            color: white;
-            text-decoration: none;
-        }
-
-        .logout:hover {
-            background: #dc2626;
+            justify-content: center;
         }
 
         /* BOTÓN HAMBURGUESA */
         .menu-toggle {
             display: none;
-            font-size: 22px;
+            font-size: 24px;
             cursor: pointer;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
         }
 
-        /* CONTENIDO */
+        .menu-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* NAV LINKS */
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-links a i {
+            font-size: 16px;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.25);
+            font-weight: 600;
+        }
+
+        /* NAV RIGHT */
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .branch-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .branch-info i {
+            color: #ffd700;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .user-avatar {
+            background: rgba(255, 255, 255, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* CONTENIDO PRINCIPAL */
         .container {
-            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 25px;
         }
 
-        .card {
+        /* CARDS ESTILO FACEBOOK */
+        .fb-card {
             background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
+        .fb-card-header {
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e4e6eb;
+        }
 
+        .fb-card-header h2 {
+            color: #050505;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .fb-card-header h3 {
+            color: #050505;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* STAT CARDS */
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* TABLAS ESTILO FACEBOOK */
+        .fb-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .fb-table th {
+            background-color: #f5f6f7;
+            color: #606770;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #dddfe2;
+        }
+
+        .fb-table td {
+            padding: 14px 16px;
+            color: #050505;
+            font-size: 14px;
+            border-bottom: 1px solid #e4e6eb;
+        }
+
+        .fb-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .fb-table tr:hover td {
+            background-color: #f5f6f7;
+        }
+
+        /* BADGES */
+        .fb-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .fb-badge-success {
+            background-color: #e3f2e8;
+            color: #1b7e3f;
+        }
+
+        .fb-badge-danger {
+            background-color: #ffebe9;
+            color: #b92b27;
+        }
+
+        .fb-badge-warning {
+            background-color: #fff4e5;
+            color: #bd7b13;
+        }
+
+        /* BOTONES */
+        .fb-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .fb-btn-primary {
+            background-color: #1877f2;
+            color: white;
+        }
+
+        .fb-btn-primary:hover {
+            background-color: #166fe5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+        }
+
+        .fb-btn-success {
+            background-color: #42b72a;
+            color: white;
+        }
+
+        .fb-btn-success:hover {
+            background-color: #3ba126;
+        }
+
+        .fb-btn-secondary {
+            background-color: #e4e6eb;
+            color: #050505;
+        }
+
+        .fb-btn-secondary:hover {
+            background-color: #d8dadf;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
             .nav-links {
                 display: none;
                 flex-direction: column;
-                background: #1f2937;
+                background: #1877f2;
                 position: absolute;
-                top: 60px;
+                top: 64px;
                 left: 0;
                 width: 100%;
                 padding: 15px 0;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             }
 
             .nav-links a {
-                padding: 10px 20px;
+                width: 100%;
+                padding: 15px 25px;
+                border-radius: 0;
+            }
+
+            .nav-links a:hover {
+                background: rgba(255, 255, 255, 0.15);
+                transform: none;
             }
 
             .nav-links.active {
@@ -105,46 +372,124 @@
             }
 
             .menu-toggle {
-                display: block;
+                display: flex;
             }
 
-            .nav-right span {
+            .branch-info span {
                 display: none;
             }
+            
+            .user-info {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .navbar {
+                padding: 0 15px;
+            }
+            
+            .branch-info {
+                padding: 8px 12px;
+            }
+            
+            .logout-btn span {
+                display: none;
+            }
+        }
+
+        /* ANIMACIONES */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: slideIn 0.3s ease;
         }
     </style>
 </head>
 <body>
 
 <div class="navbar">
-
-    <div style="display:flex; align-items:center; gap:15px;">
-        <span class="menu-toggle" onclick="toggleMenu()">☰</span>
-        <span class="brand">💵 Cajero</span>
-    </div>
-
-    <div class="nav-links" id="navLinks">
-        <a href="{% url 'cajero_dashboard' %}">Dashboard</a>
-        <a href="{% url 'pos' %}">Punto de Venta</a>
-        <a href="{% url 'sales_list' %}">Ventas</a>
-        <a href="{% url 'diets:diets_cajero_list' %}">🐖 Dietas</a>
+    <div class="navbar-left">
+        <div class="menu-toggle" onclick="toggleMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
         
+        <div class="brand">
+            <i class="fas fa-cash-register"></i>
+            <span>Sistema Cajero</span>
+        </div>
+
+        <div class="nav-links" id="navLinks">
+            <a href="{% url 'cajero_dashboard' %}" {% if request.path == '/cajero/' %}class="active"{% endif %}>
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'pos' %}" {% if 'pos' in request.path %}class="active"{% endif %}>
+                <i class="fas fa-shopping-cart"></i>
+                <span>Punto de Venta</span>
+            </a>
+            <a href="{% url 'sales_list' %}" {% if 'ventas' in request.path %}class="active"{% endif %}>
+                <i class="fas fa-history"></i>
+                <span>Ventas</span>
+            </a>
+            <a href="{% url 'diets:diets_cajero_list' %}" {% if 'diet' in request.path %}class="active"{% endif %}>
+                <i class="fas fa-drumstick-bite"></i>
+                <span>Dietas</span>
+            </a>
+        </div>
     </div>
 
     <div class="nav-right">
-        <span>Sucursal: {{ request.user.branch.name }}</span>
-        <span>{{ request.user.username }}</span>
-        <form action="{% url 'logout' %}" method="post" style="display:inline;">
-    {% csrf_token %}
-    <button type="submit" style="background:none; border:none; cursor:pointer;">
-        Salir
-    </button>
-</form>
-    </div>
+        <div class="branch-info">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>{{ request.user.branch.name|default:"Sin sucursal" }}</span>
+        </div>
 
+        <div class="user-menu">
+            <div class="user-avatar">
+                {{ request.user.username|first|upper }}
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="user-role">
+                    <i class="fas fa-user-tag"></i> Cajero
+                </div>
+            </div>
+        </div>
+
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Salir</span>
+            </button>
+        </form>
+    </div>
 </div>
 
 <div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="fb-alert fb-alert-{{ message.tags }}" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 6px; background: {% if message.tags == 'success' %}#e3f2e8{% elif message.tags == 'error' %}#ffebe9{% else %}#e7f3ff{% endif %}; border: 1px solid {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}" style="color: {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
     {% block content %}
     {% endblock %}
 </div>
@@ -153,6 +498,21 @@
     function toggleMenu() {
         document.getElementById("navLinks").classList.toggle("active");
     }
+
+    // Cerrar menú al hacer click fuera
+    document.addEventListener('click', function(event) {
+        const navLinks = document.getElementById('navLinks');
+        const menuToggle = document.querySelector('.menu-toggle');
+        
+        if (!navLinks.contains(event.target) && !menuToggle.contains(event.target)) {
+            navLinks.classList.remove('active');
+        }
+    });
+
+    // Animación de entrada para el contenido
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('.container').classList.add('fade-in');
+    });
 </script>
 
 </body>

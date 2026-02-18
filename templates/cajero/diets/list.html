@@ -1,31 +1,289 @@
 {% extends 'cajero/base.html' %}
+{% load static %}
 
 {% block content %}
-<h2>Dietas disponibles para {{ request.user.branch.name }}</h2>
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-drumstick-bite" style="color: #1877f2;"></i>
+                Dietas Disponibles
+            </h2>
+            <p style="color: #606770; margin: 5px 0 0 0;">
+                <i class="fas fa-store-alt"></i> Sucursal: <strong>{{ request.user.branch.name }}</strong>
+            </p>
+        </div>
+        
+        <!-- Resumen rápido -->
+        <div style="display: flex; gap: 15px;">
+            <div style="text-align: center; background: #e7f3ff; padding: 8px 16px; border-radius: 8px;">
+                <small style="color: #606770; display: block;">Total dietas</small>
+                <strong style="color: #1877f2; font-size: 20px;">{{ diets|length }}</strong>
+            </div>
+            <div style="text-align: center; background: #e3f2e8; padding: 8px 16px; border-radius: 8px;">
+                <small style="color: #606770; display: block;">Activas</small>
+                <strong style="color: #42b72a; font-size: 20px;">{{ active_diets|default:diets|length }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% if diets %}
-<table style="width:100%; border-collapse: collapse;">
-    <thead>
-        <tr style="background: #1f2937; color: white;">
-            <th style="padding:8px;">Nombre</th>
-            <th style="padding:8px;">Creado por</th>
-            <th style="padding:8px;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
+    <!-- Grid de dietas -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
         {% for diet in diets %}
-        <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:8px;">{{ diet.diet_base.name }}</td>
-            <td style="padding:8px;">{{ diet.created_by.username }}</td>
-            <td style="padding:8px;">
-                <a href="{% url 'diets:diet_cajero_view' diet.id diet.branch.id %}" 
-                   style="color:#3b82f6; text-decoration:none;">Ver / Editar</a>
-            </td>
-        </tr>
+        <div class="diet-card" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;"
+             onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.1)';">
+            
+            <!-- Header de la dieta -->
+            <div style="background: linear-gradient(135deg, {% cycle '#1877f2' '#42b72a' '#f7b928' '#fa383e' %} 0%, {% cycle '#166fe5' '#3ba126' '#e5a520' '#e03137' %} 100%); padding: 20px; color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-utensils"></i>
+                            {{ diet.diet_base.name }}
+                        </h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 13px;">
+                            <i class="fas fa-calendar-alt"></i> Creada: {{ diet.diet_base.created_at|date:"d/m/Y" }}
+                        </p>
+                    </div>
+                    <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                        <i class="fas fa-tag"></i> Dieta #{{ forloop.counter }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Contenido de la dieta -->
+            <div style="padding: 20px;">
+                <!-- Descripción -->
+                {% if diet.diet_base.description %}
+                <p style="color: #606770; margin-bottom: 15px; font-size: 14px;">
+                    <i class="fas fa-quote-left" style="color: #1877f2; font-size: 12px;"></i>
+                    {{ diet.diet_base.description|truncatechars:100 }}
+                </p>
+                {% endif %}
+                
+                <!-- Info del creador y fecha -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #e4e6eb;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user" style="color: #1877f2;"></i>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Creado por</small>
+                            <div><strong>{{ diet.created_by.get_full_name|default:diet.created_by.username }}</strong></div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <small style="color: #606770;">Asignada</small>
+                        <div><i class="fas fa-clock" style="color: #1877f2;"></i> {{ diet.created_at|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas de ingredientes -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="background: #f5f6f7; padding: 10px; border-radius: 8px; text-align: center;">
+                        <i class="fas fa-apple-alt" style="color: #1877f2; font-size: 18px; margin-bottom: 5px;"></i>
+                        <div style="font-size: 18px; font-weight: 600;">{{ diet.items.count }}</div>
+                        <small style="color: #606770;">Ingredientes</small>
+                    </div>
+                    <div style="background: #f5f6f7; padding: 10px; border-radius: 8px; text-align: center;">
+                        <i class="fas fa-weight" style="color: #42b72a; font-size: 18px; margin-bottom: 5px;"></i>
+                        <div style="font-size: 18px; font-weight: 600;">{{ diet.items.all|length|floatformat:0 }} kg</div>
+                        <small style="color: #606770;">Total base</small>
+                    </div>
+                </div>
+                
+                <!-- Lista de ingredientes (solo 3) -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: #606770; font-size: 13px;">
+                            <i class="fas fa-list"></i> Ingredientes principales:
+                        </span>
+                        <span class="fb-badge fb-badge-primary" style="background: #e7f3ff; color: #1877f2;">
+                            Ver todos
+                        </span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        {% for item in diet.items.all|slice:":3" %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f5f6f7; border-radius: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-box" style="color: #1877f2;"></i>
+                                <span>{{ item.product.name }}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-weight: 600;">{{ item.kilos }} kg</span>
+                                <span style="color: #606770; font-size: 11px;">
+                                    ({{ item.kilos|floatformat:2 }})
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if diet.items.count > 3 %}
+                        <div style="text-align: center; color: #606770; font-size: 12px; margin-top: 5px;">
+                            <i class="fas fa-ellipsis-h"></i> +{{ diet.items.count|add:"-3" }} ingredientes más
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <a href="{% url 'diets:diet_cajero_view' diet.id diet.branch.id %}" 
+                       class="fb-btn fb-btn-primary"
+                       style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-decoration: none;">
+                        <i class="fas fa-eye"></i>
+                        Ver detalles
+                    </a>
+                    <a href="{% url 'diets:diet_cajero_view' diet.id diet.branch.id %}#editar" 
+                       class="fb-btn"
+                       style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: #f5f6f7; color: #050505; text-decoration: none;">
+                        <i class="fas fa-edit"></i>
+                        Ajustar
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Footer con estado -->
+            <div style="padding: 12px 20px; background: #f5f6f7; border-top: 1px solid #e4e6eb; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <span style="width: 8px; height: 8px; background: #42b72a; border-radius: 50%;"></span>
+                    <span style="color: #42b72a; font-size: 12px;">Disponible</span>
+                </div>
+                <span style="color: #606770; font-size: 12px;">
+                    <i class="fas fa-sync-alt"></i> Última actualización: {{ diet.diet_base.created_at|date:"d/m/Y" }}
+                </span>
+            </div>
+        </div>
         {% endfor %}
-    </tbody>
-</table>
+    </div>
+    
+    <!-- Resumen adicional -->
+    <div class="fb-card" style="margin-top: 30px; background: #f5f6f7;">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <i class="fas fa-info-circle" style="font-size: 24px; color: #1877f2;"></i>
+                <div>
+                    <strong style="display: block;">Información importante</strong>
+                    <small style="color: #606770;">Las dietas pueden ser ajustadas según la cantidad de animales</small>
+                </div>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 10px;">
+                <span class="fb-badge fb-badge-success">
+                    <i class="fas fa-check"></i> {{ diets|length }} activas
+                </span>
+                <span class="fb-badge fb-badge-primary">
+                    <i class="fas fa-box"></i> {{ total_ingredients|default:"0" }} ingredientes
+                </span>
+            </div>
+        </div>
+    </div>
+    
 {% else %}
-<p>No hay dietas asignadas a tu sucursal.</p>
+    <!-- Estado vacío mejorado -->
+    <div class="fb-card" style="text-align: center; padding: 60px 20px;">
+        <div style="background: #e7f3ff; width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-drumstick-bite" style="font-size: 40px; color: #1877f2;"></i>
+        </div>
+        <h3 style="color: #050505; margin-bottom: 10px;">No hay dietas disponibles</h3>
+        <p style="color: #606770; max-width: 400px; margin: 0 auto 20px;">
+            Actualmente no hay dietas asignadas a tu sucursal. Contacta al administrador para asignar dietas.
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="location.reload()" class="fb-btn fb-btn-secondary">
+                <i class="fas fa-sync-alt"></i>
+                Actualizar
+            </button>
+            <a href="{% url 'cajero_dashboard' %}" class="fb-btn fb-btn-primary">
+                <i class="fas fa-home"></i>
+                Ir al Dashboard
+            </a>
+        </div>
+    </div>
 {% endif %}
+
+<!-- Leyenda de colores -->
+<div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 12px; height: 12px; background: #1877f2; border-radius: 3px;"></span>
+        <span style="color: #606770;">Dieta estándar</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 12px; height: 12px; background: #42b72a; border-radius: 3px;"></span>
+        <span style="color: #606770;">Dieta especial</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <span style="width: 12px; height: 12px; background: #f7b928; border-radius: 3px;"></span>
+        <span style="color: #606770;">Dieta temporal</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 5px;">
+        <i class="fas fa-check-circle" style="color: #42b72a;"></i>
+        <span style="color: #606770;">Disponible</span>
+    </div>
+</div>
+
+<style>
+    .diet-card {
+        position: relative;
+        animation: fadeInUp 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    {% for diet in diets %}
+    .diet-card:nth-child({{ forloop.counter }}) {
+        animation-delay: {{ forloop.counter0|add:"0.1" }}s;
+    }
+    {% endfor %}
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fb-badge-primary {
+        background: #e7f3ff;
+        color: #1877f2;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .fb-badge-success {
+        background: #e3f2e8;
+        color: #1b7e3f;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+</style>
+
+<!-- Script para tooltips y mejoras -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Agregar tooltips a los elementos
+    const badges = document.querySelectorAll('.fb-badge');
+    badges.forEach(badge => {
+        badge.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+        });
+        badge.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+</script>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

@@ -1,36 +1,140 @@
 {% extends 'admin/base.html' %}
 
 {% block content %}
-
-<h1>Dashboard Administrativo</h1>
-
-<div class="cards">
-
-    <div class="card">
-        <h3>📦 Productos</h3>
-        <div class="card-number">
-            {{ total_products }}
+<!-- Header del Dashboard -->
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-chart-simple" style="font-size:28px;"></i>
+                    Dashboard Administrativo
+                </h2>
+                <p style="color: #606770; margin: 5px 0 0 0;">
+                    Bienvenido de nuevo, {{ request.user.get_full_name|default:request.user.username }}
+                </p>
+            </div>
+            <div style="background: #e7f3ff; padding: 8px 16px; border-radius: 20px; color: #1877f2; font-size: 14px;">
+                {{ current_date|date:"l, d F Y" }}
+            </div>
         </div>
-        <a href="{% url 'product_list' %}">Ver todos</a>
     </div>
-
-    <div class="card">
-        <h3>🏬 Inventario</h3>
-        <div class="card-number">
-            {{ total_inventory }}
-        </div>
-        <a href="{% url 'inventory_list' %}">Ver inventario</a>
-    </div>
-
 </div>
 
+<!-- Cards de estadísticas -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-box"></i> Productos</h4>
+            <span class="stat-icon"><i class="fa-solid fa-box"></i></span>
+        </div>
+        <div class="stat-number">{{ total_products|default:"0" }}</div>
+        <a href="{% url 'product_list' %}" class="stat-link">
+            Ver todos los productos
+            <span>→</span>
+        </a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-warehouse"></i> Inventario</h4>
+            <span class="stat-icon"><i class="fa-solid fa-chart-simple"></i></span>
+        </div>
+        <div class="stat-number">{{ total_inventory|default:"0" }}</div>
+        <a href="{% url 'inventory_list' %}" class="stat-link">
+            Ver inventario actual
+            <span>→</span>
+        </a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-right-left"></i> Transferencias</h4>
+            <span class="stat-icon"><i class="fa-solid fa-right-left"></i></span>
+        </div>
+        <div class="stat-number">{{ total_transfers|default:"0" }}</div>
+        <a href="{% url 'transfer_list' %}" class="stat-link">
+            Ver transferencias
+            <span>→</span>
+        </a>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-drumstick-bite"></i> Dietas</h4>
+            <span class="stat-icon"><i class="fa-solid fa-clipboard"></i></span>
+        </div>
+        <div class="stat-number">{{ total_diets|default:"0" }}</div>
+        <a href="{% url 'diets:diet_list' %}" class="stat-link">
+            Ver dietas activas
+            <span>→</span>
+        </a>
+    </div>
+</div>
+
+<!-- Separador -->
 <hr>
 
-<h2>Acciones rápidas</h2>
+<!-- Acciones rápidas -->
+<div class="quick-actions">
+    <h3><i class="fa-solid fa-bolt"></i> Acciones Rápidas</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        <a href="{% url 'product_create' %}" class="fb-btn fb-btn-primary" style="justify-content: center; padding: 15px;">
+            <i class="fa-solid fa-plus"></i>
+            Crear nuevo producto
+        </a>
+        
+        <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-success" style="justify-content: center; padding: 15px;">
+            <i class="fa-solid fa-box-arrow-down"></i>
+            Agregar a inventario
+        </a>
+        
+        <a href="{% url 'transfer_create' %}" class="fb-btn" style="justify-content: center; padding: 15px; background: #f5f6f7; color: #050505;">
+            <i class="fa-solid fa-right-left"></i>
+            Nueva transferencia
+        </a>
+    </div>
+</div>
 
-<ul>
-    <li><a href="{% url 'product_create' %}">➕ Crear producto</a></li>
-    <li><a href="{% url 'inventory_create' %}">📥 Agregar a sucursal</a></li>
-</ul>
+<!-- Información adicional -->
+<div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Últimos productos -->
+    <div class="fb-card">
+        <div class="fb-card-header">
+            <h3><i class="fa-solid fa-circle-plus"></i> Últimos productos</h3>
+        </div>
+        {% if latest_products %}
+            <ul style="list-style: none;">
+                {% for product in latest_products %}
+                <li style="padding: 10px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between;">
+                    <span>{{ product.name }}</span>
+                    <span style="color: #606770;">${{ product.price }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: #606770;">No hay productos recientes</p>
+        {% endif %}
+    </div>
 
+    <!-- Stock bajo -->
+    <div class="fb-card">
+        <div class="fb-card-header">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Stock bajo</h3>
+        </div>
+        {% if low_stock %}
+            <ul style="list-style: none;">
+                {% for item in low_stock %}
+                <li style="padding: 10px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between;">
+                    <span>{{ item.product.name }}</span>
+                    <span style="color: #fa383e;">{{ item.quantity }} unidades</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p style="color: #606770;">Todo en orden, sin stock bajo</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
