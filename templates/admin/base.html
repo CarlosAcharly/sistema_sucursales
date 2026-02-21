@@ -524,6 +524,13 @@
                         Dietas
                     </a>
                 </li>
+                <li>
+        <a href="{% url 'orders:admin_orders' %}" 
+           {% if request.resolver_match.app_name == 'orders' %}class="active"{% endif %}>
+            <i class="fa-solid fa-truck-ramp-box menu-icon"></i>
+            Pedidos
+        </a>
+    </li>
             </ul>
 
             <div class="sidebar-header" style="margin-top: 30px;">

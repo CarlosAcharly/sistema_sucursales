@@ -1,0 +1,107 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header" style="display: flex; align-items: center; gap: 15px;">
+        <a href="{% url 'orders:admin_orders' %}" class="fb-btn fb-btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+        <div>
+            <h2 style="margin: 0;">Pedido #{{ order.id }}</h2>
+            <p style="color: #606770;">{{ order.branch.name }} - {{ order.created_at|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <!-- Productos del pedido -->
+    <div class="fb-card" style="padding: 0; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 15px 20px; color: white;">
+            <h3 style="margin: 0;">Productos Solicitados</h3>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f6f7;">
+                    <th style="padding: 12px; text-align: left;">Producto</th>
+                    <th style="padding: 12px; text-align: right;">Kilos</th>
+                    <th style="padding: 12px; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr style="border-bottom: 1px solid #e4e6eb;">
+                    <td style="padding: 12px;">{{ item.product.name }}</td>
+                    <td style="padding: 12px; text-align: right;">{{ item.kilos }} kg</td>
+                    <td style="padding: 12px; text-align: center;">
+                        <form method="post" action="{% url 'orders:delete_item' item.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="fb-btn" style="background: #ffebe9; color: #b92b27; padding: 4px 8px; border: none;" onclick="return confirm('¿Eliminar este producto?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot style="background: #f5f6f7;">
+                <tr>
+                    <td style="padding: 12px; text-align: right;"><strong>TOTAL:</strong></td>
+                    <td style="padding: 12px; text-align: right;"><strong>{{ order.total_kilos }} kg</strong></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <!-- Información y acciones -->
+    <div>
+        <div class="fb-card" style="margin-bottom: 20px;">
+            <h3 style="margin-bottom: 15px;">Información del Pedido</h3>
+            
+            <div style="margin-bottom: 10px;">
+                <span style="color: #606770;">Sucursal:</span><br>
+                <strong>{{ order.branch.name }}</strong>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+                <span style="color: #606770;">Solicitado por:</span><br>
+                <strong>{{ order.created_by.get_full_name|default:order.created_by.username }}</strong>
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+                <span style="color: #606770;">Fecha:</span><br>
+                <strong>{{ order.created_at|date:"d/m/Y H:i" }}</strong>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <span style="color: #606770;">Estado:</span><br>
+                {% if order.status == "PENDING" %}
+                    <span style="background: #fff4e5; color: #bd7b13; padding: 4px 12px; border-radius: 20px; display: inline-block;">
+                        <i class="fas fa-clock"></i> Pendiente
+                    </span>
+                {% elif order.status == "COMPLETED" %}
+                    <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; display: inline-block;">
+                        <i class="fas fa-check-circle"></i> Completado
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if order.status == "PENDING" %}
+        <div class="fb-card">
+            <h3 style="margin-bottom: 15px;">Acciones</h3>
+            
+            <a href="{% url 'orders:approve_order' order.id %}" class="fb-btn fb-btn-success" style="display: block; text-align: center; margin-bottom: 10px;">
+                <i class="fas fa-check"></i> Aprobar Pedido
+            </a>
+            
+            <button onclick="window.print()" class="fb-btn fb-btn-primary" style="display: block; text-align: center; width: 100%;">
+                <i class="fas fa-print"></i> Imprimir Ticket
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -449,6 +449,17 @@
                 <i class="fas fa-drumstick-bite"></i>
                 <span>Dietas</span>
             </a>
+             <a href="{% url 'orders:create_order' %}" 
+       {% if request.resolver_match.url_name == 'create_order' %}class="active"{% endif %}>
+        <i class="fas fa-box"></i>
+        <span>Nuevo Pedido</span>
+    </a>
+
+    <a href="{% url 'orders:cashier_orders' %}" 
+       {% if request.resolver_match.url_name == 'cashier_orders' %}class="active"{% endif %}>
+        <i class="fas fa-clipboard-list"></i>
+        <span>Mis Pedidos</span>
+    </a>
         </div>
     </div>
 
