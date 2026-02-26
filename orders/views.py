@@ -8,6 +8,8 @@ from inventory.models import Inventory, InventoryMovement
 from django.db import transaction
 from .services import complete_order
 import logging
+import json
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,8 @@ def create_order(request):
                 order = Order.objects.create(
                     branch=branch,
                     created_by=request.user,
-                    status="PENDING"
+                    status="PENDING",
+                    inventory_added=False  # Nuevo pedido, no agregado a inventario
                 )
                 
                 # Crear todos los items
@@ -123,23 +126,41 @@ def cashier_orders(request):
 def order_detail_api(request, order_id):
     """API para obtener detalles del pedido en formato JSON"""
     try:
-        order = Order.objects.prefetch_related('items__product').get(
-            id=order_id, 
-            branch=request.user.branch
-        )
+        # Para admin: puede ver cualquier pedido
+        if request.user.role == "ADMIN":
+            order = Order.objects.prefetch_related('items__product').get(id=order_id)
+        else:
+            # Para cajero: solo puede ver pedidos de su sucursal
+            order = Order.objects.prefetch_related('items__product').get(
+                id=order_id, 
+                branch=request.user.branch
+            )
+        
+        items = []
+        for item in order.items.all():
+            items.append({
+                'id': item.id,
+                'product_id': item.product.id,
+                'name': item.product.name,
+                'kilos': float(item.kilos),
+                'can_delete': order.status == "PENDING"  # Solo se puede eliminar si está pendiente
+            })
+        
         data = {
             'id': order.id,
             'status': order.status,
+            'status_display': order.get_status_display(),
             'date': order.created_at.strftime('%d/%m/%Y %H:%M'),
-            'products': [
-                {
-                    'name': item.product.name,
-                    'kilos': float(item.kilos)
-                }
-                for item in order.items.all()
-            ]
+            'branch': order.branch.name,
+            'cashier': order.created_by.get_full_name() or order.created_by.username,
+            'total_kilos': float(order.total_kilos()),
+            'items_count': order.items_count(),
+            'items': items,
+            'can_edit': order.status == "PENDING",  # El pedido se puede editar solo si está pendiente
+            'inventory_added': order.inventory_added
         }
         return JsonResponse(data)
+        
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
 
@@ -166,36 +187,105 @@ def cancel_order(request, order_id):
 @transaction.atomic
 def add_order_to_inventory(request, order_id):
     """Agregar productos de un pedido completado al inventario"""
+    from inventory.models import Inventory, InventoryMovement
+    
     order = get_object_or_404(Order, id=order_id, branch=request.user.branch)
     
+    # Verificar si ya fue agregado
+    if order.inventory_added:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': 'Este pedido ya fue agregado al inventario anteriormente.'
+            }, status=400)
+        messages.error(request, "Este pedido ya fue agregado al inventario anteriormente.")
+        return redirect("orders:cashier_orders")
+    
     if order.status != "COMPLETED":
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': 'Solo se pueden agregar al inventario pedidos completados.'
+            }, status=400)
         messages.error(request, "Solo se pueden agregar al inventario pedidos completados.")
         return redirect("orders:cashier_orders")
     
     if request.method == "POST":
         items_added = 0
-        for item in order.items.all():
-            inventory, created = Inventory.objects.get_or_create(
-                branch=order.branch,
-                product=item.product,
-                defaults={'stock': 0}
-            )
-            # Usar float en lugar de int para mantener precisión
-            inventory.stock += float(item.kilos)
-            inventory.save()
-            
-            InventoryMovement.objects.create(
-                inventory=inventory,
-                quantity=float(item.kilos),
-                movement_type='IN',
-                description=f"Agregado desde pedido #{order.id}"
-            )
-            items_added += 1
+        items_errors = 0
+        results = []
         
-        messages.success(
-            request, 
-            f'{items_added} productos del pedido #{order.id} agregados al inventario.'
-        )
+        for item in order.items.all():
+            try:
+                kilos = item.kilos
+                # Redondear correctamente
+                cantidad = int(round(float(kilos)))
+                
+                if cantidad <= 0:
+                    results.append({
+                        'product': item.product.name,
+                        'status': 'skipped',
+                        'message': f'Cantidad no válida: {kilos} kg'
+                    })
+                    continue
+                
+                inventory, created = Inventory.objects.get_or_create(
+                    branch=order.branch,
+                    product=item.product,
+                    defaults={'stock': 0}
+                )
+                
+                stock_antes = inventory.stock
+                inventory.stock += cantidad
+                inventory.save()
+                
+                InventoryMovement.objects.create(
+                    inventory=inventory,
+                    quantity=cantidad,
+                    movement_type='IN'
+                )
+                
+                results.append({
+                    'product': item.product.name,
+                    'status': 'success',
+                    'kilos_original': float(kilos),
+                    'unidades_agregadas': cantidad,
+                    'stock_anterior': stock_antes,
+                    'stock_nuevo': inventory.stock
+                })
+                
+                items_added += 1
+                
+            except Exception as e:
+                items_errors += 1
+                logger.error(f"Error al procesar item {item.id}: {str(e)}")
+                results.append({
+                    'product': item.product.name,
+                    'status': 'error',
+                    'message': str(e)
+                })
+        
+        # Marcar el pedido como agregado al inventario si al menos un item se agregó
+        if items_added > 0:
+            order.inventory_added = True
+            order.save()
+        
+        # Si es una petición AJAX, devolver JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': items_added > 0,
+                'items_added': items_added,
+                'items_errors': items_errors,
+                'results': results,
+                'message': f'{items_added} productos agregados al inventario.'
+            })
+        
+        # Si es una petición normal, hacer redirect con mensajes
+        if items_added > 0:
+            messages.success(request, f'{items_added} productos del pedido #{order.id} agregados al inventario.')
+        if items_errors > 0:
+            messages.error(request, f'Hubo {items_errors} error(es) al procesar el pedido.')
+            
         return redirect("orders:cashier_orders")
     
     return redirect("orders:cashier_orders")

@@ -31,18 +31,57 @@
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px;">
                 <span><i class="fas fa-clock"></i> {{ now|date:"d/m/Y H:i" }}</span>
-                <span><i class="fas fa-hashtag"></i> #{{ ticket_number|default:"Nuevo" }}</span>
+                <span><i class="fas fa-hashtag"></i> #<span id="ticket-number">{{ ticket_number|default:"Nuevo" }}</span></span>
             </div>
         </div>
 
         <div style="padding: 20px;">
+            <!-- Datos del Cliente (Expandible) -->
+            <div id="cliente-section" style="margin-bottom: 15px; border: 1px solid #e4e6eb; border-radius: 8px; overflow: hidden;">
+                <div style="background: #f5f6f7; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCliente()">
+                    <span style="font-weight: 600; color: #050505;">
+                        <i class="fas fa-user"></i> Datos del Cliente
+                    </span>
+                    <i class="fas fa-chevron-down" id="cliente-arrow" style="transition: transform 0.3s;"></i>
+                </div>
+                <div id="cliente-form" style="padding: 15px; display: none; border-top: 1px solid #e4e6eb;">
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; color: #606770; font-size: 12px;">Nombre (opcional)</label>
+                        <input type="text" id="cliente-nombre" class="fb-input" placeholder="Nombre del cliente" style="width: 100%;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; color: #606770; font-size: 12px;">Dirección (opcional)</label>
+                        <input type="text" id="cliente-direccion" class="fb-input" placeholder="Dirección" style="width: 100%;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; color: #606770; font-size: 12px;">Teléfono (opcional)</label>
+                        <input type="text" id="cliente-telefono" class="fb-input" placeholder="Teléfono" style="width: 100%;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicador de dieta activa -->
+            <div id="diet-indicator" style="display: none; background: #e7f3ff; border-radius: 8px; padding: 12px; margin-bottom: 15px; border-left: 4px solid #1877f2;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-drumstick-bite" style="color: #1877f2; font-size: 20px;"></i>
+                    <div style="flex: 1;">
+                        <strong style="display: block;">Dieta desde pedido</strong>
+                        <span style="font-size: 12px; color: #606770;" id="diet-info"></span>
+                    </div>
+                    <button onclick="clearDietItems()" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                        <i class="fas fa-times"></i> Quitar
+                    </button>
+                </div>
+            </div>
+
             <!-- Tabla de productos en ticket -->
-            <div style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;" id="ticket-scroll">
+            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;" id="ticket-scroll">
                 <table style="width: 100%; border-collapse: collapse;" id="ticket-table">
                     <thead style="position: sticky; top: 0; background: #f5f6f7;">
                         <tr>
                             <th style="padding: 12px; text-align: left; color: #606770; font-size: 12px;">Producto</th>
-                            <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Cant</th>
+                            <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Cantidad</th>
+                            <th style="padding: 12px; text-align: right; color: #606770; font-size: 12px;">Precio</th>
                             <th style="padding: 12px; text-align: right; color: #606770; font-size: 12px;">Total</th>
                             <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;"></th>
                         </tr>
@@ -53,15 +92,11 @@
                 </table>
             </div>
 
-            <!-- Resumen del ticket -->
+            <!-- Resumen del ticket (SIN IVA) -->
             <div style="border-top: 2px dashed #e4e6eb; padding-top: 15px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #606770;">
                     <span>Subtotal:</span>
                     <span>$<span id="subtotal">0.00</span></span>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: #606770;">
-                    <span>IVA (16%):</span>
-                    <span>$<span id="iva">0.00</span></span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; color: #050505;">
                     <span>Total:</span>
@@ -70,12 +105,16 @@
             </div>
 
             <!-- Botones de acción -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px;">
                 <button onclick="clearCart()" class="fb-btn fb-btn-secondary" style="justify-content: center; padding: 12px;">
                     <i class="fas fa-trash"></i>
                     Limpiar
                 </button>
-                <button onclick="checkout()" class="fb-btn fb-btn-success" style="justify-content: center; padding: 12px; background: #42b72a;">
+                <button onclick="imprimirTicket()" class="fb-btn fb-btn-primary" style="justify-content: center; padding: 12px;">
+                    <i class="fas fa-print"></i>
+                    Imprimir
+                </button>
+                <button onclick="abrirModalConfirmacion()" class="fb-btn fb-btn-success" style="justify-content: center; padding: 12px; background: #42b72a;">
                     <i class="fas fa-check-circle"></i>
                     Cobrar
                 </button>
@@ -146,7 +185,7 @@
                      data-product-code="{{ item.product.barcode|default:''|lower }}"
                      data-product-price="{{ item.product.price }}"
                      data-stock="{{ item.stock }}"
-                     onclick="addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', '{{ item.product.price }}')"
+                     onclick="addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', {{ item.product.price }})"
                      style="cursor: pointer; border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; text-align: center; background: white; transition: all 0.2s; position: relative;"
                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
@@ -164,7 +203,7 @@
                     <strong style="display: block; margin-bottom: 5px; color: #050505;">{{ item.product.name }}</strong>
                     
                     <div style="color: #1877f2; font-weight: 700; font-size: 18px; margin-bottom: 5px;">
-                        ${{ item.product.price }}
+                        ${{ item.product.price|floatformat:2 }}
                     </div>
                     
                     <div style="font-size: 12px; color: #606770;">
@@ -180,7 +219,7 @@
                     </div>
                     {% endif %}
 
-                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', '{{ item.product.price }}')">
+                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', {{ item.product.price }})">
                         <i class="fas fa-plus"></i> Agregar
                     </button>
                 </div>
@@ -190,10 +229,141 @@
     </div>
 </div>
 
+<!-- Modal de Confirmación de Venta -->
+<div id="confirmarVentaModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-shopping-cart"></i> Confirmar Venta</h3>
+            <span class="close" onclick="cerrarModalConfirmacion()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #050505;">Resumen de la Venta</h4>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Productos:</span>
+                    <strong id="modal-cantidad-productos">0</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Subtotal:</span>
+                    <strong>$<span id="modal-subtotal">0.00</span></strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #e4e6eb;">
+                    <span style="font-weight: 600;">Total a Cobrar:</span>
+                    <strong style="font-size: 24px; color: #1877f2;" id="modal-total">$0.00</strong>
+                </div>
+            </div>
+            
+            <div style="background: #e7f3ff; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #1877f2; font-size: 14px;">
+                    <i class="fas fa-user"></i> Datos del Cliente
+                </h4>
+                <div id="modal-cliente-info">
+                    <p style="margin: 5px 0; color: #606770;"><strong>Nombre:</strong> <span id="modal-cliente-nombre">Cliente Mostrador</span></p>
+                    <p style="margin: 5px 0; color: #606770;"><strong>Dirección:</strong> <span id="modal-cliente-direccion">-</span></p>
+                    <p style="margin: 5px 0; color: #606770;"><strong>Teléfono:</strong> <span id="modal-cliente-telefono">-</span></p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="cerrarModalConfirmacion()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                <button onclick="procesarVenta()" class="fb-btn fb-btn-success" id="btn-procesar-venta">
+                    <i class="fas fa-check-circle"></i> Confirmar Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Venta Exitosa -->
+<div id="ventaExitosaModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header" style="background: #42b72a; color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-check-circle"></i> ¡Venta Exitosa!
+            </h3>
+            <span class="close" onclick="cerrarModalExito()" style="color: white;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+            <i class="fas fa-check-circle" style="font-size: 64px; color: #42b72a; margin-bottom: 20px;"></i>
+            
+            <h4 style="color: #050505; margin-bottom: 10px;">Venta #<span id="exito-venta-id"></span></h4>
+            <p style="color: #606770; margin-bottom: 20px;">Total: <strong style="font-size: 20px; color: #1877f2;" id="exito-total">$0.00</strong></p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="imprimirTicketVenta()" class="fb-btn fb-btn-primary">
+                    <i class="fas fa-print"></i> Imprimir Ticket
+                </button>
+                <button onclick="finalizarVenta()" class="fb-btn fb-btn-success">
+                    <i class="fas fa-check"></i> Finalizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket oculto para impresión -->
+<div id="ticket-print" style="display: none;">
+    <div style="font-family: 'Courier New', monospace; width: 80mm; padding: 10px; margin: 0 auto; background: white;">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 18px;">{{ request.user.branch.name }}</h3>
+            <p style="margin: 2px 0; font-size: 12px;" id="print-direccion"></p>
+            <p style="margin: 2px 0; font-size: 12px;" id="print-telefono"></p>
+            <p style="margin: 5px 0; font-size: 12px;">{{ now|date:"d/m/Y H:i" }}</p>
+            <p style="margin: 2px 0; font-size: 12px;">Ticket #<span id="print-ticket-number"></span></p>
+            <p style="margin: 2px 0; font-size: 12px;">Atendió: {{ request.user.get_full_name|default:request.user.username }}</p>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <!-- Datos del cliente si existen -->
+        <div id="print-cliente" style="margin: 10px 0; font-size: 12px;">
+            <p style="margin: 2px 0;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
+            <p style="margin: 2px 0;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
+            <p style="margin: 2px 0;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <!-- Tabla de productos -->
+        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align: left; padding: 5px 0;">Producto</th>
+                    <th style="text-align: center; padding: 5px 0;">Cant</th>
+                    <th style="text-align: right; padding: 5px 0;">Precio</th>
+                    <th style="text-align: right; padding: 5px 0;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="print-items">
+                <!-- Items se insertan aquí -->
+            </tbody>
+        </table>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <div style="text-align: right; font-size: 14px; font-weight: bold;">
+            <p style="margin: 2px 0;">Total: $<span id="print-total"></span></p>
+        </div>
+        
+        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        
+        <p style="text-align: center; font-size: 11px; margin: 5px 0;">¡Gracias por su compra!</p>
+    </div>
+</div>
+
+<!-- Scripts -->
 <script>
 let cart = {};
 let products = [];
 let searchTimeout;
+let dietItems = JSON.parse(localStorage.getItem('posCart')) || [];
+let currentTicketNumber = Math.floor(Math.random() * 10000);
+let ventaActualId = null;
 
 // Inicializar productos
 document.addEventListener('DOMContentLoaded', function() {
@@ -220,9 +390,73 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#product-search') && !e.target.closest('#search-results')) {
             document.getElementById('search-results').style.display = 'none';
+            document.getElementById('products-grid').style.display = 'grid';
         }
     });
+
+    // Cargar items de dieta si existen
+    loadDietItems();
+    
+    // Actualizar número de ticket
+    document.getElementById('ticket-number').textContent = currentTicketNumber;
 });
+
+function toggleCliente() {
+    const form = document.getElementById('cliente-form');
+    const arrow = document.getElementById('cliente-arrow');
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        form.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Función para cargar items de dieta
+function loadDietItems() {
+    if (dietItems.length > 0) {
+        const dietIndicator = document.getElementById('diet-indicator');
+        const dietInfo = document.getElementById('diet-info');
+        
+        const totalItems = dietItems.length;
+        const totalKilos = dietItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        
+        dietInfo.textContent = `${totalItems} ingredientes - ${totalKilos.toFixed(2)} kg total`;
+        dietIndicator.style.display = 'flex';
+        
+        dietItems.forEach(item => {
+            if (item.type === 'ingredient') {
+                const product = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+                if (product) {
+                    cart[product.id] = {
+                        name: item.name,
+                        price: product.price,
+                        quantity: item.quantity || 1,
+                        fromDiet: true
+                    };
+                }
+            }
+        });
+        
+        renderTicket();
+        localStorage.removeItem('posCart');
+    }
+}
+
+// Función para limpiar items de dieta
+function clearDietItems() {
+    for (let id in cart) {
+        if (cart[id].fromDiet) {
+            delete cart[id];
+        }
+    }
+    
+    document.getElementById('diet-indicator').style.display = 'none';
+    renderTicket();
+    showNotification('Items de dieta removidos', 'info');
+}
 
 // Función de búsqueda predictiva
 function searchProducts(query) {
@@ -233,7 +467,7 @@ function searchProducts(query) {
 
     if (query.length < 2) {
         searchResults.style.display = 'none';
-        filterProducts('all');
+        document.getElementById('products-grid').style.display = 'grid';
         return;
     }
 
@@ -266,8 +500,6 @@ function searchProducts(query) {
         
         resultsCount.textContent = `${matches.length} productos`;
         searchResults.style.display = 'block';
-        
-        // Ocultar grid de productos
         document.getElementById('products-grid').style.display = 'none';
     } else {
         resultsContainer.innerHTML = `
@@ -302,7 +534,7 @@ function filterProducts(filter) {
     }
 }
 
-// Funciones del carrito (manteniendo la lógica original)
+// Funciones del carrito
 function addProduct(id, name, price) {
     price = parseFloat(price);
 
@@ -317,8 +549,6 @@ function addProduct(id, name, price) {
     }
 
     renderTicket();
-    
-    // Feedback visual
     showNotification(`✓ ${name} agregado al ticket`, 'success');
 }
 
@@ -326,29 +556,41 @@ function renderTicket() {
     let tbody = document.getElementById("ticket-body");
     tbody.innerHTML = "";
 
-    let subtotal = 0;
+    let total = 0;
 
     for (let id in cart) {
         let item = cart[id];
         let rowTotal = item.price * item.quantity;
-        subtotal += rowTotal;
+        total += rowTotal;
+
+        const dietIcon = item.fromDiet ? '<i class="fas fa-drumstick-bite" style="color: #1877f2; margin-right: 5px;" title="Item de dieta"></i>' : '';
 
         tbody.innerHTML += `
-            <tr style="border-bottom: 1px solid #e4e6eb;">
+            <tr style="border-bottom: 1px solid #e4e6eb;" data-product-id="${id}">
                 <td style="padding: 12px 8px;">
-                    <div><strong>${item.name}</strong></div>
+                    <div><strong>${dietIcon} ${item.name}</strong></div>
                     <div style="font-size: 11px; color: #606770;">$${item.price.toFixed(2)} c/u</div>
                 </td>
                 <td style="padding: 12px 8px; text-align: center;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
-                        <button onclick="updateQuantity('${id}', -1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                        <button onclick="updateQuantity('${id}', -1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px; min-width: 30px;">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <span style="font-weight: 600; min-width: 30px;">${item.quantity}</span>
-                        <button onclick="updateQuantity('${id}', 1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px;">
+                        <input type="number" 
+                               value="${item.quantity}" 
+                               min="1" 
+                               step="1"
+                               onchange="setQuantity('${id}', this.value)"
+                               onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.key === 'Enter'"
+                               style="width: 60px; text-align: center; padding: 4px; border: 1px solid #dddfe2; border-radius: 4px; font-weight: 600; font-size: 14px;"
+                               class="quantity-input">
+                        <button onclick="updateQuantity('${id}', 1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px; min-width: 30px;">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
+                </td>
+                <td style="padding: 12px 8px; text-align: right;">
+                    $${item.price.toFixed(2)}
                 </td>
                 <td style="padding: 12px 8px; text-align: right;">
                     <strong>$${rowTotal.toFixed(2)}</strong>
@@ -362,25 +604,35 @@ function renderTicket() {
         `;
     }
 
-    let iva = subtotal * 0.16;
-    let total = subtotal + iva;
-
-    document.getElementById("subtotal").innerText = subtotal.toFixed(2);
-    document.getElementById("iva").innerText = iva.toFixed(2);
+    document.getElementById("subtotal").innerText = total.toFixed(2);
     document.getElementById("total").innerText = total.toFixed(2);
     
-    // Scroll automático al último item
     let ticketScroll = document.getElementById('ticket-scroll');
     if (ticketScroll) {
         ticketScroll.scrollTop = ticketScroll.scrollHeight;
     }
 }
 
+function setQuantity(id, value) {
+    let newQuantity = parseInt(value);
+    
+    if (isNaN(newQuantity) || newQuantity < 1) {
+        newQuantity = 1;
+    }
+    
+    if (cart[id]) {
+        cart[id].quantity = newQuantity;
+        renderTicket();
+    }
+}
+
 function updateQuantity(id, change) {
     if (cart[id]) {
-        cart[id].quantity += change;
-        if (cart[id].quantity <= 0) {
+        let newQuantity = cart[id].quantity + change;
+        if (newQuantity <= 0) {
             delete cart[id];
+        } else {
+            cart[id].quantity = newQuantity;
         }
         renderTicket();
     }
@@ -388,24 +640,210 @@ function updateQuantity(id, change) {
 
 function removeFromCart(id) {
     delete cart[id];
+    
+    const hasDietItems = Object.values(cart).some(item => item.fromDiet);
+    if (!hasDietItems) {
+        document.getElementById('diet-indicator').style.display = 'none';
+    }
+    
     renderTicket();
 }
 
 function clearCart() {
     if (Object.keys(cart).length > 0 && confirm('¿Limpiar todo el ticket?')) {
         cart = {};
+        document.getElementById('diet-indicator').style.display = 'none';
         renderTicket();
     }
 }
 
+function abrirModalConfirmacion() {
+    if (Object.keys(cart).length === 0) {
+        showNotification('No hay productos en el ticket', 'error');
+        return;
+    }
+    
+    // Calcular totales
+    const total = parseFloat(document.getElementById('total').innerText);
+    const subtotal = parseFloat(document.getElementById('subtotal').innerText);
+    const cantidadProductos = Object.keys(cart).length;
+    
+    // Obtener datos del cliente
+    const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
+    const clienteDireccion = document.getElementById('cliente-direccion').value || '-';
+    const clienteTelefono = document.getElementById('cliente-telefono').value || '-';
+    
+    // Actualizar modal
+    document.getElementById('modal-cantidad-productos').textContent = cantidadProductos;
+    document.getElementById('modal-subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('modal-total').textContent = '$' + total.toFixed(2);
+    document.getElementById('modal-cliente-nombre').textContent = clienteNombre;
+    document.getElementById('modal-cliente-direccion').textContent = clienteDireccion;
+    document.getElementById('modal-cliente-telefono').textContent = clienteTelefono;
+    
+    document.getElementById('confirmarVentaModal').style.display = 'block';
+}
+
+function cerrarModalConfirmacion() {
+    document.getElementById('confirmarVentaModal').style.display = 'none';
+}
+
+function procesarVenta() {
+    if (Object.keys(cart).length === 0) {
+        showNotification('El carrito está vacío', 'error');
+        return;
+    }
+
+    let cartArray = [];
+    for (let id in cart) {
+        cartArray.push({
+            id: id,
+            quantity: cart[id].quantity,
+            price: cart[id].price,
+            fromDiet: cart[id].fromDiet || false
+        });
+    }
+
+    const btnProcesar = document.getElementById('btn-procesar-venta');
+    btnProcesar.disabled = true;
+    btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+    fetch("", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({
+            cart: cartArray
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            ventaActualId = data.venta_id || Math.floor(Math.random() * 10000);
+            
+            // Cerrar modal de confirmación
+            cerrarModalConfirmacion();
+            
+            // Mostrar modal de éxito
+            document.getElementById('exito-venta-id').textContent = ventaActualId;
+            document.getElementById('exito-total').textContent = '$' + document.getElementById('total').innerText;
+            document.getElementById('ventaExitosaModal').style.display = 'block';
+            
+            // Limpiar carrito
+            cart = {};
+            renderTicket();
+        } else {
+            showNotification(data.error || 'Error al procesar la venta', 'error');
+            btnProcesar.disabled = false;
+            btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
+        }
+    })
+    .catch(error => {
+        showNotification('Error de conexión', 'error');
+        btnProcesar.disabled = false;
+        btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
+    });
+}
+
+function imprimirTicketVenta() {
+    if (!ventaActualId) return;
+    
+    // Obtener datos del cliente
+    const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
+    const clienteDireccion = document.getElementById('cliente-direccion').value || '';
+    const clienteTelefono = document.getElementById('cliente-telefono').value || '';
+    
+    // Llenar datos de impresión
+    document.getElementById('print-ticket-number').textContent = ventaActualId;
+    document.getElementById('print-direccion').textContent = clienteDireccion;
+    document.getElementById('print-telefono').textContent = clienteTelefono;
+    document.getElementById('print-cliente-nombre').textContent = clienteNombre;
+    document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
+    document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
+    
+    // Generar items para impresión (usando el carrito original)
+    let itemsHtml = '';
+    let total = 0;
+    
+    // Si el carrito está vacío, usar los datos del modal
+    if (Object.keys(cart).length === 0) {
+        // Recuperar la última venta (esto es un ejemplo, idealmente vendría del servidor)
+        const totalModal = document.getElementById('exito-total').textContent.replace('$', '');
+        total = parseFloat(totalModal);
+        
+        // Mostrar mensaje genérico
+        itemsHtml = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 10px;">Venta #${ventaActualId}</td>
+            </tr>
+        `;
+    } else {
+        for (let id in cart) {
+            let item = cart[id];
+            let rowTotal = item.price * item.quantity;
+            total += rowTotal;
+            
+            itemsHtml += `
+                <tr>
+                    <td style="text-align: left; padding: 3px 0;">${item.name}</td>
+                    <td style="text-align: center; padding: 3px 0;">${item.quantity}</td>
+                    <td style="text-align: right; padding: 3px 0;">$${item.price.toFixed(2)}</td>
+                    <td style="text-align: right; padding: 3px 0;">$${rowTotal.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+    }
+    
+    document.getElementById('print-items').innerHTML = itemsHtml;
+    document.getElementById('print-total').textContent = total.toFixed(2);
+    
+    // Crear una nueva ventana para imprimir
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Ticket de Venta #${ventaActualId}</title>
+                <style>
+                    @media print {
+                        body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${document.getElementById('ticket-print').innerHTML}
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
+}
+
+function cerrarModalExito() {
+    document.getElementById('ventaExitosaModal').style.display = 'none';
+    finalizarVenta();
+}
+
+function finalizarVenta() {
+    document.getElementById('ventaExitosaModal').style.display = 'none';
+    // Recargar la página para empezar una nueva venta
+    location.reload();
+}
+
 function showNotification(message, type) {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
-        background: ${type === 'success' ? '#42b72a' : '#1877f2'};
+        background: ${type === 'success' ? '#42b72a' : type === 'error' ? '#fa383e' : type === 'warning' ? '#f7b928' : '#1877f2'};
         color: white;
         padding: 12px 20px;
         border-radius: 8px;
@@ -417,7 +855,7 @@ function showNotification(message, type) {
         gap: 10px;
     `;
     notification.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
         <span>${message}</span>
     `;
     
@@ -433,46 +871,76 @@ function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-function checkout() {
+function imprimirTicket() {
+    // Función para imprimir sin guardar (solo vista previa)
     if (Object.keys(cart).length === 0) {
-        showNotification('El carrito está vacío', 'error');
+        showNotification('No hay productos en el ticket', 'error');
         return;
     }
-
-    let cartArray = [];
-
+    
+    // Obtener datos del cliente
+    const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
+    const clienteDireccion = document.getElementById('cliente-direccion').value || '';
+    const clienteTelefono = document.getElementById('cliente-telefono').value || '';
+    
+    // Llenar datos de impresión
+    document.getElementById('print-ticket-number').textContent = currentTicketNumber;
+    document.getElementById('print-direccion').textContent = clienteDireccion;
+    document.getElementById('print-telefono').textContent = clienteTelefono;
+    document.getElementById('print-cliente-nombre').textContent = clienteNombre;
+    document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
+    document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
+    
+    // Generar items para impresión
+    let itemsHtml = '';
+    let total = 0;
+    
     for (let id in cart) {
-        cartArray.push({
-            id: id,
-            quantity: cart[id].quantity
-        });
+        let item = cart[id];
+        let rowTotal = item.price * item.quantity;
+        total += rowTotal;
+        
+        itemsHtml += `
+            <tr>
+                <td style="text-align: left; padding: 3px 0;">${item.name}</td>
+                <td style="text-align: center; padding: 3px 0;">${item.quantity}</td>
+                <td style="text-align: right; padding: 3px 0;">$${item.price.toFixed(2)}</td>
+                <td style="text-align: right; padding: 3px 0;">$${rowTotal.toFixed(2)}</td>
+            </tr>
+        `;
     }
-
-    fetch("", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCSRFToken()
-        },
-        body: JSON.stringify({
-            cart: cartArray
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('✅ Venta realizada correctamente', 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showNotification(data.error || 'Error al procesar la venta', 'error');
-        }
-    })
-    .catch(error => {
-        showNotification('Error de conexión', 'error');
-    });
+    
+    document.getElementById('print-items').innerHTML = itemsHtml;
+    document.getElementById('print-total').textContent = total.toFixed(2);
+    
+    // Crear una nueva ventana para imprimir
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Ticket de Venta #${currentTicketNumber}</title>
+                <style>
+                    @media print {
+                        body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${document.getElementById('ticket-print').innerHTML}
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
-// Agregar animaciones
+// Estilos adicionales
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
@@ -496,10 +964,102 @@ style.textContent = `
     #search-results {
         animation: slideIn 0.3s ease;
     }
+    
+    .quantity-input {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    
+    .quantity-input::-webkit-inner-spin-button,
+    .quantity-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .quantity-input:focus {
+        outline: none;
+        border-color: #1877f2 !important;
+        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
+    }
+    
+    .fb-btn-secondary {
+        min-width: 30px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        animation: fadeIn 0.2s ease;
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 10% auto;
+        padding: 0;
+        width: 90%;
+        max-width: 450px;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        animation: slideUp 0.3s ease;
+    }
+    
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid #e4e6eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        color: #050505;
+    }
+    
+    .close {
+        color: #606770;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    
+    .close:hover {
+        color: #050505;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
 `;
 document.head.appendChild(style);
 </script>
 
-<!-- Agregar Font Awesome si no está en base.html -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

@@ -106,7 +106,7 @@
                     </td>
                     <td class="actions-cell">
                         <div class="action-buttons">
-                            <button class="action-btn view" onclick="viewOrderDetails({{ order.id }})" title="Ver detalles">
+                            <button class="action-btn view" onclick="openEditModal({{ order.id }})" title="Ver/Editar pedido">
                                 <i class="fas fa-eye"></i>
                             </button>
                             
@@ -117,17 +117,6 @@
                                     <i class="fas fa-check"></i>
                                 </button>
                             </form>
-                            {% endif %}
-                            
-                            {% if order.status == "PENDING" %}
-                            {% for item in order.items.all %}
-                            <form method="post" action="{% url 'orders:delete_item' item.id %}" style="display: inline;" onsubmit="return confirm('¿Eliminar {{ item.product.name }} del pedido?');">
-                                {% csrf_token %}
-                                <button type="submit" class="action-btn delete" title="Eliminar producto">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                            {% endfor %}
                             {% endif %}
                         </div>
                     </td>
@@ -172,18 +161,32 @@
     </div>
 </div>
 
-<!-- Modal de Detalles -->
-<div id="orderModal" class="modal">
-    <div class="modal-content">
+<!-- Modal de Edición de Pedido -->
+<div id="editOrderModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
         <div class="modal-header">
-            <h3>Detalles del Pedido</h3>
-            <span class="close">&times;</span>
+            <h3>
+                <i class="fas fa-edit"></i> 
+                Editar Pedido <span id="modal-order-id"></span>
+            </h3>
+            <span class="close" onclick="closeEditModal()">&times;</span>
         </div>
-        <div class="modal-body" id="orderDetails">
-            <!-- Contenido cargado vía AJAX -->
+        
+        <div class="modal-body" id="editModalBody">
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
+                <p style="margin-top: 15px; color: #606770;">Cargando detalles del pedido...</p>
+            </div>
+        </div>
+        
+        <div style="padding: 20px; border-top: 1px solid #e4e6eb; display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeEditModal()" class="fb-btn fb-btn-secondary">Cerrar</button>
         </div>
     </div>
 </div>
+
+<!-- Toast de notificación -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
 
 <style>
 .admin-orders-container {
@@ -593,6 +596,193 @@
     overflow-y: auto;
 }
 
+/* Estilos específicos para el modal de edición */
+.order-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    background: #f5f6f7;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-label {
+    font-size: 12px;
+    color: #606770;
+}
+
+.info-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #050505;
+}
+
+.info-value i {
+    color: #1877f2;
+    margin-right: 5px;
+}
+
+/* Tabla de productos en el modal */
+.edit-products-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.edit-products-table th {
+    background: #f5f6f7;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    color: #606770;
+    font-weight: 600;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.edit-products-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.edit-products-table tr:last-child td {
+    border-bottom: none;
+}
+
+.edit-products-table tbody tr:hover {
+    background-color: #f5f6f7;
+}
+
+/* Producto eliminado */
+.product-row.deleted {
+    background-color: #ffebe9;
+    opacity: 0.7;
+}
+
+.product-row.deleted td {
+    text-decoration: line-through;
+    color: #999;
+}
+
+/* Botones de acción en el modal */
+.delete-item-btn {
+    background: none;
+    border: none;
+    color: #fa383e;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.delete-item-btn:hover:not(:disabled) {
+    background: #ffebe9;
+    transform: scale(1.1);
+}
+
+.delete-item-btn:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.undo-delete-btn {
+    background: none;
+    border: none;
+    color: #1877f2;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-left: 5px;
+}
+
+.undo-delete-btn:hover {
+    background: #e7f3ff;
+}
+
+/* Resumen del pedido en el modal */
+.order-summary-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    color: #606770;
+}
+
+.summary-item.total {
+    border-top: 1px solid #e4e6eb;
+    margin-top: 8px;
+    padding-top: 12px;
+    color: #050505;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Botones de acción de edición */
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.save-changes-btn {
+    background: #42b72a;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.save-changes-btn:hover:not(:disabled) {
+    background: #3ba126;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 183, 42, 0.3);
+}
+
+.save-changes-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.cancel-edit-btn {
+    background: #e4e6eb;
+    color: #050505;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.cancel-edit-btn:hover {
+    background: #d8dadf;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .stats-grid {
@@ -646,10 +836,299 @@
 </style>
 
 <script>
+let currentOrderId = null;
+let deletedItems = [];
+let originalItems = [];
+
+// Abrir modal de edición
+function openEditModal(orderId) {
+    currentOrderId = orderId;
+    const modal = document.getElementById('editOrderModal');
+    const modalBody = document.getElementById('editModalBody');
+    
+    // Mostrar loading
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
+            <p style="margin-top: 15px; color: #606770;">Cargando detalles del pedido...</p>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    document.getElementById('modal-order-id').textContent = `#${orderId}`;
+    
+    // Construir URL correctamente usando el sistema de URLs de Django
+    // Esto generará la URL base /orders/api/ y luego reemplazamos el 0 por el ID real
+    const baseUrl = "{% url 'orders:order_detail_api' 0 %}";
+    const url = baseUrl.replace('0', orderId);
+    
+    console.log('Cargando pedido desde:', url); // Para debugging
+    
+    // Cargar datos del pedido
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Error al cargar el pedido');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            originalItems = data.items;
+            renderEditModal(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #fa383e;"></i>
+                    <p style="margin-top: 15px; color: #606770;">Error: ${error.message}</p>
+                    <p style="margin-top: 10px; font-size: 12px; color: #999;">URL intentada: ${url}</p>
+                </div>
+            `;
+        });
+}
+
+// Renderizar modal de edición
+function renderEditModal(data) {
+    const modalBody = document.getElementById('editModalBody');
+    deletedItems = [];
+    
+    let productsHtml = '';
+    data.items.forEach(item => {
+        productsHtml += `
+            <tr class="product-row" data-item-id="${item.id}" data-kilos="${item.kilos}">
+                <td>
+                    <strong>${item.name}</strong>
+                </td>
+                <td>${item.kilos} kg</td>
+                <td style="text-align: center;">
+                    <button class="delete-item-btn" 
+                            onclick="deleteItem(${item.id})"
+                            ${!data.can_edit ? 'disabled' : ''}
+                            title="${data.can_edit ? 'Eliminar producto' : 'No se puede eliminar (pedido no pendiente)'}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="undo-delete-btn" 
+                            style="display: none;" 
+                            id="undo-${item.id}"
+                            onclick="undoDelete(${item.id})">
+                        <i class="fas fa-undo"></i> Deshacer
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    modalBody.innerHTML = `
+        <div class="order-info-grid">
+            <div class="info-item">
+                <span class="info-label">Sucursal</span>
+                <span class="info-value"><i class="fas fa-store"></i> ${data.branch}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Cajero</span>
+                <span class="info-value"><i class="fas fa-user"></i> ${data.cashier}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Fecha</span>
+                <span class="info-value"><i class="far fa-calendar-alt"></i> ${data.date}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Estado</span>
+                <span class="info-value">
+                    <span class="status-badge status-${data.status.toLowerCase()}">
+                        ${data.status_display}
+                    </span>
+                </span>
+            </div>
+        </div>
+        
+        <h4 style="margin: 20px 0 10px;">
+            <i class="fas fa-boxes"></i> Productos del Pedido
+            ${data.can_edit ? 
+                '<span style="font-size: 13px; color: #606770; margin-left: 10px;">(Puedes eliminar productos haciendo clic en <i class="fas fa-trash" style="color: #fa383e;"></i>)</span>' : 
+                '<span style="font-size: 13px; color: #606770; margin-left: 10px;">(No se puede editar - Pedido no pendiente)</span>'
+            }
+        </h4>
+        
+        <table class="edit-products-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Kilos</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${productsHtml}
+            </tbody>
+        </table>
+        
+        <div class="order-summary-box">
+            <div class="summary-item">
+                <span>Total productos:</span>
+                <span><strong id="modal-items-count">${data.items_count}</strong></span>
+            </div>
+            <div class="summary-item">
+                <span>Total kilos:</span>
+                <span><strong id="modal-total-kilos">${data.total_kilos.toFixed(2)} kg</strong></span>
+            </div>
+        </div>
+        
+        ${data.can_edit ? `
+            <div class="edit-actions">
+                <button class="cancel-edit-btn" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="save-changes-btn" onclick="saveChanges()" id="saveChangesBtn">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        ` : `
+            <div style="text-align: right;">
+                <button class="fb-btn fb-btn-secondary" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        `}
+    `;
+}
+
+// Marcar item para eliminar
+function deleteItem(itemId) {
+    const row = document.querySelector(`.product-row[data-item-id="${itemId}"]`);
+    const deleteBtn = row.querySelector('.delete-item-btn');
+    const undoBtn = document.getElementById(`undo-${itemId}`);
+    
+    row.classList.add('deleted');
+    deleteBtn.style.display = 'none';
+    undoBtn.style.display = 'inline-block';
+    
+    deletedItems.push(itemId);
+    updateTotals();
+}
+
+// Deshacer eliminación
+function undoDelete(itemId) {
+    const row = document.querySelector(`.product-row[data-item-id="${itemId}"]`);
+    const deleteBtn = row.querySelector('.delete-item-btn');
+    const undoBtn = document.getElementById(`undo-${itemId}`);
+    
+    row.classList.remove('deleted');
+    deleteBtn.style.display = 'inline-block';
+    undoBtn.style.display = 'none';
+    
+    deletedItems = deletedItems.filter(id => id !== itemId);
+    updateTotals();
+}
+
+// Actualizar totales después de eliminaciones
+function updateTotals() {
+    let totalKilos = 0;
+    let totalItems = 0;
+    
+    document.querySelectorAll('.product-row').forEach(row => {
+        const itemId = parseInt(row.dataset.itemId);
+        const kilos = parseFloat(row.dataset.kilos);
+        
+        // Si no está eliminado, contar
+        if (!deletedItems.includes(itemId)) {
+            totalKilos += kilos;
+            totalItems++;
+        }
+    });
+    
+    document.getElementById('modal-items-count').textContent = totalItems;
+    document.getElementById('modal-total-kilos').textContent = totalKilos.toFixed(2) + ' kg';
+}
+
+// Guardar cambios
+function saveChanges() {
+    if (deletedItems.length === 0) {
+        showToast('No hay cambios para guardar', 'warning');
+        closeEditModal();
+        return;
+    }
+    
+    const saveBtn = document.getElementById('saveChangesBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    
+    // Enviar petición para eliminar cada item
+    const deletePromises = deletedItems.map(itemId => {
+        return fetch(`/orders/item/${itemId}/eliminar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+    });
+    
+    Promise.all(deletePromises)
+        .then(responses => {
+            const allSuccess = responses.every(r => r.ok);
+            if (allSuccess) {
+                showToast(`${deletedItems.length} producto(s) eliminado(s) correctamente`, 'success');
+                
+                // Recargar la página después de 1.5 segundos para ver los cambios
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                throw new Error('Error al eliminar algunos productos');
+            }
+        })
+        .catch(error => {
+            showToast('Error al guardar los cambios: ' + error.message, 'error');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+        });
+}
+
+// Mostrar toast
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}" 
+               style="color: ${type === 'success' ? '#42b72a' : type === 'error' ? '#fa383e' : type === 'warning' ? '#f7b928' : '#1877f2'};"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : 
+                                  type === 'error' ? '#fa383e' : 
+                                  type === 'warning' ? '#f7b928' : '#1877f2';
+    
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Obtener CSRF token
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Cerrar modal
+function closeEditModal() {
+    document.getElementById('editOrderModal').style.display = 'none';
+    currentOrderId = null;
+    deletedItems = [];
+}
+
 // Filtrado por estado
 document.querySelectorAll('.filter-tab').forEach(btn => {
     btn.addEventListener('click', function() {
-        // Actualizar botón activo
         document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         
@@ -688,14 +1167,12 @@ function toggleProducts(orderId) {
     const detailRow = document.getElementById(`products-${orderId}`);
     const allDetailRows = document.querySelectorAll('.products-detail-row');
     
-    // Cerrar otras filas de detalles
     allDetailRows.forEach(row => {
         if (row.id !== `products-${orderId}`) {
             row.style.display = 'none';
         }
     });
     
-    // Toggle la fila actual
     if (detailRow.style.display === 'none') {
         detailRow.style.display = 'table-row';
     } else {
@@ -703,69 +1180,19 @@ function toggleProducts(orderId) {
     }
 }
 
-// Modal de detalles
-const modal = document.getElementById('orderModal');
-const span = document.getElementsByClassName('close')[0];
-
-span.onclick = function() {
-    modal.style.display = 'none';
-}
-
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = 'none';
+// Cerrar modal con tecla ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEditModal();
     }
-}
+});
 
-function viewOrderDetails(orderId) {
-    fetch(`/orders/api/${orderId}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-            
-            let productsHtml = '';
-            data.products.forEach(product => {
-                productsHtml += `
-                    <div class="detail-item">
-                        <span class="detail-label">${product.name}:</span>
-                        <span class="detail-value">${product.kilos} kg</span>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('orderDetails').innerHTML = `
-                <div class="order-detail-info">
-                    <div class="detail-group">
-                        <div class="detail-item">
-                            <span class="detail-label">Pedido #:</span>
-                            <span class="detail-value">${data.id}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Fecha:</span>
-                            <span class="detail-value">${data.date}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Estado:</span>
-                            <span class="status-badge status-${data.status.toLowerCase()}">${data.status}</span>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin: 20px 0 15px; color: #050505;">Productos</h4>
-                    <div class="products-detail-list">
-                        ${productsHtml}
-                    </div>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al cargar los detalles del pedido');
-        });
+// Clic fuera del modal para cerrar
+window.onclick = function(event) {
+    const modal = document.getElementById('editOrderModal');
+    if (event.target == modal) {
+        closeEditModal();
+    }
 }
 </script>
 {% endblock %}

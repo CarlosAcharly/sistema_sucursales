@@ -83,12 +83,56 @@ def pos_view(request):
     })
 
 
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Count, Sum, Avg
+from decimal import Decimal
+
 @login_required
 @role_required(['CASHIER'])
 def sales_list(request):
     branch = request.user.branch
-    sales = Sale.objects.filter(branch=branch).order_by('-created_at')
-    return render(request, 'cajero/sales_list.html', {'sales': sales})
+    today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+    
+    # Obtener todas las ventas de la sucursal
+    sales = Sale.objects.filter(branch=branch).prefetch_related('items__product').order_by('-created_at')
+    
+    # Ventas de hoy
+    sales_today = sales.filter(created_at__date=today)
+    sales_today_count = sales_today.count()
+    total_today = sales_today.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    
+    # Ventas de ayer (para calcular el porcentaje)
+    sales_yesterday = Sale.objects.filter(branch=branch, created_at__date=yesterday)
+    total_yesterday = sales_yesterday.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    
+    # Calcular porcentaje de crecimiento
+    if total_yesterday > 0:
+        increase_today = total_today - total_yesterday
+        sales_today_percent = ((total_today - total_yesterday) / total_yesterday) * 100
+    else:
+        increase_today = total_today
+        sales_today_percent = 100 if total_today > 0 else 0
+    
+    # Calcular ticket promedio
+    if sales_today_count > 0:
+        average_ticket = total_today / sales_today_count
+    else:
+        average_ticket = Decimal('0')
+    
+    # Total general de ventas
+    total_sum = sales.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    
+    return render(request, 'cajero/sales_list.html', {
+        'sales': sales,
+        'sales_today': sales_today_count,
+        'total_today': total_today,
+        'increase_today': increase_today,
+        'sales_today_percent': round(sales_today_percent, 1),
+        'average_ticket': average_ticket,
+        'total_sum': total_sum,
+    })
 
 @login_required
 @role_required(['CASHIER'])
@@ -123,3 +167,48 @@ def cajero_dashboard(request):
         'items_today': items_today,
         'low_stock': low_stock
     })
+
+@login_required
+def sale_detail_api(request, sale_id):
+    """API para obtener detalles de una venta"""
+    try:
+        sale = Sale.objects.prefetch_related('items__product').get(
+            id=sale_id,
+            branch=request.user.branch
+        )
+        
+        items = []
+        subtotal = 0
+        
+        for item in sale.items.all():
+            item_subtotal = item.quantity * float(item.price)
+            subtotal += item_subtotal
+            
+            items.append({
+                'id': item.id,
+                'product_name': item.product.name,
+                'quantity': float(item.quantity),
+                'price': float(item.price),
+                'subtotal': item_subtotal
+            })
+        
+        iva = subtotal * 0.16  # Calculamos IVA del 16%
+        total = subtotal + iva
+        
+        data = {
+            'id': sale.id,
+            'date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
+            'total': float(sale.total),  # Este es el total guardado en BD
+            'subtotal': subtotal,
+            'iva': iva,
+            'cashier': sale.cashier.get_full_name() or sale.cashier.username,
+            'branch': sale.branch.name,
+            'items': items
+        }
+        
+        return JsonResponse(data)
+        
+    except Sale.DoesNotExist:
+        return JsonResponse({'error': 'Venta no encontrada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

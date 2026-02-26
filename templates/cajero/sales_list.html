@@ -29,8 +29,11 @@
             <span style="color: #606770;">Ventas hoy</span>
             <i class="fas fa-calendar-day" style="color: #1877f2;"></i>
         </div>
-        <h3 style="margin: 0; font-size: 28px;">{{ sales_today|default:"0" }}</h3>
-        <small style="color: #42b72a;">{{ sales_today_percent|default:"0" }}% vs ayer</small>
+        <h3 style="margin: 0; font-size: 28px;">{{ sales_today }}</h3>
+        <small style="color: {% if sales_today_percent >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
+            <i class="fas {% if sales_today_percent >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
+            {{ sales_today_percent|floatformat:1 }}% vs ayer
+        </small>
     </div>
     
     <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
@@ -38,8 +41,10 @@
             <span style="color: #606770;">Total hoy</span>
             <i class="fas fa-dollar-sign" style="color: #42b72a;"></i>
         </div>
-        <h3 style="margin: 0; font-size: 28px;">${{ total_today|default:"0"|floatformat:2 }}</h3>
-        <small style="color: #42b72a;">+${{ increase_today|default:"0"|floatformat:2 }}</small>
+        <h3 style="margin: 0; font-size: 28px;">${{ total_today|floatformat:2 }}</h3>
+        <small style="color: {% if increase_today >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
+            {% if increase_today >= 0 %}+{% endif %}${{ increase_today|floatformat:2 }} vs ayer
+        </small>
     </div>
     
     <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
@@ -47,7 +52,7 @@
             <span style="color: #606770;">Ticket promedio</span>
             <i class="fas fa-receipt" style="color: #f7b928;"></i>
         </div>
-        <h3 style="margin: 0; font-size: 28px;">${{ average_ticket|default:"0"|floatformat:2 }}</h3>
+        <h3 style="margin: 0; font-size: 28px;">${{ average_ticket|floatformat:2 }}</h3>
         <small style="color: #606770;">{{ sales|length }} ventas totales</small>
     </div>
 </div>
@@ -61,7 +66,7 @@
             <input type="text" 
                    id="search-input" 
                    class="fb-input" 
-                   placeholder="Buscar por ID o fecha..."
+                   placeholder="Buscar por ID..."
                    style="padding-left: 45px;">
         </div>
         
@@ -195,7 +200,7 @@
 
 <!-- Modal de detalles de venta -->
 <div id="sale-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto;">
         <div style="padding: 20px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-receipt" style="color: #1877f2;"></i>
@@ -207,7 +212,10 @@
         </div>
         
         <div style="padding: 20px;" id="modal-content">
-            <!-- Contenido cargado dinámicamente -->
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
+                <p style="margin-top: 15px; color: #606770;">Cargando detalles...</p>
+            </div>
         </div>
         
         <div style="padding: 20px; border-top: 1px solid #e4e6eb; display: flex; justify-content: flex-end; gap: 10px;">
@@ -222,7 +230,7 @@
 <!-- Paginación -->
 <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
     <div style="color: #606770;">
-        <i class="fas fa-chart-bar"></i> Total {{ sales|length }} ventas · ${{ total_sum|default:"0"|floatformat:2 }}
+        <i class="fas fa-chart-bar"></i> Total {{ sales|length }} ventas · ${{ total_sum|floatformat:2 }}
     </div>
     
     <div style="display: flex; gap: 5px;">
@@ -361,44 +369,109 @@ function viewSaleDetails(saleId) {
     const modal = document.getElementById('sale-modal');
     const modalContent = document.getElementById('modal-content');
     
-    // Aquí deberías hacer una petición AJAX para obtener los detalles
-    // Por ahora simulamos contenido
+    // Mostrar loading
     modalContent.innerHTML = `
-        <div style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; background: #f5f6f7; padding: 15px; border-radius: 8px;">
-                <div>
-                    <small style="color: #606770;">Fecha</small>
-                    <div><i class="fas fa-calendar-alt"></i> ${new Date().toLocaleDateString()}</div>
-                </div>
-                <div>
-                    <small style="color: #606770;">Venta #</small>
-                    <div><strong>${saleId}</strong></div>
-                </div>
-                <div>
-                    <small style="color: #606770;">Atendió</small>
-                    <div><i class="fas fa-user"></i> {{ request.user.username }}</div>
-                </div>
-            </div>
+        <div style="text-align: center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
+            <p style="margin-top: 15px; color: #606770;">Cargando detalles...</p>
         </div>
-        
-        <h4>Productos</h4>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead style="background: #f5f6f7;">
-                <tr>
-                    <th style="padding: 10px; text-align: left;">Producto</th>
-                    <th style="padding: 10px; text-align: center;">Cantidad</th>
-                    <th style="padding: 10px; text-align: right;">Precio</th>
-                    <th style="padding: 10px; text-align: right;">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody id="modal-products">
-                <!-- Productos cargados dinámicamente -->
-            </tbody>
-        </table>
     `;
     
     modal.style.display = 'flex';
     document.getElementById('modal-sale-id').textContent = `#${saleId}`;
+    
+    // Hacer petición AJAX para obtener los detalles reales
+    fetch(`/sales/api/${saleId}/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar los detalles');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Generar HTML con los productos
+            let productsHtml = '';
+            data.items.forEach(item => {
+                productsHtml += `
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #e4e6eb;">
+                            <strong>${item.product_name}</strong>
+                        </td>
+                        <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e4e6eb;">
+                            ${item.quantity}
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e4e6eb;">
+                            $${item.price.toFixed(2)}
+                        </td>
+                        <td style="padding: 10px; text-align: right; border-bottom: 1px solid #e4e6eb;">
+                            <strong>$${item.subtotal.toFixed(2)}</strong>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            modalContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
+                        <div>
+                            <small style="color: #606770;">Fecha</small>
+                            <div><i class="fas fa-calendar-alt"></i> ${data.date}</div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Atendió</small>
+                            <div><i class="fas fa-user"></i> ${data.cashier}</div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Sucursal</small>
+                            <div><i class="fas fa-store-alt"></i> ${data.branch}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 style="margin: 20px 0 15px;">Productos</h4>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: #f5f6f7; position: sticky; top: 0;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left;">Producto</th>
+                                <th style="padding: 10px; text-align: center;">Cantidad</th>
+                                <th style="padding: 10px; text-align: right;">Precio</th>
+                                <th style="padding: 10px; text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsHtml}
+                        </tbody>
+                        <tfoot style="background: #f5f6f7; font-weight: bold;">
+                            <tr>
+                                <td colspan="3" style="padding: 10px; text-align: right;">Subtotal:</td>
+                                <td style="padding: 10px; text-align: right;">$${data.subtotal.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="padding: 10px; text-align: right;">IVA (16%):</td>
+                                <td style="padding: 10px; text-align: right;">$${data.iva.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="padding: 10px; text-align: right;">TOTAL:</td>
+                                <td style="padding: 10px; text-align: right; font-size: 18px; color: #1877f2;">$${data.total.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        })
+        .catch(error => {
+            modalContent.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #fa383e;"></i>
+                    <p style="margin-top: 15px; color: #606770;">Error al cargar los detalles: ${error.message}</p>
+                </div>
+            `;
+        });
 }
 
 function printSale(saleId) {
@@ -471,6 +544,25 @@ document.getElementById('sale-modal').addEventListener('click', function(e) {
             transform: translateY(0);
             opacity: 1;
         }
+    }
+    
+    /* Scroll personalizado para el modal */
+    #modal-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    #modal-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    #modal-content::-webkit-scrollbar-thumb {
+        background: #1877f2;
+        border-radius: 4px;
+    }
+    
+    #modal-content::-webkit-scrollbar-thumb:hover {
+        background: #166fe5;
     }
 </style>
 

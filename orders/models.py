@@ -31,6 +31,12 @@ class Order(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Nuevo campo para tracking de inventario
+    inventory_added = models.BooleanField(
+        default=False,
+        help_text="Indica si los productos de este pedido ya fueron agregados al inventario"
+    )
 
     def total_kilos(self):
         """Calcula la suma de todos los kilos de los items del pedido"""

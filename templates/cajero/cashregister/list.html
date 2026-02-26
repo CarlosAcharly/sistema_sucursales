@@ -1,0 +1,534 @@
+{% extends "cajero/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-cash-register" style="color: #1877f2;"></i>
+                Cortes de Caja
+            </h2>
+            <p style="color: #606770; margin: 5px 0 0 0;">
+                <i class="fas fa-store-alt"></i> Sucursal: <strong>{{ request.user.branch.name }}</strong>
+            </p>
+        </div>
+        <div>
+            {% if corte_activo %}
+            <a href="{% url 'cashregister:detail' corte_activo.id %}" class="fb-btn fb-btn-success" style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-eye"></i>
+                Ver Corte Activo
+            </a>
+            {% else %}
+            <button class="fb-btn fb-btn-primary" onclick="iniciarCorte()" style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-plus-circle"></i>
+                Iniciar Corte
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Total Cortes</span>
+            <i class="fas fa-chart-bar" style="color: #1877f2;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 28px;">{{ cortes.count }}</h3>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Abiertos</span>
+            <i class="fas fa-clock" style="color: #42b72a;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 28px;">{{ cortes_con_estado.ABIERTO|default:0 }}</h3>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Cerrados</span>
+            <i class="fas fa-check-circle" style="color: #f7b928;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 28px;">{{ cortes_con_estado.CERRADO|default:0 }}</h3>
+    </div>
+</div>
+
+<!-- Tabla de Cortes -->
+<div class="fb-card" style="padding: 0; overflow: hidden;">
+    <table class="fb-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Fecha Apertura</th>
+                <th>Fecha Cierre</th>
+                <th>Duración</th>
+                <th>Total Ventas</th>
+                <th>Monto Inicial</th>
+                <th>Monto Final</th>
+                <th>Diferencia</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for corte in cortes %}
+            <tr>
+                <td>#{{ corte.id }}</td>
+                <td>
+                    <div>{{ corte.fecha_apertura|date:"d/m/Y" }}</div>
+                    <small style="color: #606770;">{{ corte.fecha_apertura|date:"H:i" }}</small>
+                </td>
+                <td>
+                    {% if corte.fecha_cierre %}
+                    <div>{{ corte.fecha_cierre|date:"d/m/Y" }}</div>
+                    <small style="color: #606770;">{{ corte.fecha_cierre|date:"H:i" }}</small>
+                    {% else %}
+                    <span style="color: #606770;">-</span>
+                    {% endif %}
+                </td>
+                <td>{{ corte.duracion }}</td>
+                <td>
+                    <span style="font-weight: 600; color: #1877f2;">
+                        ${{ corte.total_ventas|floatformat:2 }}
+                    </span>
+                </td>
+                <td>${{ corte.monto_inicial|floatformat:2 }}</td>
+                <td>
+                    {% if corte.monto_final_real %}
+                    ${{ corte.monto_final_real|floatformat:2 }}
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if corte.diferencia %}
+                    <span style="color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %}; font-weight: 600;">
+                        {% if corte.diferencia > 0 %}+{% endif %}${{ corte.diferencia|floatformat:2 }}
+                    </span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge" style="background: {% if corte.estado == 'ABIERTO' %}#e7f3ff; color: #1877f2; padding: 4px 10px; border-radius: 12px;{% else %}#e3f2e8; color: #42b72a; padding: 4px 10px; border-radius: 12px;{% endif %}">
+                        {{ corte.get_estado_display }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <a href="{% url 'cashregister:detail' corte.id %}" class="fb-btn fb-btn-secondary" style="padding: 6px 12px; font-size: 12px;" title="Ver detalles">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        
+                        {% if corte.estado == 'ABIERTO' %}
+                        <a href="{% url 'cashregister:contar_dinero' corte.id %}" class="fb-btn fb-btn-primary" style="padding: 6px 12px; font-size: 12px;" title="Calcular dinero">
+                            <i class="fas fa-calculator"></i>
+                        </a>
+                        <button onclick="abrirModalCierre({{ corte.id }}, {{ corte.monto_inicial }}, {{ corte.total_ventas }})" class="fb-btn fb-btn-success" style="padding: 6px 12px; font-size: 12px;" title="Cerrar corte">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-cash-register" style="font-size: 48px; color: #e4e6eb; margin-bottom: 15px;"></i>
+                    <h3 style="color: #050505;">No hay cortes de caja</h3>
+                    <p style="color: #606770;">Inicia tu primer corte de caja</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Iniciar Corte -->
+<div id="iniciarModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-play"></i> Iniciar Corte de Caja</h3>
+            <span class="close" onclick="cerrarModalIniciar()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <form id="iniciarForm">
+                {% csrf_token %}
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770;">
+                        Monto Inicial ($)
+                    </label>
+                    <input type="number" 
+                           id="montoInicial" 
+                           step="0.01" 
+                           min="0" 
+                           value="0"
+                           style="width: 100%; padding: 10px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px;"
+                           required>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="cerrarModalIniciar()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                    <button type="submit" class="fb-btn fb-btn-primary">Iniciar Corte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cerrar Corte (Mejorado) -->
+<div id="cerrarModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-lock"></i> Cerrar Corte de Caja</h3>
+            <span class="close" onclick="cerrarModalCerrar()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Resumen del corte -->
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #050505;">Resumen del Corte</h4>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Monto Inicial:</span>
+                    <strong style="color: #1877f2;" id="resumen-monto-inicial">$0.00</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Ventas del día:</span>
+                    <strong style="color: #1877f2;" id="resumen-ventas">$0.00</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px dashed #e4e6eb; margin-top: 5px;">
+                    <span style="font-weight: 600;">Total Esperado:</span>
+                    <strong style="font-size: 18px; color: #1877f2;" id="resumen-total-esperado">$0.00</strong>
+                </div>
+            </div>
+            
+            <form id="cerrarForm">
+                {% csrf_token %}
+                <input type="hidden" name="corte_id" id="corte-id-input">
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770;">
+                        Monto Real en Caja ($)
+                    </label>
+                    <input type="number" 
+                           id="montoReal" 
+                           step="0.01" 
+                           min="0" 
+                           style="width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px;"
+                           placeholder="Ingresa el monto contado"
+                           required>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770;">
+                        Observaciones (opcional)
+                    </label>
+                    <textarea id="observaciones" 
+                              rows="3"
+                              style="width: 100%; padding: 10px; border: 1px solid #dddfe2; border-radius: 6px;"
+                              placeholder="Notas adicionales sobre el cierre..."></textarea>
+                </div>
+                
+                <!-- Diferencia en tiempo real -->
+                <div style="background: #f0f2f5; border-radius: 6px; padding: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #606770;">Diferencia:</span>
+                    <span style="font-size: 20px; font-weight: 700;" id="diferencia-tiempo-real">$0.00</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="cerrarModalCerrar()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                    <button type="submit" class="fb-btn fb-btn-success" id="btn-cerrar">
+                        <i class="fas fa-check-circle"></i> Cerrar Corte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
+
+<style>
+/* Estilos para los botones de acción */
+.fb-btn i {
+    margin-right: 4px;
+}
+
+.fb-btn[title] {
+    position: relative;
+}
+
+.fb-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: white;
+    margin: 10% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e4e6eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #050505;
+}
+
+.close {
+    color: #606770;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close:hover {
+    color: #050505;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Diferencia en tiempo real */
+#diferencia-tiempo-real.positiva {
+    color: #42b72a;
+}
+
+#diferencia-tiempo-real.negativa {
+    color: #fa383e;
+}
+</style>
+
+<script>
+let corteActivoId = null;
+
+function iniciarCorte() {
+    document.getElementById('iniciarModal').style.display = 'block';
+}
+
+function cerrarModalIniciar() {
+    document.getElementById('iniciarModal').style.display = 'none';
+}
+
+function abrirModalCierre(corteId, montoInicial, ventas) {
+    corteActivoId = corteId;
+    
+    // Calcular total esperado
+    const totalEsperado = parseFloat(montoInicial) + parseFloat(ventas);
+    
+    // Actualizar resumen en el modal
+    document.getElementById('resumen-monto-inicial').textContent = '$' + parseFloat(montoInicial).toFixed(2);
+    document.getElementById('resumen-ventas').textContent = '$' + parseFloat(ventas).toFixed(2);
+    document.getElementById('resumen-total-esperado').textContent = '$' + totalEsperado.toFixed(2);
+    document.getElementById('corte-id-input').value = corteId;
+    
+    // Limpiar campos
+    document.getElementById('montoReal').value = '';
+    document.getElementById('observaciones').value = '';
+    document.getElementById('diferencia-tiempo-real').textContent = '$0.00';
+    document.getElementById('diferencia-tiempo-real').className = '';
+    
+    // Mostrar modal
+    document.getElementById('cerrarModal').style.display = 'block';
+}
+
+function cerrarModalCerrar() {
+    document.getElementById('cerrarModal').style.display = 'none';
+    corteActivoId = null;
+}
+
+// Calcular diferencia en tiempo real
+document.getElementById('montoReal').addEventListener('input', function(e) {
+    const montoReal = parseFloat(e.target.value) || 0;
+    const totalEsperadoText = document.getElementById('resumen-total-esperado').textContent;
+    const totalEsperado = parseFloat(totalEsperadoText.replace('$', ''));
+    
+    const diferencia = montoReal - totalEsperado;
+    const diferenciaElement = document.getElementById('diferencia-tiempo-real');
+    
+    diferenciaElement.textContent = (diferencia >= 0 ? '+' : '') + '$' + diferencia.toFixed(2);
+    
+    if (diferencia > 0) {
+        diferenciaElement.className = 'positiva';
+    } else if (diferencia < 0) {
+        diferenciaElement.className = 'negativa';
+    } else {
+        diferenciaElement.className = '';
+    }
+});
+
+// Iniciar corte
+document.getElementById('iniciarForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const montoInicial = document.getElementById('montoInicial').value;
+    
+    fetch("{% url 'cashregister:iniciar' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            monto_inicial: montoInicial
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ ' + data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('❌ ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showToast('❌ Error al iniciar corte', 'error');
+    });
+});
+
+// Cerrar corte
+document.getElementById('cerrarForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const montoReal = document.getElementById('montoReal').value;
+    const observaciones = document.getElementById('observaciones').value;
+    const btnCerrar = document.querySelector('#cerrarForm button[type="submit"]');
+    
+    btnCerrar.disabled = true;
+    btnCerrar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando...';
+    
+    fetch(`/cashregister/${corteActivoId}/cerrar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            monto_real: montoReal,
+            observaciones: observaciones
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`✅ ${data.message}`, 'success');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('❌ ' + data.error, 'error');
+            btnCerrar.disabled = false;
+            btnCerrar.innerHTML = '<i class="fas fa-check-circle"></i> Cerrar Corte';
+        }
+    })
+    .catch(error => {
+        showToast('❌ Error al cerrar corte', 'error');
+        btnCerrar.disabled = false;
+        btnCerrar.innerHTML = '<i class="fas fa-check-circle"></i> Cerrar Corte';
+    });
+});
+
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" 
+               style="color: ${type === 'success' ? '#42b72a' : '#fa383e'};"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Cerrar modales con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalIniciar();
+        cerrarModalCerrar();
+    }
+});
+
+// Clic fuera del modal
+window.onclick = function(event) {
+    const iniciarModal = document.getElementById('iniciarModal');
+    const cerrarModal = document.getElementById('cerrarModal');
+    
+    if (event.target == iniciarModal) {
+        cerrarModalIniciar();
+    }
+    if (event.target == cerrarModal) {
+        cerrarModalCerrar();
+    }
+}
+</script>
+{% endblock %}

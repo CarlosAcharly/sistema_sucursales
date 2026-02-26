@@ -114,12 +114,17 @@
                     {% endif %}
                     
                     {% if order.status == "COMPLETED" %}
-                    <form method="post" action="{% url 'orders:add_order_to_inventory' order.id %}" style="display: inline;" onsubmit="return confirm('¿Agregar estos productos al inventario?');">
-                        {% csrf_token %}
-                        <button type="submit" class="fb-btn fb-btn-success btn-sm">
-                            <i class="fas fa-boxes"></i> Agregar a Inventario
-                        </button>
-                    </form>
+                        {% if order.inventory_added %}
+                            <button class="fb-btn btn-sm" disabled style="background: #e4e6eb; color: #999; cursor: not-allowed;">
+                                <i class="fas fa-check"></i> Ya agregado
+                            </button>
+                        {% else %}
+                            <button class="fb-btn fb-btn-success btn-sm add-to-inventory-btn" 
+                                    data-order-id="{{ order.id }}"
+                                    onclick="addToInventory(this, {{ order.id }})">
+                                <i class="fas fa-boxes"></i> Agregar a Inventario
+                            </button>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -149,6 +154,9 @@
         </div>
     </div>
 </div>
+
+<!-- Toast de notificación -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
 
 <style>
 .orders-list-container {
@@ -405,6 +413,7 @@
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .btn-sm {
@@ -419,6 +428,14 @@
 
 .fb-btn-danger:hover {
     background: #e62e34;
+}
+
+.fb-btn-success:disabled,
+.fb-btn-success.disabled {
+    background: #e4e6eb;
+    color: #999;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* Empty State */
@@ -490,6 +507,22 @@
     overflow-y: auto;
 }
 
+/* Toast */
+#toast {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .orders-grid {
@@ -547,6 +580,96 @@ document.getElementById('searchOrder').addEventListener('input', function(e) {
     });
 });
 
+// Función para agregar al inventario vía AJAX
+function addToInventory(button, orderId) {
+    if (!confirm('¿Agregar estos productos al inventario?')) {
+        return;
+    }
+    
+    // Deshabilitar el botón y mostrar loading
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando...';
+    
+    // Obtener el token CSRF
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Hacer la petición AJAX
+    fetch(`/orders/${orderId}/agregar-inventario/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Error al agregar al inventario');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Actualizar la UI
+            const orderCard = button.closest('.order-card');
+            
+            // Reemplazar el botón con uno deshabilitado
+            const newButton = document.createElement('button');
+            newButton.className = 'fb-btn btn-sm';
+            newButton.disabled = true;
+            newButton.style.cssText = 'background: #e4e6eb; color: #999; cursor: not-allowed;';
+            newButton.innerHTML = '<i class="fas fa-check"></i> Ya agregado';
+            
+            button.parentNode.replaceChild(newButton, button);
+            
+            // Mostrar notificación de éxito
+            showToast(`✅ ${data.message}`, 'success');
+            
+            // Mostrar detalles si hay items con advertencias
+            if (data.results) {
+                const warnings = data.results.filter(r => r.status === 'skipped');
+                if (warnings.length > 0) {
+                    console.log('Items omitidos:', warnings);
+                }
+            }
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Restaurar el botón
+        button.disabled = false;
+        button.innerHTML = originalText;
+        
+        // Mostrar notificación de error
+        showToast('❌ ' + error.message, 'error');
+    });
+}
+
+// Función para mostrar toast
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" 
+               style="color: ${type === 'success' ? '#42b72a' : '#fa383e'};"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
 // Modal de detalles
 const modal = document.getElementById('orderModal');
 const span = document.getElementsByClassName('close')[0];
@@ -585,6 +708,7 @@ function viewOrderDetails(orderId) {
                     <p><strong>Pedido #:</strong> ${data.id}</p>
                     <p><strong>Fecha:</strong> ${data.date}</p>
                     <p><strong>Estado:</strong> <span class="status-badge status-${data.status.toLowerCase()}">${data.status}</span></p>
+                    <p><strong>Inventario:</strong> ${data.inventory_added ? '✓ Agregado' : '✗ Pendiente'}</p>
                     <h4 style="margin-top: 20px; margin-bottom: 10px;">Productos:</h4>
                     <div class="products-list">
                         ${productsHtml}

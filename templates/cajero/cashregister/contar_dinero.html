@@ -1,0 +1,536 @@
+{% extends "cajero/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{% url 'cashregister:list' %}" class="fb-btn fb-btn-secondary" style="padding: 8px 12px;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-calculator" style="color: #1877f2;"></i>
+                    Conteo de Dinero - Corte #{{ corte.id }}
+                </h2>
+                <p style="color: #606770; margin: 5px 0 0 0;">
+                    <i class="fas fa-store-alt"></i> {{ request.user.branch.name }} | 
+                    <i class="fas fa-user"></i> {{ request.user.get_full_name|default:request.user.username }}
+                </p>
+            </div>
+        </div>
+        <div>
+            <span class="status-badge" style="background: #e7f3ff; color: #1877f2; padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+                <i class="fas fa-clock"></i> Corte Abierto
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen del día -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Monto Inicial</span>
+            <i class="fas fa-play-circle" style="color: #42b72a;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 24px; color: #1877f2;">${{ corte.monto_inicial|floatformat:2 }}</h3>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Ventas del Día</span>
+            <i class="fas fa-shopping-cart" style="color: #1877f2;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 24px; color: #1877f2;">${{ total_ventas_hoy|floatformat:2 }}</h3>
+        <small style="color: #606770;">{{ cantidad_ventas }} ventas</small>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="color: #606770;">Total Esperado</span>
+            <i class="fas fa-arrow-right" style="color: #f7b928;"></i>
+        </div>
+        <h3 style="margin: 0; font-size: 24px; color: #1877f2;" id="total-esperado">${{ total_esperado|floatformat:2 }}</h3>
+        <small style="color: #606770;">Inicial + Ventas</small>
+    </div>
+</div>
+
+<!-- Contador de billetes y monedas -->
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header">
+        <h3><i class="fas fa-coins"></i> Conteo de Efectivo</h3>
+        <p style="color: #606770; margin-top: 5px;">Ingresa la cantidad de billetes y monedas que tienes en caja</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <!-- Billetes -->
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-money-bill"></i> $1,000
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="billete1000" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal1000">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-money-bill"></i> $500
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="billete500" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal500">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-money-bill"></i> $200
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="billete200" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal200">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-money-bill"></i> $100
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="billete100" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal100">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-money-bill"></i> $50
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="billete50" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal50">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-coins"></i> $20
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="moneda20" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal20">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-coins"></i> $10
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="moneda10" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal10">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-coins"></i> $5
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="moneda5" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal5">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-coins"></i> $2
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="moneda2" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal2">$0.00</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="denomination-card">
+            <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px; border-radius: 8px 8px 0 0; color: white;">
+                <i class="fas fa-coins"></i> $1
+            </div>
+            <div style="padding: 15px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+                <input type="number" id="moneda1" class="denomination-input" min="0" value="0" step="1" placeholder="Cantidad">
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <span>Subtotal:</span>
+                    <span class="subtotal" id="subtotal1">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen del conteo -->
+<div class="fb-card" style="margin-bottom: 25px; background: #f8f9fa;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: center;">
+        <div>
+            <h4 style="color: #050505; margin-bottom: 10px;">Resumen del Conteo</h4>
+            <div style="display: flex; gap: 30px;">
+                <div>
+                    <span style="color: #606770;">Total contado:</span>
+                    <h3 style="color: #1877f2; font-size: 28px;" id="total-contado">$0.00</h3>
+                </div>
+                <div>
+                    <span style="color: #606770;">Total esperado:</span>
+                    <h3 style="color: #1877f2; font-size: 28px;">${{ total_esperado|floatformat:2 }}</h3>
+                </div>
+                <div>
+                    <span style="color: #606770;">Diferencia:</span>
+                    <h3 style="font-size: 28px;" id="diferencia">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <button class="fb-btn fb-btn-secondary" onclick="limpiarConteo()">
+                <i class="fas fa-eraser"></i> Limpiar
+            </button>
+        </div>
+        <div style="text-align: right;">
+            <button class="fb-btn fb-btn-success" onclick="abrirModalCierre()" style="padding: 15px 30px; font-size: 16px;">
+                <i class="fas fa-check-circle"></i> Continuar con Cierre
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cierre -->
+<div id="cerrarModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-lock"></i> Cerrar Corte de Caja</h3>
+            <span class="close" onclick="cerrarModalCierre()">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Total contado:</span>
+                    <strong style="color: #1877f2;" id="modal-total-contado">$0.00</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>Total esperado:</span>
+                    <strong>${{ total_esperado|floatformat:2 }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #e4e6eb;">
+                    <span>Diferencia:</span>
+                    <strong style="font-size: 18px;" id="modal-diferencia">$0.00</strong>
+                </div>
+            </div>
+            
+            <form id="cerrarCorteForm">
+                {% csrf_token %}
+                <input type="hidden" name="monto_real" id="monto-real-input">
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770;">
+                        Observaciones (opcional)
+                    </label>
+                    <textarea id="observaciones" 
+                              rows="3"
+                              style="width: 100%; padding: 10px; border: 1px solid #dddfe2; border-radius: 6px;"
+                              placeholder="Notas adicionales sobre el corte..."></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="cerrarModalCierre()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                    <button type="submit" class="fb-btn fb-btn-success" id="btn-cerrar">
+                        <i class="fas fa-check-circle"></i> Confirmar Cierre
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
+
+<style>
+.denomination-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.denomination-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.denomination-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #dddfe2;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.denomination-input:focus {
+    outline: none;
+    border-color: #1877f2;
+    box-shadow: 0 0 0 2px rgba(24,119,242,0.2);
+}
+
+.subtotal {
+    font-weight: 600;
+    color: #1877f2;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: white;
+    margin: 10% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+#diferencia.positiva {
+    color: #42b72a;
+}
+
+#diferencia.negativa {
+    color: #fa383e;
+}
+</style>
+
+<script>
+const denominations = [
+    { id: 'billete1000', value: 1000, subtotalId: 'subtotal1000' },
+    { id: 'billete500', value: 500, subtotalId: 'subtotal500' },
+    { id: 'billete200', value: 200, subtotalId: 'subtotal200' },
+    { id: 'billete100', value: 100, subtotalId: 'subtotal100' },
+    { id: 'billete50', value: 50, subtotalId: 'subtotal50' },
+    { id: 'moneda20', value: 20, subtotalId: 'subtotal20' },
+    { id: 'moneda10', value: 10, subtotalId: 'subtotal10' },
+    { id: 'moneda5', value: 5, subtotalId: 'subtotal5' },
+    { id: 'moneda2', value: 2, subtotalId: 'subtotal2' },
+    { id: 'moneda1', value: 1, subtotalId: 'subtotal1' }
+];
+
+const totalEsperado = {{ total_esperado|floatformat:2 }};
+
+// Agregar event listeners a todos los inputs
+document.addEventListener('DOMContentLoaded', function() {
+    denominations.forEach(denom => {
+        const input = document.getElementById(denom.id);
+        input.addEventListener('input', actualizarConteo);
+    });
+});
+
+function actualizarConteo() {
+    let total = 0;
+    
+    denominations.forEach(denom => {
+        const input = document.getElementById(denom.id);
+        const cantidad = parseInt(input.value) || 0;
+        const subtotal = cantidad * denom.value;
+        total += subtotal;
+        
+        // Actualizar subtotal
+        document.getElementById(denom.subtotalId).textContent = '$' + subtotal.toFixed(2);
+    });
+    
+    // Actualizar total contado
+    document.getElementById('total-contado').textContent = '$' + total.toFixed(2);
+    
+    // Calcular diferencia
+    const diferencia = total - totalEsperado;
+    const diferenciaElement = document.getElementById('diferencia');
+    diferenciaElement.textContent = (diferencia >= 0 ? '+' : '') + '$' + diferencia.toFixed(2);
+    
+    // Cambiar color según la diferencia
+    if (diferencia > 0) {
+        diferenciaElement.style.color = '#42b72a';
+    } else if (diferencia < 0) {
+        diferenciaElement.style.color = '#fa383e';
+    } else {
+        diferenciaElement.style.color = '#050505';
+    }
+}
+
+function limpiarConteo() {
+    denominations.forEach(denom => {
+        document.getElementById(denom.id).value = 0;
+    });
+    actualizarConteo();
+}
+
+function abrirModalCierre() {
+    const totalContado = parseFloat(document.getElementById('total-contado').textContent.replace('$', ''));
+    
+    if (totalContado === 0) {
+        showToast('❌ Debes contar el dinero primero', 'error');
+        return;
+    }
+    
+    // Actualizar modal
+    document.getElementById('modal-total-contado').textContent = '$' + totalContado.toFixed(2);
+    document.getElementById('monto-real-input').value = totalContado;
+    
+    const diferencia = totalContado - totalEsperado;
+    const modalDiferencia = document.getElementById('modal-diferencia');
+    modalDiferencia.textContent = (diferencia >= 0 ? '+' : '') + '$' + diferencia.toFixed(2);
+    
+    if (diferencia > 0) {
+        modalDiferencia.style.color = '#42b72a';
+    } else if (diferencia < 0) {
+        modalDiferencia.style.color = '#fa383e';
+    } else {
+        modalDiferencia.style.color = '#050505';
+    }
+    
+    document.getElementById('cerrarModal').style.display = 'block';
+}
+
+function cerrarModalCierre() {
+    document.getElementById('cerrarModal').style.display = 'none';
+}
+
+// Cerrar corte
+document.getElementById('cerrarCorteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const montoReal = document.getElementById('monto-real-input').value;
+    const observaciones = document.getElementById('observaciones').value;
+    const btnCerrar = document.getElementById('btn-cerrar');
+    
+    btnCerrar.disabled = true;
+    btnCerrar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando...';
+    
+    fetch("{% url 'cashregister:cerrar' corte.id %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            monto_real: montoReal,
+            observaciones: observaciones
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ ' + data.message, 'success');
+            setTimeout(() => {
+                window.location.href = "{% url 'cashregister:list' %}";
+            }, 2000);
+        } else {
+            showToast('❌ ' + data.error, 'error');
+            btnCerrar.disabled = false;
+            btnCerrar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Cierre';
+        }
+    })
+    .catch(error => {
+        showToast('❌ Error al cerrar corte', 'error');
+        btnCerrar.disabled = false;
+        btnCerrar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Cierre';
+    });
+});
+
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalCierre();
+    }
+});
+
+// Clic fuera del modal
+window.onclick = function(event) {
+    const modal = document.getElementById('cerrarModal');
+    if (event.target == modal) {
+        cerrarModalCierre();
+    }
+}
+</script>
+{% endblock %}

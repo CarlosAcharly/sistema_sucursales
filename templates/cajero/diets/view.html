@@ -363,22 +363,23 @@ function updateSelectedCount() {
     document.getElementById('selected-kilos').textContent = totalKilos.toFixed(2);
 }
 
-function addToCart(itemId, productName, button) {
+function addToCart(productId, productName, productPrice, button) {
     const row = button.closest('tr');
     const kilosInput = row.querySelector('.kilos-input');
     const quantity = parseFloat(kilosInput.value);
-    
+
     const item = {
-        id: itemId,
+        id: productId,
         name: productName,
+        price: parseFloat(productPrice),
         quantity: quantity,
         type: 'ingredient',
         unit: 'kg'
     };
-    
+
     cart.push(item);
     localStorage.setItem('posCart', JSON.stringify(cart));
-    
+
     updateCartCounter();
     showNotification(`${productName}: ${quantity}kg agregado al carrito`, 'success');
 }
