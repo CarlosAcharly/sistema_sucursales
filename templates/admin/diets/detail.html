@@ -1,0 +1,155 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #4158D0, #C850C0); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; align-items: center; gap: 20px; color: white;">
+        <a href="{% url 'diets:diet_list' %}" class="back-btn" style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 style="margin: 0; font-size: 28px;">{{ diet.name }}</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">Detalles de la dieta base</p>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <!-- Columna izquierda - Ingredientes -->
+    <div class="fb-card" style="border-radius: 16px; padding: 0; overflow: hidden;">
+        <div style="background: #f5f6f7; padding: 20px; border-bottom: 2px solid #e4e6eb;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-drumstick-bite" style="color: #42b72a;"></i>
+                Ingredientes Base
+            </h3>
+        </div>
+        
+        <div style="padding: 20px;">
+            <table class="ingredients-table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding: 10px; color: #606770;">Producto</th>
+                        <th style="text-align: right; padding: 10px; color: #606770;">Kilos</th>
+                        <th style="text-align: right; padding: 10px; color: #606770;">Porcentaje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ingredient in diet.base_ingredients.all %}
+                    <tr style="border-bottom: 1px solid #f0f2f5;">
+                        <td style="padding: 12px 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-box" style="color: #1877f2;"></i>
+                                </div>
+                                <strong>{{ ingredient.product.name }}</strong>
+                            </div>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: right;">
+                            <span style="font-weight: 600;">{{ ingredient.kilos }} kg</span>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: right;">
+                            <span style="background: #e7f3ff; color: #1877f2; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                {% widthratio ingredient.kilos 1000 100 %}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px 10px; font-weight: 600;">TOTAL</td>
+                        <td style="padding: 15px 10px; text-align: right; font-weight: 700; color: #1877f2;">{{ diet.total_base_kilos }} kg</td>
+                        <td style="padding: 15px 10px; text-align: right;">
+                            <span style="background: #42b72a; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                100%
+                            </span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Columna derecha - Información -->
+    <div>
+        <!-- Información general -->
+        <div class="fb-card" style="border-radius: 16px; margin-bottom: 20px;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0; border-bottom: 2px solid #e4e6eb;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-info" style="color: #1877f2;"></i>
+                    Información General
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #606770; font-size: 13px; display: block;">Descripción</span>
+                    <p style="margin: 5px 0 0; color: #050505;">
+                        {{ diet.description|default:"Sin descripción" }}
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <span style="color: #606770; font-size: 13px; display: block;">Creado por</span>
+                        <strong>{{ diet.created_by.get_full_name|default:diet.created_by.username }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: #606770; font-size: 13px; display: block;">Fecha</span>
+                        <strong>{{ diet.created_at|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sucursales asignadas -->
+        <div class="fb-card" style="border-radius: 16px;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0; border-bottom: 2px solid #e4e6eb;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-store" style="color: #42b72a;"></i>
+                    Sucursales Asignadas
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for branch in diet.branches.all %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                        <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-store" style="color: #1877f2;"></i>
+                        </div>
+                        <div>
+                            <strong>{{ branch.name }}</strong>
+                            <div style="color: #606770; font-size: 12px;">{{ branch.address|default:"Sin dirección" }}</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color: #999; text-align: center;">No hay sucursales asignadas</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botones de acción -->
+<div style="display: flex; gap: 15px; margin-top: 25px;">
+    <a href="{% url 'diets:diet_edit' diet.id %}" class="fb-btn" style="background: linear-gradient(135deg, #f7b928, #f59e0b); color: white; padding: 14px 28px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <i class="fa-solid fa-pen-to-square"></i>
+        Editar Dieta
+    </a>
+    <a href="{% url 'diets:diet_list' %}" class="fb-btn fb-btn-secondary" style="padding: 14px 28px; border-radius: 12px; text-decoration: none;">
+        <i class="fa-solid fa-arrow-left"></i>
+        Volver a la lista
+    </a>
+</div>
+
+<style>
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+        transform: translateX(-3px);
+    }
+    
+    .ingredients-table tbody tr:hover {
+        background: #f5f6f7;
+    }
+</style>
+{% endblock %}

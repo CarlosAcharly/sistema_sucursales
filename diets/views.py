@@ -128,3 +128,108 @@ def diet_cajero_list(request):
     diets = DietCajero.objects.filter(branch=branch).select_related('diet_base', 'created_by')
     return render(request, "cajero/diets/list.html", {"diets": diets})
 
+@login_required
+@role_required(['ADMIN'])
+def diet_detail(request, pk):
+    """Ver detalles de una dieta específica"""
+    diet = get_object_or_404(Diet, pk=pk)
+    
+    # Calcular estadísticas
+    ingredients_count = diet.base_ingredients.count()
+    branches_count = diet.branches.count()
+    
+    return render(request, 'admin/diets/detail.html', {
+        'diet': diet,
+        'ingredients_count': ingredients_count,
+        'branches_count': branches_count,
+    })
+
+@login_required
+@role_required(['ADMIN'])
+def diet_edit(request, pk):
+    """Editar una dieta existente"""
+    diet = get_object_or_404(Diet, pk=pk)
+    
+    IngredientFormSet = modelformset_factory(
+        DietBaseIngredient,
+        fields=("product", "kilos"),
+        extra=1,
+        can_delete=True
+    )
+    
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        branches_ids = request.POST.getlist("branches")
+        
+        formset = IngredientFormSet(
+            request.POST,
+            queryset=DietBaseIngredient.objects.filter(diet=diet)
+        )
+        
+        if formset.is_valid():
+            total = 0
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
+                    total += form.cleaned_data.get("kilos", 0)
+            
+            if total != 1000:
+                messages.error(request, "La suma debe ser exactamente 1000 kg.")
+                return render(request, "admin/diets/edit.html", {
+                    "diet": diet,
+                    "formset": formset,
+                    "branches": Branch.objects.filter(is_active=True),
+                    "products": Product.objects.filter(is_active=True, is_ingredient=True)
+                })
+            
+            # Actualizar dieta base
+            diet.name = name
+            diet.description = description
+            diet.save()
+            
+            # Actualizar sucursales
+            diet.branches.set(branches_ids)
+            
+            # Actualizar ingredientes
+            for form in formset:
+                if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
+                    ingredient = form.save(commit=False)
+                    ingredient.diet = diet
+                    ingredient.save()
+                elif form.cleaned_data.get("DELETE", False) and form.instance.pk:
+                    form.instance.delete()
+            
+            # Actualizar dietas de cajeros
+            # Eliminar dietas de cajero para sucursales que ya no están asignadas
+            DietCajero.objects.filter(diet_base=diet).exclude(branch_id__in=branches_ids).delete()
+            
+            # Crear o actualizar dietas de cajero para las sucursales asignadas
+            for branch_id in branches_ids:
+                branch = Branch.objects.get(id=branch_id)
+                diet_cajero, created = DietCajero.objects.get_or_create(
+                    diet_base=diet,
+                    branch=branch,
+                    defaults={'created_by': request.user}
+                )
+                
+                if created:
+                    # Copiar ingredientes base a DietCajeroItem
+                    base_ingredients = DietBaseIngredient.objects.filter(diet=diet)
+                    for base_ing in base_ingredients:
+                        DietCajeroItem.objects.create(
+                            diet=diet_cajero,
+                            product=base_ing.product,
+                            kilos=float(base_ing.kilos)
+                        )
+            
+            messages.success(request, f'Dieta "{diet.name}" actualizada correctamente.')
+            return redirect("diets:diet_detail", pk=diet.pk)
+    else:
+        formset = IngredientFormSet(queryset=DietBaseIngredient.objects.filter(diet=diet))
+    
+    return render(request, "admin/diets/edit.html", {
+        "diet": diet,
+        "formset": formset,
+        "branches": Branch.objects.filter(is_active=True),
+        "products": Product.objects.filter(is_active=True, is_ingredient=True)
+    })

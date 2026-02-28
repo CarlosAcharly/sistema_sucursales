@@ -2,16 +2,16 @@
 {% load static %}
 
 {% block content %}
-<div class="fb-card" style="margin-bottom: 25px;">
+<div class="fb-card" style="margin-bottom: 20px;">
     <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-box" style="font-size: 28px; color: #1877f2;"></i>
+                <i class="fa-solid fa-box" style="color: #1877f2;"></i>
                 Productos
             </h2>
             <p style="color: #606770; margin: 5px 0 0 0;">Gestiona el catálogo de productos</p>
         </div>
-        <a href="{% url 'product_create' %}" class="fb-btn fb-btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
+        <a href="{% url 'product_create' %}" class="fb-btn fb-btn-primary">
             <i class="fa-solid fa-plus"></i>
             Nuevo Producto
         </a>
@@ -21,55 +21,67 @@
 <!-- Mensajes de éxito/error -->
 {% if messages %}
     {% for message in messages %}
-        <div class="fb-alert fb-alert-{{ message.tags }}" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 6px; background: {% if message.tags == 'success' %}#e3f2e8{% elif message.tags == 'error' %}#ffebe9{% else %}#e7f3ff{% endif %}; border: 1px solid {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};">
+        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 6px; background: {% if message.tags == 'success' %}#e3f2e8{% elif message.tags == 'error' %}#ffebe9{% else %}#e7f3ff{% endif %}; border: 1px solid {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};">
             <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}" style="color: {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};"></i>
             <span>{{ message }}</span>
         </div>
     {% endfor %}
 {% endif %}
 
-<!-- Filtros o búsqueda -->
-<div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
-    <div style="flex: 1; max-width: 300px; position: relative;">
+<!-- Filtros y búsqueda -->
+<div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 250px; position: relative;">
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
         <input type="text" 
                id="search-input"
-               placeholder="Buscar productos..." 
+               placeholder="Buscar por nombre o descripción..." 
                style="width: 100%; padding: 10px 10px 10px 40px; border: 1px solid #e4e6eb; border-radius: 8px; font-size: 14px; background: white;">
     </div>
-    <span style="color: #606770; font-size: 14px;">
+    
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="fb-btn filter-btn active" data-filter="all" onclick="filterProducts('all')" style="background: #1877f2; color: white; border: none; padding: 8px 16px;">Todos</button>
+        <button class="fb-btn filter-btn" data-filter="active" onclick="filterProducts('active')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Activos</button>
+        <button class="fb-btn filter-btn" data-filter="inactive" onclick="filterProducts('inactive')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Inactivos</button>
+        <button class="fb-btn filter-btn" data-filter="ingredient" onclick="filterProducts('ingredient')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Ingredientes</button>
+    </div>
+    
+    <span style="color: #606770; font-size: 14px; margin-left: auto;">
         <i class="fa-solid fa-cubes"></i> Total: <strong>{{ products|length }}</strong> productos
     </span>
 </div>
 
 <!-- Tabla de productos -->
-<div class="fb-card" style="padding: 0; overflow: hidden;">
+<div class="fb-card" style="padding: 0; overflow-x: auto;">
     {% if products %}
-        <table style="width: 100%; border-collapse: collapse;" id="products-table">
+        <table style="width: 100%; border-collapse: collapse; min-width: 1100px;" id="products-table">
             <thead>
                 <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
                     <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                         <i class="fa-solid fa-box"></i> Producto
                     </th>
                     <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fa-solid fa-barcode"></i> Código
+                        <i class="fa-solid fa-align-left"></i> Descripción
                     </th>
                     <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fa-solid fa-dollar-sign"></i> Precio
+                        <i class="fa-solid fa-tag"></i> Precios
                     </th>
                     <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                         <i class="fa-solid fa-circle"></i> Estado
                     </th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <th style="padding: 16px; text-align: center; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
                         <i class="fa-solid fa-gear"></i> Acciones
                     </th>
                 </tr>
             </thead>
             <tbody>
                 {% for product in products %}
-                <tr style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;" 
+                <tr class="product-row" 
+                    data-status="{% if product.is_active %}active{% else %}inactive{% endif %}"
+                    data-ingredient="{{ product.is_ingredient|yesno:'true,false' }}"
+                    style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;" 
                     onmouseover="this.style.background='#f5f6f7'" 
                     onmouseout="this.style.background='transparent'">
+                    
                     <td style="padding: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #1877f2; font-size: 20px;">
@@ -78,22 +90,56 @@
                             <div>
                                 <strong style="color: #050505;">{{ product.name }}</strong>
                                 {% if product.is_ingredient %}
-                                    <span style="background: #e3f2e8; color: #1b7e3f; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">
+                                    <span style="background: #e3f2e8; color: #1b7e3f; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px;">
                                         <i class="fa-solid fa-leaf"></i> Ingrediente
                                     </span>
                                 {% endif %}
                             </div>
                         </div>
                     </td>
-                    <td style="padding: 16px;">
-                        <span style="color: #606770; font-family: monospace; display: flex; align-items: center; gap: 5px;">
-                            <i class="fa-solid fa-qrcode"></i>
-                            {{ product.barcode|default:"—" }}
+                    
+                    <td style="padding: 16px; max-width: 200px;">
+                        <span style="color: #606770; font-size: 13px; display: block; line-height: 1.4;">
+                            {{ product.description|default:"—"|truncatechars:60 }}
                         </span>
                     </td>
+                    
                     <td style="padding: 16px;">
-                        <span style="font-weight: 600; color: #1877f2;">${{ product.price|floatformat:2 }}</span>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            {% if product.price_kg %}
+                                <span style="background: #e7f3ff; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; width: fit-content;">
+                                    <i class="fa-solid fa-weight-scale" style="color: #1877f2;"></i>
+                                    <strong>Kg:</strong> ${{ product.price_kg|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                            
+                            {% if product.price_bulk %}
+                                <span style="background: #e3f2e8; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; width: fit-content;">
+                                    <i class="fa-solid fa-cube" style="color: #42b72a;"></i>
+                                    <strong>Bulto:</strong> ${{ product.price_bulk|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                            
+                            {% if product.price_wholesale %}
+                                <span style="background: #fff4e5; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; width: fit-content;">
+                                    <i class="fa-solid fa-boxes-packing" style="color: #f7b928;"></i>
+                                    <strong>Mayoreo:</strong> ${{ product.price_wholesale|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                            
+                            {% if product.price_special %}
+                                <span style="background: #ffebe9; padding: 4px 10px; border-radius: 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; width: fit-content;">
+                                    <i class="fa-solid fa-star" style="color: #fa383e;"></i>
+                                    <strong>Especial:</strong> ${{ product.price_special|floatformat:2 }}
+                                </span>
+                            {% endif %}
+                            
+                            {% if not product.price_kg and not product.price_bulk and not product.price_wholesale and not product.price_special %}
+                                <span style="color: #999; font-style: italic;">Sin precios configurados</span>
+                            {% endif %}
+                        </div>
                     </td>
+                    
                     <td style="padding: 16px;">
                         {% if product.is_active %}
                             <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
@@ -105,28 +151,31 @@
                             </span>
                         {% endif %}
                     </td>
-                    <td style="padding: 16px;">
-                        <div style="display: flex; gap: 8px;">
+                    
+                    <td style="padding: 16px; text-align: center;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <!-- Botón Editar - Solo icono -->
                             <a href="{% url 'product_edit' product.id %}" 
                                class="fb-btn" 
-                               style="background: #f5f6f7; color: #050505; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; text-decoration: none;">
+                               style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; text-decoration: none;"
+                               title="Editar producto">
                                 <i class="fa-solid fa-pen"></i>
-                                Editar
                             </a>
-                            {% if not product.is_ingredient %}
-                            <a href="#" 
+                            
+                            <!-- Botón Stock - Solo icono -->
+                            <a href="{% url 'inventory_list' %}?product={{ product.id }}" 
                                class="fb-btn" 
-                               style="background: #fff4e5; color: #bd7b13; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; text-decoration: none;">
+                               style="background: #fff4e5; color: #f7b928; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; text-decoration: none;"
+                               title="Ver inventario">
                                 <i class="fa-solid fa-chart-simple"></i>
-                                Stock
                             </a>
-                            {% endif %}
-                            <!-- Botón Eliminar con modal -->
+                            
+                            <!-- Botón Eliminar - Solo icono -->
                             <button onclick="openDeleteModal('{{ product.id }}', '{{ product.name|escapejs }}')" 
                                     class="fb-btn" 
-                                    style="background: #ffebe9; color: #b92b27; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; border: none; cursor: pointer;">
+                                    style="background: #ffebe9; color: #fa383e; width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; border: none; cursor: pointer;"
+                                    title="Eliminar producto">
                                 <i class="fa-solid fa-trash"></i>
-                                Eliminar
                             </button>
                         </div>
                     </td>
@@ -151,42 +200,35 @@
 
 <!-- Modal de confirmación para eliminar -->
 <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; width: 90%; max-width: 400px; padding: 0; overflow: hidden; animation: modalSlideIn 0.3s ease;">
-        
-        <!-- Header del modal -->
-        <div style="background: linear-gradient(135deg, #fa383e, #e03137); padding: 20px; color: white;">
+    <div style="background: white; border-radius: 8px; width: 90%; max-width: 400px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+        <div style="background: #fa383e; padding: 20px; color: white;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px;"></i>
                 <h3 style="margin: 0; font-size: 20px;">Confirmar eliminación</h3>
             </div>
         </div>
         
-        <!-- Cuerpo del modal -->
         <div style="padding: 25px;">
             <div style="text-align: center; margin-bottom: 20px;">
-                <div style="background: #ffebe9; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                    <i class="fa-solid fa-trash" style="font-size: 30px; color: #fa383e;"></i>
-                </div>
                 <p style="color: #050505; font-size: 16px; margin-bottom: 10px;">
                     ¿Estás seguro de eliminar el producto?
                 </p>
                 <p style="color: #606770; font-size: 14px; margin-bottom: 20px;">
                     Esta acción no se puede deshacer.
                 </p>
-                <div style="background: #f5f6f7; padding: 12px; border-radius: 8px;">
+                <div style="background: #f5f6f7; padding: 12px; border-radius: 6px;">
                     <p style="margin: 0; font-weight: 600; color: #050505;" id="modal-product-name"></p>
                 </div>
             </div>
             
-            <!-- Botones de acción -->
             <div style="display: flex; gap: 10px;">
-                <button onclick="closeDeleteModal()" class="fb-btn fb-btn-secondary" style="flex: 1; padding: 12px; border: none; background: #e4e6eb; color: #050505; border-radius: 6px; cursor: pointer;">
+                <button onclick="closeDeleteModal()" class="fb-btn fb-btn-secondary" style="flex: 1; padding: 12px; background: #e4e6eb; color: #050505; border: none;">
                     <i class="fa-solid fa-times"></i>
                     Cancelar
                 </button>
                 <form method="post" action="" id="delete-form" style="flex: 1;">
                     {% csrf_token %}
-                    <button type="submit" class="fb-btn" style="width: 100%; padding: 12px; background: #fa383e; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    <button type="submit" class="fb-btn" style="width: 100%; padding: 12px; background: #fa383e; color: white; border: none;">
                         <i class="fa-solid fa-trash"></i>
                         Eliminar
                     </button>
@@ -196,7 +238,6 @@
     </div>
 </div>
 
-<!-- Scripts para el modal y búsqueda -->
 <script>
 // Variables para el modal
 let deleteModal = document.getElementById('deleteModal');
@@ -208,8 +249,6 @@ function openDeleteModal(productId, productName) {
     modalProductName.textContent = productName;
     deleteForm.action = `/products/${productId}/delete/`;
     deleteModal.style.display = 'flex';
-    
-    // Prevenir scroll del body
     document.body.style.overflow = 'hidden';
 }
 
@@ -219,6 +258,35 @@ function closeDeleteModal() {
     document.body.style.overflow = 'auto';
 }
 
+// Función para filtrar productos
+function filterProducts(filter) {
+    const rows = document.querySelectorAll('.product-row');
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    buttons.forEach(btn => {
+        btn.style.background = '#e4e6eb';
+        btn.style.color = '#050505';
+    });
+    
+    const activeBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+    if (activeBtn) {
+        activeBtn.style.background = '#1877f2';
+        activeBtn.style.color = 'white';
+    }
+    
+    rows.forEach(row => {
+        if (filter === 'all') {
+            row.style.display = 'table-row';
+        } else if (filter === 'active') {
+            row.style.display = row.dataset.status === 'active' ? 'table-row' : 'none';
+        } else if (filter === 'inactive') {
+            row.style.display = row.dataset.status === 'inactive' ? 'table-row' : 'none';
+        } else if (filter === 'ingredient') {
+            row.style.display = row.dataset.ingredient === 'true' ? 'table-row' : 'none';
+        }
+    });
+}
+
 // Cerrar modal con tecla ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && deleteModal.style.display === 'flex') {
@@ -226,7 +294,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Cerrar modal al hacer clic fuera del contenido
+// Cerrar modal al hacer clic fuera
 deleteModal.addEventListener('click', function(e) {
     if (e.target === deleteModal) {
         closeDeleteModal();
@@ -236,23 +304,23 @@ deleteModal.addEventListener('click', function(e) {
 // Búsqueda en tiempo real
 document.getElementById('search-input').addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#products-table tbody tr');
+    const rows = document.querySelectorAll('.product-row');
     
     rows.forEach(row => {
         const productName = row.querySelector('td:first-child strong').textContent.toLowerCase();
-        const productCode = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        const description = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
         
-        if (productName.includes(searchTerm) || productCode.includes(searchTerm)) {
-            row.style.display = '';
+        if (productName.includes(searchTerm) || description.includes(searchTerm)) {
+            row.style.display = 'table-row';
         } else {
             row.style.display = 'none';
         }
     });
 });
 
-// Animación al cargar la tabla
+// Animación al cargar
 document.addEventListener('DOMContentLoaded', function() {
-    const rows = document.querySelectorAll('#products-table tbody tr');
+    const rows = document.querySelectorAll('.product-row');
     rows.forEach((row, index) => {
         row.style.animation = `fadeIn 0.3s ease ${index * 0.05}s both`;
     });
@@ -272,17 +340,6 @@ style.textContent = `
         }
     }
     
-    @keyframes modalSlideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-50px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
     .fb-btn {
         transition: all 0.2s ease;
     }
@@ -292,13 +349,40 @@ style.textContent = `
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
-    button.fb-btn {
-        font-family: inherit;
+    .filter-btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Tooltip personalizado */
+    [title] {
+        position: relative;
+    }
+    
+    [title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        white-space: nowrap;
+        z-index: 1000;
+        pointer-events: none;
     }
 `;
 document.head.appendChild(style);
 </script>
-
-<!-- Font Awesome (si no está en base.html) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

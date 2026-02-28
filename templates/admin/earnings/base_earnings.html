@@ -1,0 +1,121 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Header con gradiente mejorado -->
+<div class="earnings-header" style="margin-bottom: 25px; background: linear-gradient(135deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%); border-radius: 16px; padding: 30px; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="background: rgba(255,255,255,0.2); width: 70px; height: 70px; border-radius: 18px; backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.3);">
+                <i class="fas fa-chart-line" style="font-size: 32px;"></i>
+            </div>
+            <div>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Módulo de Ganancias</h1>
+                <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 15px;">Gestión de precios de compra y análisis de rentabilidad</p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'earnings:profit_dashboard' %}" class="earnings-nav-btn" style="background: rgba(255,255,255,0.15); color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease;">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </a>
+            <a href="{% url 'earnings:purchase_price_list' %}" class="earnings-nav-btn" style="background: rgba(255,255,255,0.15); color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease;">
+                <i class="fas fa-tag"></i> Precios de Compra
+            </a>
+            <a href="{% url 'earnings:profit_report' %}" class="earnings-nav-btn" style="background: rgba(255,255,255,0.15); color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s ease;">
+                <i class="fas fa-file-alt"></i> Reportes
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .earnings-nav-btn:hover {
+        background: rgba(255,255,255,0.25) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    
+    /* Estilos para las cards de estadísticas */
+    .kpi-card {
+        background: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+    
+    /* Estilos para badges de estado */
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .status-active {
+        background: #e3f2e8;
+        color: #1b7e3f;
+    }
+    
+    .status-inactive {
+        background: #ffebe9;
+        color: #b92b27;
+    }
+    
+    /* Estilos para la tabla */
+    .earnings-table {
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+    
+    .earnings-table thead th {
+        background: #f8f9fa;
+        color: #606770;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 16px;
+        border: none;
+    }
+    
+    .earnings-table tbody tr {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-radius: 12px;
+        transition: all 0.2s ease;
+    }
+    
+    .earnings-table tbody tr:hover {
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        transform: scale(1.01);
+    }
+    
+    .earnings-table td {
+        padding: 16px;
+        border: none;
+        font-size: 14px;
+    }
+    
+    .earnings-table td:first-child {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+    
+    .earnings-table td:last-child {
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+</style>
+
+{% block earnings_content %}{% endblock %}
+{% endblock %}

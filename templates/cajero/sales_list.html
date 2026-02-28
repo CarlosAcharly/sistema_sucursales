@@ -148,7 +148,9 @@
                         <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                             {% for item in sale.items.all|slice:":3" %}
                                 <span style="background: #f5f6f7; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-                                    {{ item.product.name|truncatechars:15 }} x{{ item.quantity }}
+                                    {{ item.product.name|truncatechars:10 }} 
+                                    <span style="color: #1877f2;">{{ item.get_price_type_display }}</span>
+                                    x{{ item.quantity }}
                                 </span>
                             {% endfor %}
                             {% if sale.items.count > 3 %}
@@ -249,6 +251,14 @@ let salesData = [];
 let filteredSales = [];
 let currentPage = 1;
 const itemsPerPage = 10;
+
+// Mapeo de tipos de precio
+const priceTypeNames = {
+    'kg': 'Kg',
+    'bulk': 'Bulto',
+    'wholesale': 'Mayoreo',
+    'special': 'Especial'
+};
 
 // Inicializar datos
 document.addEventListener('DOMContentLoaded', function() {
@@ -369,7 +379,6 @@ function viewSaleDetails(saleId) {
     const modal = document.getElementById('sale-modal');
     const modalContent = document.getElementById('modal-content');
     
-    // Mostrar loading
     modalContent.innerHTML = `
         <div style="text-align: center; padding: 40px;">
             <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
@@ -380,7 +389,6 @@ function viewSaleDetails(saleId) {
     modal.style.display = 'flex';
     document.getElementById('modal-sale-id').textContent = `#${saleId}`;
     
-    // Hacer petición AJAX para obtener los detalles reales
     fetch(`/sales/api/${saleId}/`)
         .then(response => {
             if (!response.ok) {
@@ -393,13 +401,13 @@ function viewSaleDetails(saleId) {
                 throw new Error(data.error);
             }
             
-            // Generar HTML con los productos
             let productsHtml = '';
             data.items.forEach(item => {
                 productsHtml += `
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #e4e6eb;">
                             <strong>${item.product_name}</strong>
+                            <div style="font-size: 11px; color: #1877f2;">${item.price_type_display}</div>
                         </td>
                         <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e4e6eb;">
                             ${item.quantity}
@@ -448,14 +456,6 @@ function viewSaleDetails(saleId) {
                         </tbody>
                         <tfoot style="background: #f5f6f7; font-weight: bold;">
                             <tr>
-                                <td colspan="3" style="padding: 10px; text-align: right;">Subtotal:</td>
-                                <td style="padding: 10px; text-align: right;">$${data.subtotal.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" style="padding: 10px; text-align: right;">IVA (16%):</td>
-                                <td style="padding: 10px; text-align: right;">$${data.iva.toFixed(2)}</td>
-                            </tr>
-                            <tr>
                                 <td colspan="3" style="padding: 10px; text-align: right;">TOTAL:</td>
                                 <td style="padding: 10px; text-align: right; font-size: 18px; color: #1877f2;">$${data.total.toFixed(2)}</td>
                             </tr>
@@ -502,7 +502,6 @@ document.getElementById('sale-modal').addEventListener('click', function(e) {
 </script>
 
 <style>
-    /* Animaciones */
     .stat-card {
         transition: transform 0.2s, box-shadow 0.2s;
     }
@@ -521,7 +520,6 @@ document.getElementById('sale-modal').addEventListener('click', function(e) {
         background-color: #f5f6f7;
     }
     
-    /* Modal animation */
     #sale-modal {
         animation: fadeIn 0.2s ease;
     }
@@ -546,7 +544,6 @@ document.getElementById('sale-modal').addEventListener('click', function(e) {
         }
     }
     
-    /* Scroll personalizado para el modal */
     #modal-content::-webkit-scrollbar {
         width: 8px;
     }

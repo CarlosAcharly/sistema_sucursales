@@ -87,6 +87,9 @@
                             </div>
                             <div>
                                 <strong>{{ item.product.name }}</strong>
+                                {% if item.product.description %}
+                                <div style="font-size: 11px; color: #606770;">{{ item.product.description|truncatechars:30 }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </td>
@@ -142,7 +145,7 @@
         </thead>
         <tbody id="ingredients-tbody">
             {% for item in items %}
-            <tr class="ingredient-row" data-id="{{ item.id }}" data-product-id="{{ item.product.id }}">
+            <tr class="ingredient-row" data-id="{{ item.id }}" data-product-id="{{ item.product.id }}" data-product-name="{{ item.product.name }}">
                 <td style="text-align: center;">
                     <input type="checkbox" class="ingredient-check" name="select_{{ item.id }}" value="{{ item.id }}" 
                            onchange="updateSelectedCount()">
@@ -154,9 +157,9 @@
                         </div>
                         <div>
                             <strong>{{ item.product.name }}</strong>
-                            {% if item.product.barcode %}
+                            {% if item.product.description %}
                             <div style="font-size: 11px; color: #606770;">
-                                <i class="fas fa-barcode"></i> {{ item.product.barcode }}
+                                <i class="fas fa-align-left"></i> {{ item.product.description|truncatechars:30 }}
                             </div>
                             {% endif %}
                         </div>
@@ -188,8 +191,8 @@
                                data-item-id="{{ item.id }}">
                         <span style="color: #606770; font-size: 12px;">kg</span>
                         <button type="button" class="fb-btn fb-btn-secondary" style="padding: 4px 8px;" 
-                                onclick="addToCart({{ item.id }}, '{{ item.product.name|escapejs }}', this)"
-                                title="Agregar al carrito">
+                                onclick="addToCart({{ item.product.id }}, '{{ item.product.name|escapejs }}', {{ item.product.price_kg|default:0 }}, this)"
+                                title="Agregar al carrito (Precio por Kg)">
                             <i class="fas fa-cart-plus"></i>
                         </button>
                     </div>
@@ -368,46 +371,27 @@ function addToCart(productId, productName, productPrice, button) {
     const kilosInput = row.querySelector('.kilos-input');
     const quantity = parseFloat(kilosInput.value);
 
+    if (!quantity || quantity <= 0) {
+        showNotification('❌ Ingresa una cantidad válida', 'error');
+        return;
+    }
+
     const item = {
         id: productId,
         name: productName,
         price: parseFloat(productPrice),
         quantity: quantity,
         type: 'ingredient',
-        unit: 'kg'
+        unit: 'kg',
+        price_type: 'kg',
+        price_type_name: 'Kg'
     };
 
     cart.push(item);
     localStorage.setItem('posCart', JSON.stringify(cart));
 
     updateCartCounter();
-    showNotification(`${productName}: ${quantity}kg agregado al carrito`, 'success');
-}
-
-function addFullDietToCart() {
-    const items = [];
-    let totalKg = 0;
-    
-    document.querySelectorAll('.ingredient-row').forEach(row => {
-        const productName = row.querySelector('td:nth-child(2) strong').textContent;
-        const kilosInput = row.querySelector('.kilos-input');
-        const kilos = parseFloat(kilosInput.value);
-        totalKg += kilos;
-        
-        items.push({
-            id: row.dataset.id,
-            name: productName,
-            quantity: kilos,
-            type: 'ingredient',
-            unit: 'kg'
-        });
-    });
-    
-    cart = [...cart, ...items];
-    localStorage.setItem('posCart', JSON.stringify(cart));
-    
-    updateCartCounter();
-    showNotification(`Dieta completa agregada al carrito (${items.length} ingredientes, ${totalKg.toFixed(2)}kg)`, 'success');
+    showNotification(`${productName}: ${quantity}kg agregado al carrito (Precio por Kg)`, 'success');
 }
 
 function addSelectedToCart() {
@@ -421,17 +405,21 @@ function addSelectedToCart() {
     
     document.querySelectorAll('.ingredient-check:checked').forEach(cb => {
         const row = cb.closest('tr');
-        const productName = row.querySelector('td:nth-child(2) strong').textContent;
+        const productName = row.dataset.productName;
+        const productId = row.dataset.productId;
         const kilosInput = row.querySelector('.kilos-input');
         const kilos = parseFloat(kilosInput.value);
         totalKg += kilos;
         
         items.push({
-            id: row.dataset.id,
+            id: productId,
             name: productName,
+            price: 0, // El precio se asignará en el POS
             quantity: kilos,
             type: 'ingredient',
-            unit: 'kg'
+            unit: 'kg',
+            price_type: 'kg',
+            price_type_name: 'Kg'
         });
     });
     
@@ -441,7 +429,8 @@ function addSelectedToCart() {
     updateCartCounter();
     document.getElementById('cart-modal-message').innerHTML = `
         <strong>${items.length}</strong> ingredientes agregados al carrito<br>
-        Total: <strong>${totalKg.toFixed(2)} kg</strong>
+        Total: <strong>${totalKg.toFixed(2)} kg</strong><br>
+        <small>Los precios se asignarán en el punto de venta</small>
     `;
     document.getElementById('cart-modal').style.display = 'flex';
 }
@@ -457,20 +446,13 @@ function goToCart() {
     window.location.href = '{% url "pos" %}';
 }
 
-function toggleCustomMode() {
-    document.querySelectorAll('.ingredient-check').forEach(cb => {
-        cb.style.display = 'inline-block';
-    });
-    showNotification('Modo personalizado activado. Selecciona los ingredientes.', 'info');
-}
-
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
-        background: ${type === 'success' ? '#42b72a' : type === 'warning' ? '#f7b928' : '#1877f2'};
+        background: ${type === 'success' ? '#42b72a' : type === 'warning' ? '#f7b928' : type === 'error' ? '#fa383e' : '#1877f2'};
         color: white;
         padding: 12px 20px;
         border-radius: 8px;
@@ -482,7 +464,7 @@ function showNotification(message, type) {
         gap: 10px;
     `;
     notification.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
         <span>${message}</span>
     `;
     

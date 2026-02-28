@@ -1,0 +1,220 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Header con gradiente -->
+<div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, 
+    {% if transfer.status == 'COMPLETED' %}#42b72a, #2d8a1f
+    {% elif transfer.status == 'CANCELLED' %}#fa383e, #e03137
+    {% else %}#f7b928, #f59e0b{% endif %});
+    border-radius: 20px; padding: 30px;">
+    
+    <div style="display: flex; align-items: center; gap: 20px; color: white;">
+        <a href="{% url 'transfer_list' %}" class="back-btn" style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                <h1 style="margin: 0; font-size: 28px;">Transferencia #{{ transfer.id }}</h1>
+                <span style="background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-circle"></i>
+                    {{ transfer.get_status_display }}
+                </span>
+            </div>
+            <div style="display: flex; gap: 30px; opacity: 0.9;">
+                <span><i class="fa-solid fa-store"></i> Origen: <strong>{{ transfer.from_branch.name }}</strong></span>
+                <i class="fa-solid fa-arrow-right"></i>
+                <span><i class="fa-solid fa-store"></i> Destino: <strong>{{ transfer.to_branch.name }}</strong></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <!-- Columna izquierda - Productos -->
+    <div class="fb-card" style="border-radius: 16px; padding: 0; overflow: hidden;">
+        <div style="background: #f5f6f7; padding: 20px; border-bottom: 2px solid #e4e6eb;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-boxes" style="color: #4158D0;"></i>
+                Productos a Transferir
+            </h3>
+        </div>
+        
+        <div style="padding: 20px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e4e6eb;">
+                        <th style="padding: 12px; text-align: left; color: #606770;">Producto</th>
+                        <th style="padding: 12px; text-align: center; color: #606770;">Cantidad</th>
+                        <th style="padding: 12px; text-align: center; color: #606770;">Stock Origen</th>
+                        <th style="padding: 12px; text-align: center; color: #606770;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for status in stock_status %}
+                    <tr style="border-bottom: 1px solid #f0f2f5;">
+                        <td style="padding: 15px 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-box" style="color: #1877f2;"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ status.item.product.name }}</strong>
+                                    {% if status.item.product.description %}
+                                    <div style="font-size: 11px; color: #606770;">{{ status.item.product.description|truncatechars:30 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: center;">
+                            <span style="font-weight: 600; font-size: 16px;">{{ status.item.quantity }}</span>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: center;">
+                            <span style="background: #f5f6f7; padding: 4px 12px; border-radius: 20px;">
+                                {{ status.available_stock }} uds
+                            </span>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: center;">
+                            {% if status.is_available %}
+                                <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 30px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-circle-check"></i> Disponible
+                                </span>
+                            {% else %}
+                                <span style="background: #ffebe9; color: #b92b27; padding: 4px 12px; border-radius: 30px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Faltan {{ status.needs }}
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 15px 12px; font-weight: 600;" colspan="3">Total productos:</td>
+                        <td style="padding: 15px 12px; text-align: center; font-weight: 700; color: #1877f2;">
+                            {{ transfer.total_items }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Columna derecha - Información y acciones -->
+    <div>
+        <!-- Información general -->
+        <div class="fb-card" style="border-radius: 16px; margin-bottom: 20px;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0; border-bottom: 2px solid #e4e6eb;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-info" style="color: #1877f2;"></i>
+                    Información General
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #606770; font-size: 13px; display: block;">
+                        <i class="fa-regular fa-note-sticky"></i> Notas
+                    </span>
+                    <p style="margin: 5px 0 0; color: #050505; background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                        {{ transfer.notes|default:"Sin notas adicionales" }}
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <span style="color: #606770; font-size: 13px; display: block;">
+                            <i class="fa-regular fa-calendar"></i> Fecha creación
+                        </span>
+                        <strong>{{ transfer.created_at|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                    <div>
+                        <span style="color: #606770; font-size: 13px; display: block;">
+                            <i class="fa-regular fa-user"></i> Creado por
+                        </span>
+                        <strong>{{ transfer.created_by.get_full_name|default:transfer.created_by.username }}</strong>
+                    </div>
+                </div>
+                
+                {% if transfer.completed_at %}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e4e6eb;">
+                    <span style="color: #606770; font-size: 13px; display: block;">
+                        <i class="fa-regular fa-calendar-check"></i> Fecha completado
+                    </span>
+                    <strong>{{ transfer.completed_at|date:"d/m/Y H:i" }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Acciones -->
+        <div class="fb-card" style="border-radius: 16px;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0; border-bottom: 2px solid #e4e6eb;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-bolt" style="color: #f7b928;"></i>
+                    Acciones
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                {% if transfer.status == 'PENDING' %}
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        {% if all_available %}
+                            <form method="post" action="{% url 'transfer_process' transfer.id %}" onsubmit="return confirm('¿Confirmas que deseas procesar esta transferencia? Se moverá el stock de las sucursales.');">
+                                {% csrf_token %}
+                                <button type="submit" class="fb-btn" style="width: 100%; background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 14px; border: none; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    Procesar Transferencia
+                                </button>
+                            </form>
+                        {% else %}
+                            <div style="background: #ffebe9; padding: 15px; border-radius: 12px; color: #b92b27; display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-circle-exclamation" style="font-size: 20px;"></i>
+                                <div>
+                                    <strong>Stock insuficiente</strong>
+                                    <p style="margin: 5px 0 0; font-size: 13px;">No se puede procesar hasta que haya suficiente stock en origen.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <form method="post" action="{% url 'transfer_cancel' transfer.id %}" onsubmit="return confirm('¿Estás seguro de cancelar esta transferencia?');">
+                            {% csrf_token %}
+                            <button type="submit" class="fb-btn" style="width: 100%; background: white; color: #fa383e; padding: 14px; border: 2px solid #fa383e; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                                <i class="fa-solid fa-ban"></i>
+                                Cancelar Transferencia
+                            </button>
+                        </form>
+                    </div>
+                {% elif transfer.status == 'COMPLETED' %}
+                    <div style="background: #e3f2e8; padding: 20px; border-radius: 12px; text-align: center;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 40px; color: #1b7e3f; margin-bottom: 10px;"></i>
+                        <h4 style="margin: 0; color: #1b7e3f;">Transferencia Completada</h4>
+                        <p style="color: #606770; margin-top: 10px;">Esta transferencia ya fue procesada exitosamente.</p>
+                    </div>
+                {% else %}
+                    <div style="background: #ffebe9; padding: 20px; border-radius: 12px; text-align: center;">
+                        <i class="fa-solid fa-ban" style="font-size: 40px; color: #b92b27; margin-bottom: 10px;"></i>
+                        <h4 style="margin: 0; color: #b92b27;">Transferencia Cancelada</h4>
+                        <p style="color: #606770; margin-top: 10px;">Esta transferencia fue cancelada y no puede ser procesada.</p>
+                    </div>
+                {% endif %}
+                
+                <a href="{% url 'transfer_list' %}" class="fb-btn fb-btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; margin-top: 10px; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Volver a la lista
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+        transform: translateX(-3px);
+    }
+    
+    .fb-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

@@ -6,17 +6,19 @@ from inventory.models import Inventory, InventoryMovement
 from .models import Sale, SaleItem
 from products.models import Product
 from django.utils.timezone import now
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from inventory.models import Inventory
 from .models import Sale, SaleItem
 import json
 from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+from decimal import Decimal
 
 @login_required
 @role_required(['CASHIER'])
 @transaction.atomic
 def pos_view(request):
-
     branch = request.user.branch
     inventory = Inventory.objects.filter(
         branch=branch,
@@ -41,6 +43,7 @@ def pos_view(request):
         for item in cart:
             product_id = item['id']
             quantity = int(item['quantity'])
+            price_type = item.get('price_type', 'kg')
 
             inventory_item = Inventory.objects.filter(
                 branch=branch,
@@ -51,16 +54,17 @@ def pos_view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({'error': f'Stock insuficiente para {inventory_item.product.name}'}, status=400)
 
-            price = inventory_item.product.price
+            price = Decimal(str(item['price']))
             subtotal = price * quantity
             total_sale += subtotal
 
-            # Crear SaleItem
+            # Crear SaleItem con tipo de precio
             SaleItem.objects.create(
                 sale=sale,
                 product=inventory_item.product,
                 quantity=quantity,
-                price=price
+                price=price,
+                price_type=price_type
             )
 
             # Descontar stock
@@ -76,17 +80,15 @@ def pos_view(request):
         sale.total = total_sale
         sale.save()
 
-        return JsonResponse({'success': True})
+        return JsonResponse({
+            'success': True,
+            'venta_id': sale.id
+        })
 
     return render(request, 'cajero/pos.html', {
         'inventory': inventory
     })
 
-
-from django.utils import timezone
-from datetime import timedelta
-from django.db.models import Count, Sum, Avg
-from decimal import Decimal
 
 @login_required
 @role_required(['CASHIER'])
@@ -103,7 +105,7 @@ def sales_list(request):
     sales_today_count = sales_today.count()
     total_today = sales_today.aggregate(total=Sum('total'))['total'] or Decimal('0')
     
-    # Ventas de ayer (para calcular el porcentaje)
+    # Ventas de ayer
     sales_yesterday = Sale.objects.filter(branch=branch, created_at__date=yesterday)
     total_yesterday = sales_yesterday.aggregate(total=Sum('total'))['total'] or Decimal('0')
     
@@ -134,10 +136,10 @@ def sales_list(request):
         'total_sum': total_sum,
     })
 
+
 @login_required
 @role_required(['CASHIER'])
 def cajero_dashboard(request):
-
     branch = request.user.branch
     today = now().date()
 
@@ -146,27 +148,53 @@ def cajero_dashboard(request):
         created_at__date=today
     )
 
-    total_today = sales_today.aggregate(
-        total=Sum('total')
-    )['total'] or 0
+    total_today = sales_today.aggregate(total=Sum('total'))['total'] or 0
+    sales_today_count = sales_today.count()
 
     items_today = SaleItem.objects.filter(
         sale__branch=branch,
         sale__created_at__date=today
-    ).aggregate(
-        total=Sum('quantity')
-    )['total'] or 0
+    ).aggregate(total=Sum('quantity'))['total'] or 0
 
     low_stock = Inventory.objects.filter(
         branch=branch,
         stock__lte=5
-    )
+    ).select_related('product')[:10]
+
+    # Calcular ventas de ayer para porcentaje
+    yesterday = today - timedelta(days=1)
+    sales_yesterday = Sale.objects.filter(
+        branch=branch,
+        created_at__date=yesterday
+    ).aggregate(total=Sum('total'))['total'] or 0
+
+    if sales_yesterday > 0:
+        sales_today_percent = ((total_today - sales_yesterday) / sales_yesterday) * 100
+    else:
+        sales_today_percent = 100 if total_today > 0 else 0
+
+    # Ticket promedio
+    if sales_today_count > 0:
+        average_ticket = total_today / sales_today_count
+    else:
+        average_ticket = 0
+
+    # Últimas 5 ventas
+    recent_sales = Sale.objects.filter(
+        branch=branch
+    ).prefetch_related('items').order_by('-created_at')[:5]
 
     return render(request, 'cajero/dashboard.html', {
         'total_today': total_today,
         'items_today': items_today,
-        'low_stock': low_stock
+        'low_stock': low_stock,
+        'sales_today_count': sales_today_count,
+        'sales_today_percent': round(sales_today_percent, 1),
+        'average_ticket': average_ticket,
+        'recent_sales': recent_sales,
+        'today': today
     })
+
 
 @login_required
 def sale_detail_api(request, sale_id):
@@ -187,20 +215,18 @@ def sale_detail_api(request, sale_id):
             items.append({
                 'id': item.id,
                 'product_name': item.product.name,
-                'quantity': float(item.quantity),
+                'quantity': item.quantity,
                 'price': float(item.price),
+                'price_type': item.price_type,
+                'price_type_display': item.get_price_type_display(),
                 'subtotal': item_subtotal
             })
-        
-        iva = subtotal * 0.16  # Calculamos IVA del 16%
-        total = subtotal + iva
         
         data = {
             'id': sale.id,
             'date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
-            'total': float(sale.total),  # Este es el total guardado en BD
+            'total': float(sale.total),
             'subtotal': subtotal,
-            'iva': iva,
             'cashier': sale.cashier.get_full_name() or sale.cashier.username,
             'branch': sale.branch.name,
             'items': items

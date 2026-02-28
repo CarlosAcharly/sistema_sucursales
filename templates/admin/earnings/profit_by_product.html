@@ -1,0 +1,115 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header">
+        <h2 style="margin: 0;"><i class="fas fa-chart-bar"></i> Rentabilidad por Producto</h2>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="fb-card" style="margin-bottom: 20px;">
+    <form method="get">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; color: #606770;">Sucursal</label>
+                <select name="branch" class="fb-input">
+                    <option value="">Todas</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; color: #606770;">Desde</label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="fb-input">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; color: #606770;">Hasta</label>
+                <input type="date" name="date_to" value="{{ date_to }}" class="fb-input">
+            </div>
+            <div>
+                <button type="submit" class="fb-btn fb-btn-primary">
+                    <i class="fas fa-filter"></i> Aplicar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Totales -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+    <div class="stat-card" style="background: white; padding: 20px;">
+        <span style="color: #606770;">Total Ingresos</span>
+        <h3 style="margin: 10px 0; color: #1877f2;">${{ totals.total_revenue|floatformat:2 }}</h3>
+    </div>
+    <div class="stat-card" style="background: white; padding: 20px;">
+        <span style="color: #606770;">Total Costos</span>
+        <h3 style="margin: 10px 0; color: #f7b928;">${{ totals.total_cost|floatformat:2 }}</h3>
+    </div>
+    <div class="stat-card" style="background: white; padding: 20px;">
+        <span style="color: #606770;">Ganancia Total</span>
+        <h3 style="margin: 10px 0; color: #42b72a;">${{ totals.total_profit|floatformat:2 }}</h3>
+    </div>
+</div>
+
+<!-- Tabla de productos -->
+<div class="fb-card" style="padding: 0; overflow: hidden;">
+    <table class="fb-table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Unidades</th>
+                <th>Transacciones</th>
+                <th>Precio Venta Prom.</th>
+                <th>Precio Compra Prom.</th>
+                <th>Ingresos</th>
+                <th>Costos</th>
+                <th>Ganancia</th>
+                <th>Margen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products_stats %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-box" style="color: #1877f2;"></i>
+                        </div>
+                        <div>
+                            <strong>{{ product.product__name }}</strong>
+                            {% if product.product__description %}
+                            <div style="font-size: 11px; color: #606770;">{{ product.product__description|truncatechars:30 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>{{ product.units_sold }}</td>
+                <td>{{ product.transactions }}</td>
+                <td>${{ product.avg_sale_price|floatformat:2 }}</td>
+                <td>${{ product.avg_cost_price|floatformat:2 }}</td>
+                <td>${{ product.revenue|floatformat:2 }}</td>
+                <td>${{ product.cost|floatformat:2 }}</td>
+                <td style="color: #42b72a; font-weight: 600;">${{ product.profit|floatformat:2 }}</td>
+                <td>
+                    <span style="background: #e7f3ff; padding: 4px 10px; border-radius: 12px;">
+                        {{ product.margin|floatformat:1 }}%
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-chart-bar" style="font-size: 40px; color: #e4e6eb;"></i>
+                    <p style="margin-top: 10px; color: #606770;">No hay datos para el período seleccionado</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

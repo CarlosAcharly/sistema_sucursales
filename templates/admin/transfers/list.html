@@ -1,47 +1,222 @@
 {% extends 'admin/base.html' %}
+{% load static %}
+
 {% block content %}
-
-<h1>🔁 Transferencias</h1>
-
-<div style="margin-bottom:20px;">
-    <a href="{% url 'transfer_create' %}"
-       style="background:#2563eb;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;">
-        ➕ Nueva Transferencia
-    </a>
+<!-- Header con gradiente -->
+<div class="fb-card" style="margin-bottom: 25px; background: linear-gradient(135deg, #4158D0 0%, #C850C0 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
+        <div>
+            <h1 style="margin: 0; display: flex; align-items: center; gap: 15px; font-size: 28px;">
+                <div style="background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                    <i class="fa-solid fa-right-left" style="font-size: 30px;"></i>
+                </div>
+                <span>Transferencias</span>
+            </h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Gestiona el movimiento de productos entre sucursales</p>
+        </div>
+        <a href="{% url 'transfer_create' %}" class="fb-btn" style="background: white; color: #4158D0; padding: 14px 28px; border-radius: 50px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: all 0.3s;">
+            <i class="fa-solid fa-circle-plus"></i>
+            Nueva Transferencia
+        </a>
+    </div>
 </div>
 
-<div style="background:white;padding:25px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
-
-<table style="width:100%;border-collapse:collapse;">
-<thead>
-<tr style="background:#f3f4f6;text-align:left;">
-<th style="padding:12px;">Producto</th>
-<th style="padding:12px;">Origen</th>
-<th style="padding:12px;">Destino</th>
-<th style="padding:12px;">Cantidad</th>
-<th style="padding:12px;">Fecha</th>
-</tr>
-</thead>
-
-<tbody>
-{% for t in transfers %}
-<tr style="border-top:1px solid #e5e7eb;">
-<td style="padding:12px;">{{ t.product.name }}</td>
-<td style="padding:12px;">{{ t.from_branch.name }}</td>
-<td style="padding:12px;">{{ t.to_branch.name }}</td>
-<td style="padding:12px;">{{ t.quantity }}</td>
-<td style="padding:12px;">{{ t.created_at|date:"d/m/Y H:i" }}</td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="5" style="padding:20px;text-align:center;">
-No hay transferencias registradas.
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-
+<!-- Estadísticas -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-arrows-spin" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Total transferencias</span>
+                <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ total_transfers }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #f7b928, #f59e0b); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-clock" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Pendientes</span>
+                <div style="font-size: 24px; font-weight: 600; color: #f7b928;">{{ pending_transfers }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #42b72a, #2d8a1f); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-circle-check" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Completadas</span>
+                <div style="font-size: 24px; font-weight: 600; color: #42b72a;">{{ completed_transfers }}</div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Lista de transferencias -->
+<div class="fb-card" style="padding: 0; overflow: hidden; border-radius: 16px;">
+    {% if transfers %}
+        <table class="modern-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-hashtag" style="margin-right: 5px;"></i> ID
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-arrow-right-arrow-left" style="margin-right: 5px;"></i> Origen → Destino
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-boxes" style="margin-right: 5px;"></i> Productos
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-cubes" style="margin-right: 5px;"></i> Total
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-calendar" style="margin-right: 5px;"></i> Fecha
+                    </th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-circle" style="margin-right: 5px;"></i> Estado
+                    </th>
+                    <th style="padding: 16px; text-align: center; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">
+                        <i class="fa-solid fa-gear" style="margin-right: 5px;"></i> Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transfer in transfers %}
+                <tr class="transfer-row" style="border-bottom: 1px solid #e4e6eb; transition: background 0.3s;">
+                    <td style="padding: 16px;">
+                        <strong>#{{ transfer.id }}</strong>
+                    </td>
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background: #e7f3ff; color: #1877f2; padding: 6px 12px; border-radius: 30px; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fa-solid fa-store"></i> {{ transfer.from_branch.name }}
+                            </span>
+                            <i class="fa-solid fa-arrow-right" style="color: #606770;"></i>
+                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 6px 12px; border-radius: 30px; font-size: 13px; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fa-solid fa-store"></i> {{ transfer.to_branch.name }}
+                            </span>
+                        </div>
+                    </td>
+                    <td style="padding: 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            {% for item in transfer.items.all|slice:":2" %}
+                                <span style="font-size: 13px; display: flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-box" style="color: #1877f2;"></i>
+                                    {{ item.product.name }} x{{ item.quantity }}
+                                </span>
+                            {% endfor %}
+                            {% if transfer.items.count > 2 %}
+                                <span style="color: #606770; font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                                    <i class="fa-solid fa-ellipsis"></i> +{{ transfer.items.count|add:"-2" }} más
+                                </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 16px;">
+                        <span style="font-weight: 600; background: #f5f6f7; padding: 6px 12px; border-radius: 20px;">
+                            <i class="fa-solid fa-weight-hanging" style="color: #f7b928;"></i> {{ transfer.total_quantity }} uds
+                        </span>
+                    </td>
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <i class="fa-regular fa-calendar" style="color: #606770;"></i>
+                            {{ transfer.created_at|date:"d/m/Y" }}
+                        </div>
+                        <small style="color: #606770; display: flex; align-items: center; gap: 5px; margin-top: 3px;">
+                            <i class="fa-regular fa-clock"></i> {{ transfer.created_at|date:"H:i" }}
+                        </small>
+                    </td>
+                    <td style="padding: 16px;">
+                        {% if transfer.status == 'PENDING' %}
+                            <span style="background: #fff4e5; color: #bd7b13; padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-clock"></i> Pendiente
+                            </span>
+                        {% elif transfer.status == 'COMPLETED' %}
+                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-circle-check"></i> Completada
+                            </span>
+                        {% else %}
+                            <span style="background: #ffebe9; color: #b92b27; padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-ban"></i> Cancelada
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px; text-align: center;">
+                        <a href="{% url 'transfer_detail' transfer.id %}" class="action-btn" style="background: #e7f3ff; color: #1877f2; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s;" title="Ver detalles">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 80px 20px; text-align: center;">
+            <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 100px; height: 100px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px;">
+                <i class="fa-solid fa-right-left" style="font-size: 50px; color: white;"></i>
+            </div>
+            <h2 style="color: #050505; margin-bottom: 10px;">No hay transferencias registradas</h2>
+            <p style="color: #606770; margin-bottom: 25px;">Comienza creando tu primera transferencia entre sucursales</p>
+            <a href="{% url 'transfer_create' %}" class="fb-btn" style="background: linear-gradient(135deg, #4158D0, #C850C0); color: white; padding: 15px 35px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(65, 88, 208, 0.3);">
+                <i class="fa-solid fa-circle-plus"></i>
+                Crear primera transferencia
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .transfer-row:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+        background: #1877f2 !important;
+        color: white !important;
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .transfer-row {
+        animation: fadeIn 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    {% for transfer in transfers %}
+    .transfer-row:nth-child({{ forloop.counter }}) {
+        animation-delay: {{ forloop.counter0|add:"0.05" }}s;
+    }
+    {% endfor %}
+</style>
 {% endblock %}

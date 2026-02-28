@@ -1,17 +1,21 @@
 {% extends 'admin/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="fb-card" style="margin-bottom: 25px;">
-    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+<!-- Header con gradiente -->
+<div class="fb-card" style="margin-bottom: 25px; background: linear-gradient(135deg, #4158D0 0%, #C850C0 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
         <div>
-            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-piggy-bank" style="font-size: 28px; color: #1877f2;"></i>
-                Dietas
-            </h2>
-            <p style="color: #606770; margin: 5px 0 0 0;">Gestiona las dietas base del sistema</p>
+            <h1 style="margin: 0; display: flex; align-items: center; gap: 15px; font-size: 28px;">
+                <div style="background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                    <i class="fa-solid fa-piggy-bank" style="font-size: 30px;"></i>
+                </div>
+                <span>Dietas</span>
+            </h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Gestiona las dietas base del sistema</p>
         </div>
-        <a href="{% url 'diets:diet_create' %}" class="fb-btn fb-btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
-            <i class="fa-solid fa-plus"></i>
+        <a href="{% url 'diets:diet_create' %}" class="fb-btn" style="background: white; color: #4158D0; padding: 14px 28px; border-radius: 50px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: all 0.3s;">
+            <i class="fa-solid fa-plus-circle"></i>
             Nueva Dieta
         </a>
     </div>
@@ -19,87 +23,117 @@
 
 <!-- Estadísticas rápidas -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-        <div style="color: #606770; font-size: 13px;">Total dietas</div>
-        <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ diets|length }}</div>
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-piggy-bank" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Total dietas</span>
+                <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ diets|length }}</div>
+            </div>
+        </div>
     </div>
-    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-        <div style="color: #606770; font-size: 13px;">Sucursales activas</div>
-        <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ branches_count|default:"0" }}</div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #42b72a, #2d8a1f); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-store" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Sucursales activas</span>
+                <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ branches_count|default:"0" }}</div>
+            </div>
+        </div>
     </div>
-    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-        <div style="color: #606770; font-size: 13px;">Total ingredientes</div>
-        <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ ingredients_count|default:"0" }}</div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #f7b928, #f59e0b); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid fa-drumstick-bite" style="color: white; font-size: 20px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Total ingredientes</span>
+                <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ ingredients_count|default:"0" }}</div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- Lista de dietas -->
-<div class="fb-card" style="padding: 0; overflow: hidden;">
+<div class="fb-card" style="padding: 0; overflow: hidden; border-radius: 16px;">
     {% if diets %}
-        <table style="width: 100%; border-collapse: collapse;">
+        <table class="modern-table" style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Dieta</th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Descripción</th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Sucursales</th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Ingredientes</th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Acciones</th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">Dieta</th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">Descripción</th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">Sucursales</th>
+                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">Ingredientes</th>
+                    <th style="padding: 16px; text-align: center; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for diet in diets %}
-                <tr style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;" 
-                    onmouseover="this.style.background='#f5f6f7'" 
-                    onmouseout="this.style.background='transparent'">
+                <tr class="diet-row" style="border-bottom: 1px solid #e4e6eb; transition: all 0.3s;">
                     <td style="padding: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #1877f2; font-size: 20px;">
-                                <i class="fa-solid fa-piggy-bank"></i>
+                            <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-piggy-bank" style="color: white; font-size: 20px;"></i>
                             </div>
                             <div>
-                                <strong style="color: #050505;">{{ diet.name }}</strong>
-                                <div style="color: #606770; font-size: 12px; margin-top: 2px;">
-                                    Creado: {{ diet.created_at|date:"d/m/Y" }}
+                                <strong style="color: #050505; font-size: 15px;">{{ diet.name }}</strong>
+                                <div style="color: #606770; font-size: 11px; margin-top: 2px;">
+                                    <i class="fa-regular fa-calendar"></i> {{ diet.created_at|date:"d/m/Y" }}
                                 </div>
                             </div>
                         </div>
                     </td>
                     <td style="padding: 16px; color: #606770; max-width: 200px;">
-                        {{ diet.description|truncatechars:50|default:"—" }}
+                        {% if diet.description %}
+                            <span style="background: #f5f6f7; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                {{ diet.description|truncatechars:40 }}
+                            </span>
+                        {% else %}
+                            <span style="color: #999; font-style: italic;">—</span>
+                        {% endif %}
                     </td>
                     <td style="padding: 16px;">
                         <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-                            {% for branch in diet.branches.all|slice:":3" %}
-                                <span style="background: #e7f3ff; color: #1877f2; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                            {% for branch in diet.branches.all|slice:":2" %}
+                                <span class="branch-badge" style="background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 30px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-store"></i>
                                     {{ branch.name }}
                                 </span>
                             {% endfor %}
-                            {% if diet.branches.count > 3 %}
-                                <span style="background: #f5f6f7; color: #606770; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
-                                    +{{ diet.branches.count|add:"-3" }} más
+                            {% if diet.branches.count > 2 %}
+                                <span class="branch-badge" style="background: #f5f6f7; color: #606770; padding: 4px 12px; border-radius: 30px; font-size: 12px;">
+                                    +{{ diet.branches.count|add:"-2" }} más
                                 </span>
                             {% endif %}
                         </div>
                     </td>
                     <td style="padding: 16px;">
-                        <div style="text-align: center;">
-                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                                {{ diet.base_ingredients.count }} ingredientes
+                        <div style="text-align: left;">
+                            <span class="ingredient-count" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 6px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-drumstick-bite"></i>
+                                {{ diet.base_ingredients.count }}
                             </span>
-                            <div style="color: #606770; font-size: 12px; margin-top: 4px;">
-                                {{ diet.total_base_kilos }} kg
+                            <div style="color: #606770; font-size: 11px; margin-top: 5px;">
+                                <i class="fa-solid fa-weight-scale"></i> {{ diet.total_base_kilos }} kg
                             </div>
                         </div>
                     </td>
                     <td style="padding: 16px;">
-                        <div style="display: flex; gap: 8px;">
-                            <a href="#" class="fb-btn" style="background: #f5f6f7; color: #050505; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; text-decoration: none;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <!-- Botón Ver -->
+                            <a href="{% url 'diets:diet_detail' diet.id %}" class="action-btn view-btn" style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none;" title="Ver detalles">
                                 <i class="fa-solid fa-eye"></i>
-                                Ver
                             </a>
-                            <a href="#" class="fb-btn" style="background: #fff4e5; color: #bd7b13; padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; text-decoration: none;">
+                            
+                            <!-- Botón Editar -->
+                            <a href="{% url 'diets:diet_edit' diet.id %}" class="action-btn edit-btn" style="background: #fff4e5; color: #f7b928; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; text-decoration: none;" title="Editar dieta">
                                 <i class="fa-solid fa-pen-to-square"></i>
-                                Editar
                             </a>
                         </div>
                     </td>
@@ -108,17 +142,84 @@
             </tbody>
         </table>
     {% else %}
-        <div style="padding: 60px 20px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;">
-                <i class="fa-solid fa-piggy-bank"></i>
+        <div class="empty-state" style="padding: 80px 20px; text-align: center;">
+            <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 120px; height: 120px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px;">
+                <i class="fa-solid fa-piggy-bank" style="font-size: 60px; color: white;"></i>
             </div>
-            <h3 style="color: #050505; margin-bottom: 10px;">No hay dietas registradas</h3>
-            <p style="color: #606770; margin-bottom: 20px;">Comienza creando tu primera dieta base</p>
-            <a href="{% url 'diets:diet_create' %}" class="fb-btn fb-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
-                <i class="fa-solid fa-plus"></i>
+            <h2 style="color: #050505; margin-bottom: 10px;">No hay dietas registradas</h2>
+            <p style="color: #606770; margin-bottom: 25px;">Comienza creando tu primera dieta base para asignar a las sucursales</p>
+            <a href="{% url 'diets:diet_create' %}" class="fb-btn" style="background: linear-gradient(135deg, #4158D0, #C850C0); color: white; padding: 15px 35px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(65, 88, 208, 0.3);">
+                <i class="fa-solid fa-plus-circle"></i>
                 Crear primera dieta
             </a>
         </div>
     {% endif %}
 </div>
+
+<style>
+    .diet-row:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .action-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .view-btn:hover {
+        background: #1877f2 !important;
+        color: white !important;
+    }
+    
+    .edit-btn:hover {
+        background: #f7b928 !important;
+        color: white !important;
+    }
+    
+    .branch-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .branch-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .ingredient-count {
+        transition: all 0.2s ease;
+    }
+    
+    .ingredient-count:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(66, 183, 42, 0.3);
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .diet-row {
+        animation: fadeIn 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    {% for diet in diets %}
+    .diet-row:nth-child({{ forloop.counter }}) {
+        animation-delay: {{ forloop.counter0|add:"0.05" }}s;
+    }
+    {% endfor %}
+</style>
 {% endblock %}

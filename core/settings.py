@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'diets',
     'orders',
     'cashregister',
+    'earnings',
 
 ]
 

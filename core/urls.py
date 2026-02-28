@@ -36,6 +36,8 @@ urlpatterns = [
     path("dietas/", include("diets.urls")),
     path("orders/", include("orders.urls")),
     path('cashregister/', include('cashregister.urls')),
+    path("earnings/", include("earnings.urls")),
+
 
 
     path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),

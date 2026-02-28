@@ -2,43 +2,54 @@
 {% load static %}
 
 {% block content %}
-<div class="fb-card" style="margin-bottom: 25px;">
-    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+<div class="fb-card" style="margin-bottom: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; color: white;">
         <div>
-            <h1 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-warehouse" style="font-size: 28px; color: #1877f2;"></i>
-                Inventario
+            <h1 style="margin: 0; display: flex; align-items: center; gap: 15px; font-size: 28px;">
+                <div style="background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+                    <i class="fa-solid fa-warehouse" style="font-size: 30px;"></i>
+                </div>
+                <span>Inventario</span>
             </h1>
-            <p style="color: #606770; margin: 5px 0 0 0;">Gestiona el stock de productos por sucursal</p>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Gestiona el stock de productos por sucursal</p>
         </div>
         
         {% if request.user.role != 'CASHIER' %}
-        <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
-            <i class="fa-solid fa-plus"></i>
+        <a href="{% url 'inventory_create' %}" class="fb-btn" style="background: white; color: #764ba2; padding: 14px 28px; border-radius: 50px; font-weight: 600; display: flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: all 0.3s;">
+            <i class="fa-solid fa-plus-circle"></i>
             Agregar Inventario
         </a>
         {% endif %}
     </div>
 </div>
+<!-- Mensajes de éxito/error -->
+{% if messages %}
+    {% for message in messages %}
+        <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: {% if message.tags == 'success' %}#e3f2e8{% elif message.tags == 'error' %}#ffebe9{% else %}#e7f3ff{% endif %}; border: 1px solid {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};">
+            <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}" style="color: {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};"></i>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+{% endif %}
 
-<!-- Filtros y búsqueda -->
-<div class="fb-card" style="margin-bottom: 20px; padding: 20px;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: center;">
+<!-- Filtros y búsqueda mejorados -->
+<div class="fb-card" style="border-radius: 16px; padding: 25px; margin-bottom: 25px;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 15px; align-items: center;">
         
         <!-- Buscador por producto -->
         <div style="position: relative;">
-            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #667eea; z-index: 1;"></i>
             <input type="text" 
                    id="search-input"
-                   class="fb-input"
-                   placeholder="Buscar por producto..."
-                   style="padding-left: 45px; width: 100%;">
+                   class="modern-input"
+                   placeholder="Buscar por nombre de producto..."
+                   style="padding-left: 45px; width: 100%; border-radius: 12px; border: 2px solid #f0f2f5; background: #f8f9fa; transition: all 0.3s;">
         </div>
         
         <!-- Filtro por sucursal -->
         <div style="position: relative;">
-            <i class="fa-solid fa-store" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
-            <select id="branch-filter" class="fb-input" style="padding-left: 45px; width: 100%;">
+            <i class="fa-solid fa-store" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #42b72a; z-index: 1;"></i>
+            <select id="branch-filter" class="modern-select" style="padding-left: 45px; width: 100%; border-radius: 12px; border: 2px solid #f0f2f5; background: #f8f9fa;">
                 <option value="all">Todas las sucursales</option>
                 {% for branch in branches %}
                     <option value="{{ branch.id }}">{{ branch.name }}</option>
@@ -46,32 +57,40 @@
             </select>
         </div>
         
-        <!-- Contador y limpiar filtros -->
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="color: #606770; font-size: 14px;" id="items-count">
-                <i class="fa-solid fa-cubes"></i> <strong>{{ inventory|length }}</strong> items
-            </span>
-            <button onclick="clearFilters()" class="fb-btn fb-btn-secondary" style="padding: 8px 12px;" title="Limpiar filtros">
-                <i class="fa-solid fa-rotate-left"></i>
+        <!-- Acciones rápidas -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="stats-badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 20px; border-radius: 12px;">
+                <i class="fa-solid fa-cubes"></i>
+                <span id="items-count">{{ inventory|length }} items</span>
+            </div>
+            <button onclick="clearFilters()" class="action-btn" style="background: #f5f6f7; width: 45px; height: 45px; border-radius: 12px; border: none; cursor: pointer; transition: all 0.3s;" title="Limpiar filtros">
+                <i class="fa-solid fa-rotate-left" style="color: #606770;"></i>
             </button>
         </div>
     </div>
 </div>
 
-<!-- Tabla de inventario -->
-<div class="fb-card" style="padding: 0; overflow: hidden;">
+<!-- Tabla de inventario mejorada -->
+<div class="fb-card" style="padding: 0; border-radius: 20px; overflow: hidden;">
     {% if inventory %}
-        <table style="width:100%;border-collapse:collapse;" id="inventory-table">
+        <table class="modern-table" style="width:100%; border-collapse: collapse;">
             <thead>
-                <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fa-solid fa-store"></i> Sucursal
+                <tr>
+                    <th style="padding: 20px; text-align: left;">
+                        <i class="fa-solid fa-store" style="margin-right: 8px; color: #667eea;"></i>
+                        Sucursal
                     </th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fa-solid fa-box"></i> Producto
+                    <th style="padding: 20px; text-align: left;">
+                        <i class="fa-solid fa-box" style="margin-right: 8px; color: #42b72a;"></i>
+                        Producto
                     </th>
-                    <th style="padding: 16px; text-align: left; color: #606770; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <i class="fa-solid fa-cubes"></i> Stock
+                    <th style="padding: 20px; text-align: left;">
+                        <i class="fa-solid fa-cubes" style="margin-right: 8px; color: #f7b928;"></i>
+                        Stock
+                    </th>
+                    <th style="padding: 20px; text-align: center;">
+                        <i class="fa-solid fa-gear" style="margin-right: 8px; color: #764ba2;"></i>
+                        Acciones
                     </th>
                 </tr>
             </thead>
@@ -82,29 +101,32 @@
                     data-branch-name="{{ item.branch.name|lower }}"
                     data-product="{{ item.product.name|lower }}"
                     data-stock="{{ item.stock }}"
-                    style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;"
-                    onmouseover="this.style.background='#f5f6f7'"
-                    onmouseout="this.style.background='transparent'">
+                    style="border-bottom: 1px solid #f0f2f5; transition: all 0.3s;">
                     
-                    <td style="padding: 16px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa-solid fa-store" style="color: #1877f2;"></i>
+                    <td style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="branch-icon" style="background: linear-gradient(135deg, #667eea20, #764ba220); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-store" style="color: #667eea;"></i>
                             </div>
-                            <strong>{{ item.branch.name }}</strong>
+                            <div>
+                                <strong style="font-size: 15px;">{{ item.branch.name }}</strong>
+                                {% if item.branch.is_active %}
+                                <span style="display: block; font-size: 11px; color: #42b72a;">Activa</span>
+                                {% endif %}
+                            </div>
                         </div>
                     </td>
                     
-                    <td style="padding: 16px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="background: {% if item.product.is_ingredient %}#e3f2e8{% else %}#e7f3ff{% endif %}; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <td style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="product-icon" style="background: {% if item.product.is_ingredient %}#e3f2e8{% else %}#e7f3ff{% endif %}; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid {% if item.product.is_ingredient %}fa-leaf{% else %}fa-box{% endif %}" 
                                    style="color: {% if item.product.is_ingredient %}#1b7e3f{% else %}#1877f2{% endif %};"></i>
                             </div>
                             <div>
-                                <strong>{{ item.product.name }}</strong>
+                                <strong style="font-size: 15px;">{{ item.product.name }}</strong>
                                 {% if item.product.is_ingredient %}
-                                    <span style="background: #e3f2e8; color: #1b7e3f; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 5px;">
+                                    <span class="ingredient-badge" style="background: #e3f2e8; color: #1b7e3f; font-size: 11px; padding: 3px 10px; border-radius: 30px; margin-left: 8px;">
                                         Ingrediente
                                     </span>
                                 {% endif %}
@@ -112,10 +134,10 @@
                         </div>
                     </td>
 
-                    <td style="padding: 16px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <!-- Número con color según nivel (sin barra de progreso) -->
-                            <span style="font-weight: 700; font-size: 18px; 
+                    <td style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <!-- Número con color según nivel -->
+                            <span class="stock-number" style="font-weight: 700; font-size: 22px; 
                                 {% if item.stock <= 5 %}
                                     color: #fa383e;
                                 {% elif item.stock <= 10 %}
@@ -126,22 +148,52 @@
                                 {{ item.stock }}
                             </span>
                             
-                            <!-- Badge de alerta para stock bajo -->
+                            <!-- Badge de alerta mejorado -->
                             {% if item.stock <= 5 %}
-                                <span style="background: #ffebe9; color: #b92b27; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                <span class="stock-badge critical">
                                     <i class="fa-solid fa-exclamation-triangle"></i>
-                                    Stock crítico
+                                    Crítico
                                 </span>
                             {% elif item.stock <= 10 %}
-                                <span style="background: #fff4e5; color: #bd7b13; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                <span class="stock-badge medium">
                                     <i class="fa-solid fa-clock"></i>
-                                    Stock medio
+                                    Medio
                                 </span>
                             {% else %}
-                                <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 10px; border-radius: 20px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                                <span class="stock-badge optimal">
                                     <i class="fa-solid fa-check-circle"></i>
-                                    Stock óptimo
+                                    Óptimo
                                 </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 20px; text-align: center;">
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <!-- Botón para agregar inventario -->
+                            <a href="{% url 'inventory_create' %}?branch={{ item.branch.id }}&product={{ item.product.id }}" 
+                               class="action-button add-stock" 
+                               style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
+                               title="Agregar stock">
+                                <i class="fa-solid fa-plus"></i>
+                            </a>
+                            
+                            <!-- Botón para ver movimientos (opcional) -->
+                            <a href="#" 
+                               class="action-button view-movements" 
+                               style="background: #e7f3ff; color: #1877f2; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
+                               title="Ver movimientos">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </a>
+                            
+                            <!-- Botón para editar (solo admin) -->
+                            {% if request.user.role != 'CASHIER' %}
+                            <a href="#" 
+                               class="action-button edit" 
+                               style="background: #fff4e5; color: #f7b928; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
+                               title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
                             {% endif %}
                         </div>
                     </td>
@@ -150,44 +202,192 @@
             </tbody>
         </table>
     {% else %}
-        <div style="padding: 60px 20px; text-align: center;">
-            <div style="background: #e7f3ff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                <i class="fa-solid fa-warehouse" style="font-size: 40px; color: #1877f2;"></i>
+        <div class="empty-state" style="padding: 80px 20px; text-align: center;">
+            <div style="background: linear-gradient(135deg, #667eea20, #764ba220); width: 120px; height: 120px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px;">
+                <i class="fa-solid fa-warehouse" style="font-size: 60px; color: #667eea;"></i>
             </div>
-            <h3 style="color: #050505; margin-bottom: 10px;">No hay inventario registrado</h3>
-            <p style="color: #606770; margin-bottom: 20px;">Agrega productos al inventario para comenzar</p>
+            <h2 style="color: #050505; margin-bottom: 10px;">No hay inventario registrado</h2>
+            <p style="color: #606770; margin-bottom: 25px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                Comienza agregando productos al inventario para gestionar el stock de tu sucursal.
+            </p>
             {% if request.user.role != 'CASHIER' %}
-            <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;">
-                <i class="fa-solid fa-plus"></i>
-                Agregar Inventario
+            <a href="{% url 'inventory_create' %}" class="fb-btn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px 35px; border-radius: 50px; font-weight: 600; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);">
+                <i class="fa-solid fa-plus-circle"></i>
+                Agregar Primer Inventario
             </a>
             {% endif %}
         </div>
     {% endif %}
 </div>
 
-<!-- Resumen de stock simplificado -->
-<div class="fb-card" style="margin-top: 20px; padding: 15px; background: #f5f6f7;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 25px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 12px; height: 12px; background: #42b72a; border-radius: 50%;"></span>
-                <span style="color: #606770; font-size: 13px;">Stock óptimo (>10)</span>
+<!-- Resumen de stock mejorado -->
+<div class="fb-card" style="margin-top: 25px; padding: 20px; border-radius: 16px; background: white;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
+            <div class="legend-item">
+                <span class="legend-dot optimal"></span>
+                <span style="color: #606770;">Stock óptimo (>10)</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 12px; height: 12px; background: #f7b928; border-radius: 50%;"></span>
-                <span style="color: #606770; font-size: 13px;">Stock medio (6-10)</span>
+            <div class="legend-item">
+                <span class="legend-dot medium"></span>
+                <span style="color: #606770;">Stock medio (6-10)</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="width: 12px; height: 12px; background: #fa383e; border-radius: 50%;"></span>
-                <span style="color: #606770; font-size: 13px;">Stock crítico (≤5)</span>
+            <div class="legend-item">
+                <span class="legend-dot critical"></span>
+                <span style="color: #606770;">Stock crítico (≤5)</span>
             </div>
         </div>
-        <div style="color: #606770; font-size: 13px;">
-            <i class="fa-solid fa-chart-simple"></i> Total items: <strong id="total-items">{{ inventory|length }}</strong>
+        <div class="total-stats" style="display: flex; gap: 20px;">
+            <span style="background: #e7f3ff; padding: 8px 16px; border-radius: 30px; color: #1877f2;">
+                <i class="fa-solid fa-cubes"></i> Total: <strong id="total-items">{{ inventory|length }}</strong>
+            </span>
+            <span style="background: #ffebe9; padding: 8px 16px; border-radius: 30px; color: #fa383e;">
+                <i class="fa-solid fa-exclamation-triangle"></i> Críticos: <strong id="critical-count">0</strong>
+            </span>
         </div>
     </div>
 </div>
+
+<style>
+    /* Estilos modernos */
+    .modern-input, .modern-select {
+        padding: 14px 16px;
+        border: 2px solid #f0f2f5;
+        border-radius: 12px;
+        font-size: 14px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .modern-input:focus, .modern-select:focus {
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .modern-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .modern-table thead tr {
+        background: linear-gradient(135deg, #f8f9fa, #f0f2f5);
+    }
+    
+    .modern-table thead th {
+        color: #606770;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .inventory-row {
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .inventory-row:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .stock-badge {
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .stock-badge.critical {
+        background: #ffebe9;
+        color: #b92b27;
+    }
+    
+    .stock-badge.medium {
+        background: #fff4e5;
+        color: #bd7b13;
+    }
+    
+    .stock-badge.optimal {
+        background: #e3f2e8;
+        color: #1b7e3f;
+    }
+    
+    .action-button {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-3px) scale(1.1);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .action-button.add-stock:hover {
+        background: linear-gradient(135deg, #2d8a1f, #1e5f15) !important;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+    
+    .legend-dot.optimal { background: #42b72a; }
+    .legend-dot.medium { background: #f7b928; }
+    .legend-dot.critical { background: #fa383e; }
+    
+    .stats-badge {
+        transition: all 0.3s ease;
+    }
+    
+    .stats-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .action-btn:hover {
+        background: #667eea !important;
+    }
+    
+    .action-btn:hover i {
+        color: white !important;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .inventory-row {
+        animation: fadeIn 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    {% for item in inventory %}
+    .inventory-row:nth-child({{ forloop.counter }}) {
+        animation-delay: {{ forloop.counter0|add:"0.05" }}s;
+    }
+    {% endfor %}
+</style>
 
 <script>
 // Variables para los filtros
@@ -196,6 +396,21 @@ let branchFilter = document.getElementById('branch-filter');
 let rows = document.querySelectorAll('.inventory-row');
 let itemsCount = document.getElementById('items-count');
 let totalItemsSpan = document.getElementById('total-items');
+let criticalCountSpan = document.getElementById('critical-count');
+
+// Función para contar stock crítico
+function countCriticalStock() {
+    let critical = 0;
+    rows.forEach(row => {
+        let stock = parseInt(row.dataset.stock);
+        if (stock <= 5 && row.style.display !== 'none') {
+            critical++;
+        }
+    });
+    if (criticalCountSpan) {
+        criticalCountSpan.textContent = critical;
+    }
+}
 
 // Función para filtrar la tabla
 function filterTable() {
@@ -207,13 +422,9 @@ function filterTable() {
         let productName = row.dataset.product;
         let branchId = row.dataset.branch;
         
-        // Verificar filtro de sucursal
         let matchesBranch = branchValue === 'all' || branchId === branchValue;
-        
-        // Verificar búsqueda por producto
         let matchesSearch = searchTerm === '' || productName.includes(searchTerm);
         
-        // Mostrar u ocultar la fila
         if (matchesBranch && matchesSearch) {
             row.style.display = '';
             visibleCount++;
@@ -222,11 +433,12 @@ function filterTable() {
         }
     });
     
-    // Actualizar contador
-    itemsCount.innerHTML = `<i class="fa-solid fa-cubes"></i> <strong>${visibleCount}</strong> de ${rows.length} items`;
+    // Actualizar contadores
+    itemsCount.innerHTML = `<i class="fa-solid fa-cubes"></i> ${visibleCount} de ${rows.length} items`;
     if (totalItemsSpan) {
         totalItemsSpan.textContent = rows.length;
     }
+    countCriticalStock();
     
     // Mostrar mensaje si no hay resultados
     let tbody = document.getElementById('inventory-tbody');
@@ -237,10 +449,12 @@ function filterTable() {
             noResultsRow = document.createElement('tr');
             noResultsRow.id = 'no-results-row';
             noResultsRow.innerHTML = `
-                <td colspan="3" style="padding: 40px; text-align: center;">
-                    <i class="fa-solid fa-search" style="font-size: 30px; color: #e4e6eb; margin-bottom: 10px;"></i>
-                    <h4 style="color: #050505;">No se encontraron resultados</h4>
-                    <p style="color: #606770;">Intenta con otros filtros</p>
+                <td colspan="4" style="padding: 60px; text-align: center;">
+                    <div style="background: #f8f9fa; width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="fa-solid fa-search" style="font-size: 40px; color: #667eea;"></i>
+                    </div>
+                    <h3 style="color: #050505; margin-bottom: 10px;">No se encontraron resultados</h3>
+                    <p style="color: #606770;">Prueba con otros filtros o términos de búsqueda</p>
                 </td>
             `;
             tbody.appendChild(noResultsRow);
@@ -255,49 +469,19 @@ function clearFilters() {
     searchInput.value = '';
     branchFilter.value = 'all';
     filterTable();
-    
-    // Quitar mensaje de no resultados
-    let noResultsRow = document.getElementById('no-results-row');
-    if (noResultsRow) {
-        noResultsRow.remove();
-    }
 }
 
 // Event listeners
 searchInput.addEventListener('input', filterTable);
 branchFilter.addEventListener('change', filterTable);
 
+// Inicializar contadores
+countCriticalStock();
+
 // Animación al cargar
 document.addEventListener('DOMContentLoaded', function() {
-    rows.forEach((row, index) => {
-        row.style.animation = `fadeIn 0.3s ease ${index * 0.03}s both`;
-    });
+    filterTable();
 });
-
-// Estilos adicionales
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .fb-input {
-        transition: all 0.3s ease;
-    }
-    
-    .fb-input:focus {
-        border-color: #1877f2;
-        box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
-    }
-`;
-document.head.appendChild(style);
 </script>
 
 <!-- Font Awesome -->

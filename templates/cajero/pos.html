@@ -80,6 +80,7 @@
                     <thead style="position: sticky; top: 0; background: #f5f6f7;">
                         <tr>
                             <th style="padding: 12px; text-align: left; color: #606770; font-size: 12px;">Producto</th>
+                            <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Tipo</th>
                             <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Cantidad</th>
                             <th style="padding: 12px; text-align: right; color: #606770; font-size: 12px;">Precio</th>
                             <th style="padding: 12px; text-align: right; color: #606770; font-size: 12px;">Total</th>
@@ -132,7 +133,7 @@
                     <input type="text" 
                            id="product-search" 
                            class="fb-input" 
-                           placeholder="Buscar producto por nombre o código..."
+                           placeholder="Buscar producto por nombre o descripción..."
                            style="padding-left: 45px; padding-right: 100px; height: 48px;"
                            autocomplete="off">
                     <span style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #606770; font-size: 12px;" id="search-count">
@@ -150,17 +151,15 @@
             </div>
         </div>
 
-        <!-- Resultados del buscador (autocomplete) -->
+        <!-- Resultados del buscador (ahora en cards también) -->
         <div id="search-results" style="display: none; margin-bottom: 20px;">
-            <div class="fb-card" style="padding: 0; overflow: hidden;">
-                <div class="fb-card-header" style="padding: 15px; margin: 0; background: #f5f6f7;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 style="margin: 0;"><i class="fas fa-search"></i> Resultados de búsqueda</h4>
-                        <span id="results-count" style="color: #606770;">0 productos</span>
-                    </div>
+            <div class="fb-card" style="padding: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4 style="margin: 0;"><i class="fas fa-search"></i> Resultados de búsqueda</h4>
+                    <span id="results-count" style="color: #606770;">0 productos</span>
                 </div>
-                <div style="padding: 15px; max-height: 400px; overflow-y: auto;" id="results-container">
-                    <!-- Resultados dinámicos -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;" id="results-container">
+                    <!-- Resultados dinámicos en cards -->
                 </div>
             </div>
         </div>
@@ -177,16 +176,18 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;" id="products-grid">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;" id="products-grid">
                 {% for item in inventory %}
                 <div class="product-card {% if item.stock < 5 %}low-stock{% endif %}" 
                      data-product-id="{{ item.product.id }}"
                      data-product-name="{{ item.product.name|lower }}"
-                     data-product-code="{{ item.product.barcode|default:''|lower }}"
-                     data-product-price="{{ item.product.price }}"
+                     data-product-description="{{ item.product.description|default:''|lower }}"
+                     data-product-price-kg="{{ item.product.price_kg|default:'' }}"
+                     data-product-price-bulk="{{ item.product.price_bulk|default:'' }}"
+                     data-product-price-wholesale="{{ item.product.price_wholesale|default:'' }}"
+                     data-product-price-special="{{ item.product.price_special|default:'' }}"
                      data-stock="{{ item.stock }}"
-                     onclick="addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', {{ item.product.price }})"
-                     style="cursor: pointer; border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; text-align: center; background: white; transition: all 0.2s; position: relative;"
+                     style="border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; background: white; transition: all 0.2s; position: relative;"
                      onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 
@@ -200,26 +201,49 @@
                         <i class="fas fa-box" style="font-size: 24px; color: #1877f2;"></i>
                     </div>
 
-                    <strong style="display: block; margin-bottom: 5px; color: #050505;">{{ item.product.name }}</strong>
+                    <strong style="display: block; margin-bottom: 5px; color: #050505; text-align: center;">{{ item.product.name }}</strong>
                     
-                    <div style="color: #1877f2; font-weight: 700; font-size: 18px; margin-bottom: 5px;">
-                        ${{ item.product.price|floatformat:2 }}
+                    <!-- Selector de tipo de precio - Kg seleccionado por defecto si existe -->
+                    <div style="margin: 10px 0;">
+                        <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
+                            {% if item.product.price_kg %}
+                            <option value="kg" data-price="{{ item.product.price_kg }}" selected>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
+                            {% endif %}
+                            {% if item.product.price_bulk %}
+                            <option value="bulk" data-price="{{ item.product.price_bulk }}">Bulto: ${{ item.product.price_bulk|floatformat:2 }}</option>
+                            {% endif %}
+                            {% if item.product.price_wholesale %}
+                            <option value="wholesale" data-price="{{ item.product.price_wholesale }}">Mayoreo: ${{ item.product.price_wholesale|floatformat:2 }}</option>
+                            {% endif %}
+                            {% if item.product.price_special %}
+                            <option value="special" data-price="{{ item.product.price_special }}">Especial: ${{ item.product.price_special|floatformat:2 }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <!-- Precio seleccionado (se actualiza dinámicamente) -->
+                    <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
+                        {% if item.product.price_kg %}
+                            ${{ item.product.price_kg|floatformat:2 }}
+                        {% else %}
+                            $0.00
+                        {% endif %}
                     </div>
                     
-                    <div style="font-size: 12px; color: #606770;">
+                    <div style="font-size: 12px; color: #606770; text-align: center;">
                         <i class="fas fa-cubes"></i> Stock: 
                         <span style="color: {% if item.stock < 5 %}#fa383e{% else %}#42b72a{% endif %}; font-weight: 600;">
                             {{ item.stock }}
                         </span>
                     </div>
 
-                    {% if item.product.barcode %}
-                    <div style="font-size: 10px; color: #606770; margin-top: 5px;">
-                        <i class="fas fa-barcode"></i> {{ item.product.barcode }}
+                    {% if item.product.description %}
+                    <div style="font-size: 10px; color: #606770; margin-top: 5px; text-align: center;">
+                        <i class="fas fa-align-left"></i> {{ item.product.description|truncatechars:30 }}
                     </div>
                     {% endif %}
 
-                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProduct('{{ item.product.id }}', '{{ item.product.name|escapejs }}', {{ item.product.price }})">
+                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProductWithPrice('{{ item.product.id }}', '{{ item.product.name|escapejs }}', this)">
                         <i class="fas fa-plus"></i> Agregar
                     </button>
                 </div>
@@ -306,37 +330,36 @@
     </div>
 </div>
 
-<!-- Ticket oculto para impresión -->
+<!-- Ticket oculto para impresión - Optimizado para impresora térmica -->
 <div id="ticket-print" style="display: none;">
-    <div style="font-family: 'Courier New', monospace; width: 80mm; padding: 10px; margin: 0 auto; background: white;">
-        <div style="text-align: center; margin-bottom: 10px;">
-            <h3 style="margin: 0; font-size: 18px;">{{ request.user.branch.name }}</h3>
-            <p style="margin: 2px 0; font-size: 12px;" id="print-direccion"></p>
-            <p style="margin: 2px 0; font-size: 12px;" id="print-telefono"></p>
-            <p style="margin: 5px 0; font-size: 12px;">{{ now|date:"d/m/Y H:i" }}</p>
-            <p style="margin: 2px 0; font-size: 12px;">Ticket #<span id="print-ticket-number"></span></p>
-            <p style="margin: 2px 0; font-size: 12px;">Atendió: {{ request.user.get_full_name|default:request.user.username }}</p>
+    <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 5px; margin: 0 auto; background: white; font-size: 10px;">
+        <div style="text-align: center; margin-bottom: 5px;">
+            <h3 style="margin: 0; font-size: 14px;">{{ request.user.branch.name }}</h3>
+            <p style="margin: 2px 0;" id="print-direccion"></p>
+            <p style="margin: 2px 0;" id="print-telefono"></p>
+            <p style="margin: 3px 0;">{{ now|date:"d/m/Y H:i" }}</p>
+            <p style="margin: 2px 0;">Ticket #<span id="print-ticket-number"></span></p>
+            <p style="margin: 2px 0;">Atendió: {{ request.user.get_full_name|default:request.user.username }}</p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
         
         <!-- Datos del cliente si existen -->
-        <div id="print-cliente" style="margin: 10px 0; font-size: 12px;">
+        <div id="print-cliente" style="margin: 5px 0;">
             <p style="margin: 2px 0;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
             <p style="margin: 2px 0;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
             <p style="margin: 2px 0;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
         
-        <!-- Tabla de productos -->
-        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+        <!-- Tabla de productos compacta -->
+        <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="text-align: left; padding: 5px 0;">Producto</th>
-                    <th style="text-align: center; padding: 5px 0;">Cant</th>
-                    <th style="text-align: right; padding: 5px 0;">Precio</th>
-                    <th style="text-align: right; padding: 5px 0;">Total</th>
+                    <th style="text-align: left;">Producto</th>
+                    <th style="text-align: center;">Cant</th>
+                    <th style="text-align: right;">Total</th>
                 </tr>
             </thead>
             <tbody id="print-items">
@@ -344,19 +367,18 @@
             </tbody>
         </table>
         
-        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
         
-        <div style="text-align: right; font-size: 14px; font-weight: bold;">
+        <div style="text-align: right;">
             <p style="margin: 2px 0;">Total: $<span id="print-total"></span></p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
         
-        <p style="text-align: center; font-size: 11px; margin: 5px 0;">¡Gracias por su compra!</p>
+        <p style="text-align: center; margin: 5px 0;">¡Gracias por su compra!</p>
     </div>
 </div>
 
-<!-- Scripts -->
 <script>
 let cart = {};
 let products = [];
@@ -365,17 +387,49 @@ let dietItems = JSON.parse(localStorage.getItem('posCart')) || [];
 let currentTicketNumber = Math.floor(Math.random() * 10000);
 let ventaActualId = null;
 
+// Mapeo de tipos de precio para mostrar en el ticket
+const priceTypeNames = {
+    'kg': 'Kg',
+    'bulk': 'Bulto',
+    'wholesale': 'Mayoreo',
+    'special': 'Especial'
+};
+
 // Inicializar productos
 document.addEventListener('DOMContentLoaded', function() {
     // Cargar productos en array para búsqueda
     document.querySelectorAll('.product-card').forEach(card => {
+        const priceKg = card.dataset.productPriceKg ? parseFloat(card.dataset.productPriceKg) : null;
+        
         products.push({
             id: card.dataset.productId,
             name: card.dataset.productName,
-            code: card.dataset.productCode || '',
-            price: parseFloat(card.dataset.productPrice),
+            description: card.dataset.productDescription || '',
+            priceKg: priceKg,
+            priceBulk: card.dataset.productPriceBulk ? parseFloat(card.dataset.productPriceBulk) : null,
+            priceWholesale: card.dataset.productPriceWholesale ? parseFloat(card.dataset.productPriceWholesale) : null,
+            priceSpecial: card.dataset.productPriceSpecial ? parseFloat(card.dataset.productPriceSpecial) : null,
             stock: parseInt(card.dataset.stock),
             element: card
+        });
+        
+        // Configurar selector de precio
+        const selector = card.querySelector('.price-type-selector');
+        const priceDisplay = card.querySelector('.selected-price');
+        
+        // Si hay precio por kg, seleccionarlo por defecto y mostrar el precio
+        if (priceKg) {
+            priceDisplay.textContent = '$' + priceKg.toFixed(2);
+            priceDisplay.dataset.price = priceKg;
+            priceDisplay.dataset.priceType = 'kg';
+        }
+        
+        selector.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const price = parseFloat(selectedOption.dataset.price);
+            priceDisplay.textContent = '$' + price.toFixed(2);
+            priceDisplay.dataset.price = price;
+            priceDisplay.dataset.priceType = selectedOption.value;
         });
     });
 
@@ -430,9 +484,13 @@ function loadDietItems() {
             if (item.type === 'ingredient') {
                 const product = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
                 if (product) {
+                    // Usar precio por Kg por defecto para ingredientes
+                    const price = product.priceKg || 0;
                     cart[product.id] = {
                         name: item.name,
-                        price: product.price,
+                        price: price,
+                        priceType: 'kg',
+                        priceTypeName: 'Kg',
                         quantity: item.quantity || 1,
                         fromDiet: true
                     };
@@ -458,7 +516,7 @@ function clearDietItems() {
     showNotification('Items de dieta removidos', 'info');
 }
 
-// Función de búsqueda predictiva
+// Función de búsqueda predictiva (ahora en cards)
 function searchProducts(query) {
     query = query.toLowerCase().trim();
     const resultsContainer = document.getElementById('results-container');
@@ -472,38 +530,81 @@ function searchProducts(query) {
     }
 
     const matches = products.filter(p => 
-        p.name.includes(query) || p.code.includes(query)
+        p.name.includes(query) || (p.description && p.description.includes(query))
     );
 
     if (matches.length > 0) {
-        resultsContainer.innerHTML = matches.map(p => `
-            <div onclick="addProduct('${p.id}', '${p.name}', ${p.price})" 
-                 style="display: flex; align-items: center; gap: 15px; padding: 12px; border-bottom: 1px solid #e4e6eb; cursor: pointer; transition: background 0.2s;"
-                 onmouseover="this.style.background='#f5f6f7'"
-                 onmouseout="this.style.background='transparent'">
-                <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-box" style="color: #1877f2;"></i>
+        resultsContainer.innerHTML = matches.map(p => {
+            // Determinar precio por defecto (Kg si existe)
+            const defaultPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial;
+            const defaultPriceType = p.priceKg ? 'kg' : p.priceBulk ? 'bulk' : p.priceWholesale ? 'wholesale' : p.priceSpecial ? 'special' : null;
+            const defaultPriceTypeName = defaultPriceType ? priceTypeNames[defaultPriceType] : '';
+            
+            // Generar opciones de precio para el selector
+            let priceOptions = '';
+            if (p.priceKg) {
+                priceOptions += `<option value="kg" data-price="${p.priceKg}" ${p.priceKg === defaultPrice ? 'selected' : ''}>Kg: $${p.priceKg.toFixed(2)}</option>`;
+            }
+            if (p.priceBulk) {
+                priceOptions += `<option value="bulk" data-price="${p.priceBulk}" ${p.priceBulk === defaultPrice ? 'selected' : ''}>Bulto: $${p.priceBulk.toFixed(2)}</option>`;
+            }
+            if (p.priceWholesale) {
+                priceOptions += `<option value="wholesale" data-price="${p.priceWholesale}" ${p.priceWholesale === defaultPrice ? 'selected' : ''}>Mayoreo: $${p.priceWholesale.toFixed(2)}</option>`;
+            }
+            if (p.priceSpecial) {
+                priceOptions += `<option value="special" data-price="${p.priceSpecial}" ${p.priceSpecial === defaultPrice ? 'selected' : ''}>Especial: $${p.priceSpecial.toFixed(2)}</option>`;
+            }
+            
+            return `
+            <div class="product-card" 
+                 data-product-id="${p.id}"
+                 data-product-name="${p.name}"
+                 data-product-price-kg="${p.priceKg || ''}"
+                 data-product-price-bulk="${p.priceBulk || ''}"
+                 data-product-price-wholesale="${p.priceWholesale || ''}"
+                 data-product-price-special="${p.priceSpecial || ''}"
+                 data-stock="${p.stock}"
+                 style="border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; background: white; transition: all 0.2s; position: relative;"
+                 onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
+                 onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                
+                ${p.stock < 5 ? '<span style="position: absolute; top: 10px; right: 10px; color: #fa383e;"><i class="fas fa-exclamation-circle"></i></span>' : ''}
+                
+                <div style="background: #e7f3ff; width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                    <i class="fas fa-box" style="font-size: 24px; color: #1877f2;"></i>
                 </div>
-                <div style="flex: 1;">
-                    <strong>${p.name}</strong>
-                    ${p.code ? `<div style="font-size: 11px; color: #606770;"><i class="fas fa-barcode"></i> ${p.code}</div>` : ''}
+                
+                <strong style="display: block; margin-bottom: 5px; color: #050505; text-align: center;">${p.name}</strong>
+                
+                <div style="margin: 10px 0;">
+                    <select class="price-type-selector" data-product-id="${p.id}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
+                        ${priceOptions}
+                    </select>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 700; color: #1877f2;">$${p.price.toFixed(2)}</div>
-                    <div style="font-size: 11px; color: ${p.stock < 5 ? '#fa383e' : '#42b72a'};">
-                        <i class="fas fa-cubes"></i> ${p.stock} uds
-                    </div>
+                
+                <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
+                    $${defaultPrice ? defaultPrice.toFixed(2) : '0.00'}
                 </div>
-                <i class="fas fa-plus-circle" style="color: #1877f2; font-size: 20px;"></i>
+                
+                <div style="font-size: 12px; color: #606770; text-align: center;">
+                    <i class="fas fa-cubes"></i> Stock: 
+                    <span style="color: ${p.stock < 5 ? '#fa383e' : '#42b72a'}; font-weight: 600;">
+                        ${p.stock} uds
+                    </span>
+                </div>
+                
+                <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="addProductWithPrice('${p.id}', '${p.name}', this)">
+                    <i class="fas fa-plus"></i> Agregar
+                </button>
             </div>
-        `).join('');
+        `}).join('');
         
         resultsCount.textContent = `${matches.length} productos`;
         searchResults.style.display = 'block';
         document.getElementById('products-grid').style.display = 'none';
     } else {
         resultsContainer.innerHTML = `
-            <div style="text-align: center; padding: 30px;">
+            <div style="grid-column: 1/-1; text-align: center; padding: 30px;">
                 <i class="fas fa-search" style="font-size: 40px; color: #e4e6eb; margin-bottom: 15px;"></i>
                 <h4 style="color: #050505;">No se encontraron productos</h4>
                 <p style="color: #606770;">Intenta con otro término de búsqueda</p>
@@ -534,22 +635,43 @@ function filterProducts(filter) {
     }
 }
 
-// Funciones del carrito
-function addProduct(id, name, price) {
+// Función para agregar producto con precio seleccionado
+function addProductWithPrice(id, name, button) {
+    const card = button.closest('.product-card');
+    const selector = card.querySelector('.price-type-selector');
+    const priceDisplay = card.querySelector('.selected-price');
+    
+    const price = parseFloat(priceDisplay.dataset.price);
+    const priceType = priceDisplay.dataset.priceType;
+    const priceTypeName = selector.options[selector.selectedIndex].text.split(':')[0];
+    
+    addProductToCart(id, name, price, priceType, priceTypeName);
+}
+
+// Función para agregar al carrito
+function addProductToCart(id, name, price, priceType, priceTypeName) {
     price = parseFloat(price);
 
     if (cart[id]) {
-        cart[id].quantity += 1;
+        // Si ya existe, verificar si es el mismo tipo de precio
+        if (cart[id].priceType === priceType) {
+            cart[id].quantity += 1;
+        } else {
+            showNotification('❌ Ya tienes este producto con otro tipo de precio', 'error');
+            return;
+        }
     } else {
         cart[id] = {
             name: name,
             price: price,
+            priceType: priceType,
+            priceTypeName: priceTypeName,
             quantity: 1
         };
     }
 
     renderTicket();
-    showNotification(`✓ ${name} agregado al ticket`, 'success');
+    showNotification(`✓ ${name} (${priceTypeName}) agregado al ticket`, 'success');
 }
 
 function renderTicket() {
@@ -569,7 +691,11 @@ function renderTicket() {
             <tr style="border-bottom: 1px solid #e4e6eb;" data-product-id="${id}">
                 <td style="padding: 12px 8px;">
                     <div><strong>${dietIcon} ${item.name}</strong></div>
-                    <div style="font-size: 11px; color: #606770;">$${item.price.toFixed(2)} c/u</div>
+                </td>
+                <td style="padding: 12px 8px; text-align: center;">
+                    <span style="background: #e7f3ff; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
+                        ${item.priceTypeName}
+                    </span>
                 </td>
                 <td style="padding: 12px 8px; text-align: center;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 5px;">
@@ -700,6 +826,8 @@ function procesarVenta() {
             id: id,
             quantity: cart[id].quantity,
             price: cart[id].price,
+            priceType: cart[id].priceType,
+            priceTypeName: cart[id].priceTypeName,
             fromDiet: cart[id].fromDiet || false
         });
     }
@@ -763,37 +891,22 @@ function imprimirTicketVenta() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Generar items para impresión (usando el carrito original)
+    // Generar items para impresión (formato compacto)
     let itemsHtml = '';
     let total = 0;
     
-    // Si el carrito está vacío, usar los datos del modal
-    if (Object.keys(cart).length === 0) {
-        // Recuperar la última venta (esto es un ejemplo, idealmente vendría del servidor)
-        const totalModal = document.getElementById('exito-total').textContent.replace('$', '');
-        total = parseFloat(totalModal);
+    for (let id in cart) {
+        let item = cart[id];
+        let rowTotal = item.price * item.quantity;
+        total += rowTotal;
         
-        // Mostrar mensaje genérico
-        itemsHtml = `
+        itemsHtml += `
             <tr>
-                <td colspan="4" style="text-align: center; padding: 10px;">Venta #${ventaActualId}</td>
+                <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
+                <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
+                <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
             </tr>
         `;
-    } else {
-        for (let id in cart) {
-            let item = cart[id];
-            let rowTotal = item.price * item.quantity;
-            total += rowTotal;
-            
-            itemsHtml += `
-                <tr>
-                    <td style="text-align: left; padding: 3px 0;">${item.name}</td>
-                    <td style="text-align: center; padding: 3px 0;">${item.quantity}</td>
-                    <td style="text-align: right; padding: 3px 0;">$${item.price.toFixed(2)}</td>
-                    <td style="text-align: right; padding: 3px 0;">$${rowTotal.toFixed(2)}</td>
-                </tr>
-            `;
-        }
     }
     
     document.getElementById('print-items').innerHTML = itemsHtml;
@@ -806,8 +919,11 @@ function imprimirTicketVenta() {
             <head>
                 <title>Ticket de Venta #${ventaActualId}</title>
                 <style>
+                    body { font-family: 'Courier New', monospace; width: 58mm; margin: 0 auto; font-size: 10px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 2px 0; }
                     @media print {
-                        body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; }
+                        body { width: 58mm; }
                     }
                 </style>
             </head>
@@ -891,7 +1007,7 @@ function imprimirTicket() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Generar items para impresión
+    // Generar items para impresión (formato compacto)
     let itemsHtml = '';
     let total = 0;
     
@@ -902,10 +1018,9 @@ function imprimirTicket() {
         
         itemsHtml += `
             <tr>
-                <td style="text-align: left; padding: 3px 0;">${item.name}</td>
-                <td style="text-align: center; padding: 3px 0;">${item.quantity}</td>
-                <td style="text-align: right; padding: 3px 0;">$${item.price.toFixed(2)}</td>
-                <td style="text-align: right; padding: 3px 0;">$${rowTotal.toFixed(2)}</td>
+                <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
+                <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
+                <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
             </tr>
         `;
     }
@@ -920,8 +1035,11 @@ function imprimirTicket() {
             <head>
                 <title>Ticket de Venta #${currentTicketNumber}</title>
                 <style>
+                    body { font-family: 'Courier New', monospace; width: 58mm; margin: 0 auto; font-size: 10px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 2px 0; }
                     @media print {
-                        body { font-family: 'Courier New', monospace; width: 80mm; margin: 0 auto; }
+                        body { width: 58mm; }
                     }
                 </style>
             </head>

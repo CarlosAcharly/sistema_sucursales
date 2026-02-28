@@ -1,0 +1,198 @@
+{% extends 'admin/earnings/base_earnings.html' %}
+{% load static %}
+
+{% block earnings_content %}
+<div class="fb-card" style="border-radius: 20px; padding: 30px; max-width: 700px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, {% if form.instance.pk %}#f7b928, #f59e0b{% else %}#42b72a, #2d8a1f{% endif %}); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+            <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %}" style="font-size: 40px; color: white;"></i>
+        </div>
+        <h2 style="margin: 0; font-size: 28px;">{{ title }}</h2>
+        <p style="color: #606770; margin-top: 10px;">
+            {% if form.instance.pk %}
+                Actualizando precio de compra existente
+            {% else %}
+                Registra el costo de adquisición del producto
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div style="background: #ffebe9; border: 1px solid #fa383e; padding: 16px; border-radius: 12px; margin-bottom: 25px;">
+            {% for error in form.non_field_errors %}
+            <div style="color: #b92b27; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-circle"></i>
+                {{ error }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Producto -->
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-box" style="color: #1877f2; margin-right: 8px;"></i>
+                Producto <span style="color: #fa383e;">*</span>
+            </label>
+            <div style="position: relative;">
+                {{ form.product }}
+            </div>
+            {% if form.product.errors %}
+            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
+                <i class="fas fa-exclamation-circle"></i> {{ form.product.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sucursal -->
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-store" style="color: #42b72a; margin-right: 8px;"></i>
+                Sucursal <span style="color: #fa383e;">*</span>
+            </label>
+            <div style="position: relative;">
+                {{ form.branch }}
+            </div>
+            {% if form.branch.errors %}
+            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
+                <i class="fas fa-exclamation-circle"></i> {{ form.branch.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Precio -->
+        <div class="form-group" style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-dollar-sign" style="color: #f7b928; margin-right: 8px;"></i>
+                Precio de Compra <span style="color: #fa383e;">*</span>
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-dollar-sign" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
+                <input type="number" 
+                       name="{{ form.price.name }}"
+                       value="{{ form.price.value|default:'' }}"
+                       step="0.01"
+                       min="0"
+                       class="price-input"
+                       style="width: 100%; padding: 14px 14px 14px 40px; border: 2px solid #e4e6eb; border-radius: 12px; font-size: 16px; transition: all 0.2s;"
+                       placeholder="0.00"
+                       required>
+            </div>
+            {% if form.price.errors %}
+            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
+                <i class="fas fa-exclamation-circle"></i> {{ form.price.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Notas -->
+        <div class="form-group" style="margin-bottom: 30px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-sticky-note" style="color: #764ba2; margin-right: 8px;"></i>
+                Notas <span style="color: #606770; font-weight: normal;">(opcional)</span>
+            </label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
+                <i class="fas fa-exclamation-circle"></i> {{ form.notes.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Información adicional (solo edición) -->
+        {% if form.instance.pk %}
+        <div style="background: linear-gradient(135deg, #f8f9fa, #f0f2f5); padding: 20px; border-radius: 16px; margin-bottom: 30px;">
+            <h4 style="margin: 0 0 15px 0; color: #050505; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-info-circle" style="color: #1877f2;"></i>
+                Información del registro
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="background: white; padding: 12px; border-radius: 10px;">
+                    <small style="color: #606770; display: block;">Creado por</small>
+                    <strong>{{ form.instance.created_by.get_full_name|default:form.instance.created_by.username }}</strong>
+                </div>
+                <div style="background: white; padding: 12px; border-radius: 10px;">
+                    <small style="color: #606770; display: block;">Fecha</small>
+                    <strong>{{ form.instance.created_at|date:"d/m/Y H:i" }}</strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Botones de acción -->
+        <div style="display: flex; gap: 15px; border-top: 2px solid #f0f2f5; padding-top: 30px;">
+            <button type="submit" class="fb-btn" style="flex: 2; background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 16px; border-radius: 12px; font-weight: 600; font-size: 16px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;">
+                <i class="fas fa-save"></i>
+                Guardar Precio
+            </button>
+            <a href="{% url 'earnings:purchase_price_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1; padding: 16px; border-radius: 12px; text-align: center; text-decoration: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .price-input:focus {
+        border-color: #42b72a !important;
+        box-shadow: 0 0 0 4px rgba(66, 183, 42, 0.1);
+        outline: none;
+    }
+    
+    select {
+        width: 100%;
+        padding: 14px;
+        border: 2px solid #e4e6eb;
+        border-radius: 12px;
+        font-size: 15px;
+        background: white;
+        transition: all 0.2s;
+    }
+    
+    select:focus {
+        border-color: #1877f2;
+        box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.1);
+        outline: none;
+    }
+    
+    textarea {
+        width: 100%;
+        padding: 14px;
+        border: 2px solid #e4e6eb;
+        border-radius: 12px;
+        font-size: 14px;
+        min-height: 100px;
+        resize: vertical;
+        transition: all 0.2s;
+    }
+    
+    textarea:focus {
+        border-color: #764ba2;
+        box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.1);
+        outline: none;
+    }
+    
+    .fb-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Formatear precio al perder foco
+    const priceInput = document.querySelector('.price-input');
+    if (priceInput) {
+        priceInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

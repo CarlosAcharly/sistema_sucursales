@@ -189,7 +189,7 @@
             margin-bottom: 5px;
         }
 
-        .sidebar-menu a {
+        .sidebar-menu a, .dropdown-toggle {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -201,9 +201,10 @@
             border-left: 3px solid transparent;
             margin: 0 10px;
             border-radius: 8px;
+            cursor: pointer;
         }
 
-        .sidebar-menu a:hover {
+        .sidebar-menu a:hover, .dropdown-toggle:hover {
             background: #1f2a40;
             color: white;
             border-left-color: #3b82f6;
@@ -214,6 +215,45 @@
             background: #1f2a40;
             color: white;
             border-left-color: #3b82f6;
+        }
+
+        /* Estilos para dropdown */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-arrow {
+            margin-left: auto;
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            display: none;
+            list-style: none;
+            margin-left: 20px;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .dropdown.active .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-menu li a {
+            padding: 10px 20px 10px 52px;
+            font-size: 13px;
+            margin: 0 10px;
+            border-left: 3px solid transparent;
+        }
+
+        .dropdown-menu li a i {
+            font-size: 14px;
+            min-width: 20px;
         }
 
         .menu-icon {
@@ -443,6 +483,14 @@
                 flex-direction: column;
                 align-items: flex-end;
             }
+            
+            .dropdown-menu {
+                margin-left: 10px;
+            }
+            
+            .dropdown-menu li a {
+                padding-left: 42px;
+            }
         }
     </style>
 </head>
@@ -525,12 +573,47 @@
                     </a>
                 </li>
                 <li>
-        <a href="{% url 'orders:admin_orders' %}" 
-           {% if request.resolver_match.app_name == 'orders' %}class="active"{% endif %}>
-            <i class="fa-solid fa-truck-ramp-box menu-icon"></i>
-            Pedidos
-        </a>
-    </li>
+                    <a href="{% url 'orders:admin_orders' %}" 
+                       {% if request.resolver_match.app_name == 'orders' %}class="active"{% endif %}>
+                        <i class="fa-solid fa-truck-ramp-box menu-icon"></i>
+                        Pedidos
+                    </a>
+                </li>
+                
+                <!-- Dropdown de Ganancias -->
+                <li class="dropdown {% if 'earnings' in request.path %}active{% endif %}">
+                    <div class="dropdown-toggle" onclick="toggleDropdown(this)">
+                        <i class="fa-solid fa-chart-line menu-icon"></i>
+                        <span>Ganancias</span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </div>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="{% url 'earnings:profit_dashboard' %}" {% if request.resolver_match.url_name == 'profit_dashboard' %}class="active"{% endif %}>
+                                <i class="fa-solid fa-gauge-high"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'earnings:purchase_price_list' %}" {% if request.resolver_match.url_name == 'purchase_price_list' %}class="active"{% endif %}>
+                                <i class="fa-solid fa-tag"></i>
+                                Precios de Compra
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'earnings:profit_report' %}" {% if request.resolver_match.url_name == 'profit_report' %}class="active"{% endif %}>
+                                <i class="fa-solid fa-file-alt"></i>
+                                Reportes
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'earnings:profit_by_product' %}" {% if request.resolver_match.url_name == 'profit_by_product' %}class="active"{% endif %}>
+                                <i class="fa-solid fa-chart-bar"></i>
+                                Por Producto
+                            </a>
+                        </li>
+                    </ul>
+                </li>
             </ul>
 
             <div class="sidebar-header" style="margin-top: 30px;">
@@ -550,6 +633,12 @@
                         Agregar Stock
                     </a>
                 </li>
+                <li>
+                    <a href="{% url 'earnings:purchase_price_create' %}">
+                        <i class="fa-solid fa-circle-plus menu-icon"></i>
+                        Nuevo Precio Compra
+                    </a>
+                </li>
             </ul>
         </div>
 
@@ -558,5 +647,40 @@
             {% block content %}{% endblock %}
         </div>
     </div>
+
+    <script>
+        // Función para toggle del dropdown
+        function toggleDropdown(element) {
+            const dropdown = element.closest('.dropdown');
+            dropdown.classList.toggle('active');
+            
+            // Cerrar otros dropdowns
+            document.querySelectorAll('.dropdown').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('active');
+                }
+            });
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown').forEach(d => {
+                    d.classList.remove('active');
+                });
+            }
+        });
+
+        // Mantener dropdown abierto si la URL actual está en earnings
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/earnings/')) {
+                const earningsDropdown = document.querySelector('.dropdown');
+                if (earningsDropdown) {
+                    earningsDropdown.classList.add('active');
+                }
+            }
+        });
+    </script>
 </body>
 </html>

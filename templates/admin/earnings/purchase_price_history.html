@@ -1,0 +1,229 @@
+{% extends 'admin/earnings/base_earnings.html' %}
+{% load static %}
+
+{% block earnings_content %}
+<div class="fb-card" style="border-radius: 20px; padding: 25px; margin-bottom: 25px;">
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <a href="{% url 'earnings:purchase_price_list' %}" class="back-btn" style="background: #f5f6f7; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #606770; transition: all 0.2s;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-history" style="color: #1877f2;"></i>
+                Historial de Precios
+            </h2>
+            <p style="color: #606770; margin: 8px 0 0 0; display: flex; align-items: center; gap: 10px;">
+                <span style="background: #e7f3ff; padding: 4px 12px; border-radius: 30px; font-size: 13px;">
+                    <i class="fas fa-box"></i> {{ product.name }}
+                </span>
+                <span style="background: #fff4e5; padding: 4px 12px; border-radius: 30px; font-size: 13px;">
+                    <i class="fas fa-store"></i> {{ branch.name }}
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen en cards -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+    <div class="kpi-card">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #e3f2e8; width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-tag" style="color: #42b72a; font-size: 24px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Precio actual</span>
+                {% with current_price=prices.first %}
+                <h3 style="margin: 5px 0 0; color: #42b72a; font-size: 28px;">${{ current_price.price|floatformat:2 }}</h3>
+                <small style="color: #606770;">{{ current_price.valid_from|date:"d/m/Y" }}</small>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="kpi-card">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #e7f3ff; width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-sync-alt" style="color: #1877f2; font-size: 24px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Total cambios</span>
+                <h3 style="margin: 5px 0 0; color: #1877f2; font-size: 28px;">{{ prices|length }}</h3>
+                <small style="color: #606770;">Actualizaciones</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="kpi-card">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #ffebe9; width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-arrow-down" style="color: #fa383e; font-size: 24px;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Precio más bajo</span>
+                {% with min_price=prices|dictsort:"price"|first %}
+                <h3 style="margin: 5px 0 0; color: #fa383e; font-size: 28px;">${{ min_price.price|floatformat:2 }}</h3>
+                <small style="color: #606770;">{{ min_price.valid_from|date:"d/m/Y" }}</small>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de historial -->
+<div class="fb-card" style="padding: 0; border-radius: 20px; overflow: hidden; margin-bottom: 30px;">
+    <table class="earnings-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Precio</th>
+                <th>Registrado por</th>
+                <th>Notas</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for price in prices %}
+            <tr>
+                <td>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600;">{{ price.valid_from|date:"d/m/Y" }}</span>
+                        <small style="color: #606770;">{{ price.valid_from|date:"H:i" }}</small>
+                    </div>
+                </td>
+                <td>
+                    <span style="font-size: 18px; font-weight: 700; {% if price.is_active %}color: #42b72a;{% else %}color: #606770;{% endif %}">
+                        ${{ price.price|floatformat:2 }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user" style="color: #1877f2; font-size: 14px;"></i>
+                        </div>
+                        <span>{{ price.created_by.get_full_name|default:price.created_by.username }}</span>
+                    </div>
+                </td>
+                <td>
+                    {% if price.notes %}
+                        <span style="background: #f5f6f7; padding: 4px 12px; border-radius: 30px; font-size: 12px;">
+                            {{ price.notes|truncatechars:30 }}
+                        </span>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if price.is_active %}
+                        <span class="status-badge status-active">
+                            <i class="fas fa-check-circle"></i> Activo
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-inactive">
+                            <i class="fas fa-history"></i> Histórico
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 60px;">
+                    <i class="fas fa-history" style="font-size: 60px; color: #e4e6eb; margin-bottom: 20px;"></i>
+                    <h3 style="color: #050505;">No hay historial de precios</h3>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Gráfico de evolución -->
+<div class="fb-card" style="border-radius: 20px; padding: 25px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f5;">
+        <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-chart-line" style="color: #42b72a;"></i> Evolución del Precio</h3>
+        <span class="status-badge status-active">{{ prices|length }} cambios</span>
+    </div>
+    <div style="height: 300px; margin-top: 20px;">
+        <canvas id="priceChart"></canvas>
+    </div>
+</div>
+
+<style>
+    .back-btn:hover {
+        background: #1877f2 !important;
+        color: white !important;
+        transform: translateX(-3px);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    
+    const prices = [
+        {% for price in prices reversed %}
+        {
+            date: '{{ price.valid_from|date:"d/m" }}',
+            price: {{ price.price }}
+        },
+        {% endfor %}
+    ];
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: prices.map(p => p.date),
+            datasets: [{
+                label: 'Precio de Compra ($)',
+                data: prices.map(p => p.price),
+                borderColor: '#42b72a',
+                backgroundColor: 'rgba(66, 183, 42, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#42b72a',
+                pointBorderColor: 'white',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return '$' + context.raw.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
