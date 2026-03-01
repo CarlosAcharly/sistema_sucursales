@@ -469,6 +469,7 @@ function toggleCliente() {
 }
 
 // Función para cargar items de dieta
+// Función para cargar items de dieta - CORREGIDA
 function loadDietItems() {
     if (dietItems.length > 0) {
         const dietIndicator = document.getElementById('diet-indicator');
@@ -482,24 +483,42 @@ function loadDietItems() {
         
         dietItems.forEach(item => {
             if (item.type === 'ingredient') {
+                // Buscar el producto en el inventario por nombre
                 const product = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
                 if (product) {
-                    // Usar precio por Kg por defecto para ingredientes
-                    const price = product.priceKg || 0;
+                    // Usar el precio y tipo de precio guardados en el item de dieta
                     cart[product.id] = {
                         name: item.name,
-                        price: price,
-                        priceType: 'kg',
-                        priceTypeName: 'Kg',
+                        price: item.price || 0,  // Usar el precio guardado
+                        priceType: item.price_type || 'kg',  // Usar el tipo guardado
+                        priceTypeName: item.price_type_name || 'Kg',  // Usar el nombre guardado
                         quantity: item.quantity || 1,
                         fromDiet: true
                     };
+                } else {
+                    // Si no encuentra el producto por nombre, intentar por ID
+                    const productById = products.find(p => p.id == item.id);
+                    if (productById) {
+                        cart[productById.id] = {
+                            name: item.name,
+                            price: item.price || 0,
+                            priceType: item.price_type || 'kg',
+                            priceTypeName: item.price_type_name || 'Kg',
+                            quantity: item.quantity || 1,
+                            fromDiet: true
+                        };
+                    }
                 }
             }
         });
         
         renderTicket();
-        localStorage.removeItem('posCart');
+        
+        // Limpiar localStorage después de cargar (opcional, puedes comentar si quieres mantener)
+        // localStorage.removeItem('posCart');
+        
+        // Mostrar resumen de lo cargado
+        console.log('Items de dieta cargados:', Object.keys(cart).length);
     }
 }
 
@@ -641,9 +660,15 @@ function addProductWithPrice(id, name, button) {
     const selector = card.querySelector('.price-type-selector');
     const priceDisplay = card.querySelector('.selected-price');
     
+    if (!selector.value) {
+        showNotification('❌ Debes seleccionar un tipo de precio', 'error');
+        return;
+    }
+    
     const price = parseFloat(priceDisplay.dataset.price);
     const priceType = priceDisplay.dataset.priceType;
-    const priceTypeName = selector.options[selector.selectedIndex].text.split(':')[0];
+    const selectedOption = selector.options[selector.selectedIndex];
+    const priceTypeName = selectedOption.text.split(':')[0];
     
     addProductToCart(id, name, price, priceType, priceTypeName);
 }
@@ -780,6 +805,12 @@ function clearCart() {
         cart = {};
         document.getElementById('diet-indicator').style.display = 'none';
         renderTicket();
+        
+        // Limpiar localStorage si había items de dieta
+        if (dietItems.length > 0) {
+            localStorage.removeItem('posCart');
+            dietItems = [];
+        }
     }
 }
 
@@ -851,17 +882,29 @@ function procesarVenta() {
         if (data.success) {
             ventaActualId = data.venta_id || Math.floor(Math.random() * 10000);
             
+            // Guardar el total antes de limpiar
+            const totalVenta = document.getElementById('total').innerText;
+            
+            // Limpiar carrito ANTES de cerrar el modal de confirmación
+            cart = {};
+            renderTicket(); // Esto actualiza la vista del ticket
+            
             // Cerrar modal de confirmación
             cerrarModalConfirmacion();
             
-            // Mostrar modal de éxito
+            // Actualizar modal de éxito con los datos de la venta
             document.getElementById('exito-venta-id').textContent = ventaActualId;
-            document.getElementById('exito-total').textContent = '$' + document.getElementById('total').innerText;
+            document.getElementById('exito-total').textContent = '$' + totalVenta;
+            
+            // Mostrar modal de éxito
             document.getElementById('ventaExitosaModal').style.display = 'block';
             
-            // Limpiar carrito
-            cart = {};
-            renderTicket();
+            // Opcional: limpiar localStorage si había items de dieta
+            if (dietItems.length > 0) {
+                localStorage.removeItem('posCart');
+                dietItems = [];
+            }
+            
         } else {
             showNotification(data.error || 'Error al procesar la venta', 'error');
             btnProcesar.disabled = false;
@@ -873,6 +916,39 @@ function procesarVenta() {
         btnProcesar.disabled = false;
         btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
     });
+}
+
+function finalizarVenta() {
+    // Cerrar modal de éxito
+    document.getElementById('ventaExitosaModal').style.display = 'none';
+    
+    // Resetear todo para una nueva venta
+    cart = {};
+    renderTicket();
+    
+    // Generar nuevo número de ticket
+    currentTicketNumber = Math.floor(Math.random() * 10000);
+    document.getElementById('ticket-number').textContent = currentTicketNumber;
+    
+    // Limpiar campos del cliente
+    document.getElementById('cliente-nombre').value = '';
+    document.getElementById('cliente-direccion').value = '';
+    document.getElementById('cliente-telefono').value = '';
+    
+    // Ocultar indicador de dieta si estaba visible
+    document.getElementById('diet-indicator').style.display = 'none';
+    
+    // Limpiar localStorage
+    localStorage.removeItem('posCart');
+    dietItems = [];
+    
+    showNotification('✅ Venta completada. Listo para nueva venta', 'success');
+}
+
+// Modificar también la función cerrarModalExito para que no recargue la página
+function cerrarModalExito() {
+    document.getElementById('ventaExitosaModal').style.display = 'none';
+    finalizarVenta();
 }
 
 function imprimirTicketVenta() {

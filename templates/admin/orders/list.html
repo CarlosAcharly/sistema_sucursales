@@ -161,9 +161,9 @@
     </div>
 </div>
 
-<!-- Modal de Edición de Pedido -->
+<!-- Modal de Edición de Pedido (MEJORADO) -->
 <div id="editOrderModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-content" style="max-width: 900px;">
         <div class="modal-header">
             <h3>
                 <i class="fas fa-edit"></i> 
@@ -560,7 +560,7 @@
     margin: 5% auto;
     padding: 25px;
     width: 90%;
-    max-width: 600px;
+    max-width: 900px;
     border-radius: 10px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
@@ -637,6 +637,7 @@
     background: white;
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid #e4e6eb;
 }
 
 .edit-products-table th {
@@ -662,18 +663,85 @@
     background-color: #f5f6f7;
 }
 
-/* Producto eliminado */
-.product-row.deleted {
-    background-color: #ffebe9;
-    opacity: 0.7;
+/* Input de cantidad */
+.quantity-input {
+    width: 100px;
+    padding: 8px 10px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: right;
+    transition: all 0.2s;
+    font-weight: 500;
 }
 
-.product-row.deleted td {
-    text-decoration: line-through;
-    color: #999;
+.quantity-input:focus {
+    outline: none;
+    border-color: #1877f2;
+    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
+}
+
+.quantity-input.changed {
+    background-color: #fff4e5;
+    border-color: #f7b928;
+}
+
+.original-value {
+    font-size: 12px;
+    color: #606770;
+    margin-left: 5px;
 }
 
 /* Botones de acción en el modal */
+.apply-btn {
+    background: #1877f2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    margin-right: 5px;
+}
+
+.apply-btn:hover:not(:disabled) {
+    background: #166fe5;
+    transform: translateY(-1px);
+}
+
+.apply-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.apply-btn.hidden {
+    display: none;
+}
+
+.update-item-btn {
+    background: none;
+    border: none;
+    color: #1877f2;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.update-item-btn:hover:not(:disabled) {
+    background: #e7f3ff;
+    transform: scale(1.1);
+}
+
+.update-item-btn:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
 .delete-item-btn {
     background: none;
     border: none;
@@ -706,6 +774,46 @@
 
 .undo-delete-btn:hover {
     background: #e7f3ff;
+}
+
+/* Producto eliminado */
+.product-row.deleted {
+    background-color: #ffebe9;
+    opacity: 0.7;
+}
+
+.product-row.deleted td {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.product-row.deleted .quantity-input {
+    background-color: #ffebe9;
+    color: #999;
+}
+
+/* Badge para cambios pendientes */
+.pending-badge {
+    background: #f7b928;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+.changes-indicator {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    color: #f7b928;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.changes-indicator i {
+    font-size: 16px;
 }
 
 /* Resumen del pedido en el modal */
@@ -744,7 +852,7 @@
     background: #42b72a;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
@@ -769,7 +877,7 @@
     background: #e4e6eb;
     color: #050505;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 6px;
     font-weight: 600;
     cursor: pointer;
@@ -816,6 +924,14 @@
         width: 30px;
         height: 30px;
     }
+    
+    .edit-products-table td {
+        padding: 8px;
+    }
+    
+    .quantity-input {
+        width: 70px;
+    }
 }
 
 /* Animations */
@@ -838,6 +954,7 @@
 <script>
 let currentOrderId = null;
 let deletedItems = [];
+let updatedItems = {};  // Objeto para almacenar items con cantidad modificada {itemId: newKilos}
 let originalItems = [];
 
 // Abrir modal de edición
@@ -845,6 +962,10 @@ function openEditModal(orderId) {
     currentOrderId = orderId;
     const modal = document.getElementById('editOrderModal');
     const modalBody = document.getElementById('editModalBody');
+    
+    // Resetear variables
+    deletedItems = [];
+    updatedItems = {};
     
     // Mostrar loading
     modalBody.innerHTML = `
@@ -857,12 +978,11 @@ function openEditModal(orderId) {
     modal.style.display = 'block';
     document.getElementById('modal-order-id').textContent = `#${orderId}`;
     
-    // Construir URL correctamente usando el sistema de URLs de Django
-    // Esto generará la URL base /orders/api/ y luego reemplazamos el 0 por el ID real
+    // Construir URL correctamente
     const baseUrl = "{% url 'orders:order_detail_api' 0 %}";
     const url = baseUrl.replace('0', orderId);
     
-    console.log('Cargando pedido desde:', url); // Para debugging
+    console.log('Cargando pedido desde:', url);
     
     // Cargar datos del pedido
     fetch(url)
@@ -897,25 +1017,46 @@ function openEditModal(orderId) {
 // Renderizar modal de edición
 function renderEditModal(data) {
     const modalBody = document.getElementById('editModalBody');
-    deletedItems = [];
     
     let productsHtml = '';
+    let hasChanges = false;
+    
     data.items.forEach(item => {
+        const isDeleted = deletedItems.includes(item.id);
+        const newKilos = updatedItems[item.id] !== undefined ? updatedItems[item.id] : item.kilos;
+        const hasChanged = updatedItems[item.id] !== undefined && updatedItems[item.id] != item.kilos;
+        
+        if (hasChanged) hasChanges = true;
+        
         productsHtml += `
-            <tr class="product-row" data-item-id="${item.id}" data-kilos="${item.kilos}">
+            <tr class="product-row ${isDeleted ? 'deleted' : ''}" data-item-id="${item.id}" data-original-kilos="${item.kilos}">
                 <td>
                     <strong>${item.name}</strong>
+                    ${hasChanged ? '<span class="pending-badge">Modificado</span>' : ''}
                 </td>
-                <td>${item.kilos} kg</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <input type="number" 
+                               class="quantity-input ${hasChanged ? 'changed' : ''}" 
+                               value="${newKilos}" 
+                               min="0.01" 
+                               step="0.01"
+                               data-item-id="${item.id}"
+                               onchange="trackQuantityChange(${item.id}, this.value)"
+                               ${!data.can_edit || isDeleted ? 'disabled' : ''}>
+                        <span>kg</span>
+                        <span class="original-value">(original: ${item.kilos} kg)</span>
+                    </div>
+                </td>
                 <td style="text-align: center;">
                     <button class="delete-item-btn" 
                             onclick="deleteItem(${item.id})"
-                            ${!data.can_edit ? 'disabled' : ''}
-                            title="${data.can_edit ? 'Eliminar producto' : 'No se puede eliminar (pedido no pendiente)'}">
+                            ${!data.can_edit || isDeleted ? 'disabled' : ''}
+                            title="${data.can_edit ? 'Eliminar producto' : 'No se puede eliminar'}">
                         <i class="fas fa-trash"></i>
                     </button>
                     <button class="undo-delete-btn" 
-                            style="display: none;" 
+                            style="display: ${isDeleted ? 'inline-block' : 'none'};" 
                             id="undo-${item.id}"
                             onclick="undoDelete(${item.id})">
                         <i class="fas fa-undo"></i> Deshacer
@@ -949,19 +1090,21 @@ function renderEditModal(data) {
             </div>
         </div>
         
-        <h4 style="margin: 20px 0 10px;">
-            <i class="fas fa-boxes"></i> Productos del Pedido
-            ${data.can_edit ? 
-                '<span style="font-size: 13px; color: #606770; margin-left: 10px;">(Puedes eliminar productos haciendo clic en <i class="fas fa-trash" style="color: #fa383e;"></i>)</span>' : 
-                '<span style="font-size: 13px; color: #606770; margin-left: 10px;">(No se puede editar - Pedido no pendiente)</span>'
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px;">
+            <h4 style="margin: 0;">
+                <i class="fas fa-boxes"></i> Productos del Pedido
+            </h4>
+            ${hasChanges ? 
+                '<div class="changes-indicator"><i class="fas fa-exclamation-triangle"></i> Hay cambios sin guardar</div>' : 
+                ''
             }
-        </h4>
+        </div>
         
         <table class="edit-products-table">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Kilos</th>
+                    <th>Cantidad (kg)</th>
                     <th style="text-align: center;">Acciones</th>
                 </tr>
             </thead>
@@ -973,11 +1116,11 @@ function renderEditModal(data) {
         <div class="order-summary-box">
             <div class="summary-item">
                 <span>Total productos:</span>
-                <span><strong id="modal-items-count">${data.items_count}</strong></span>
+                <span><strong id="modal-items-count">${data.items_count - deletedItems.length}</strong></span>
             </div>
             <div class="summary-item">
                 <span>Total kilos:</span>
-                <span><strong id="modal-total-kilos">${data.total_kilos.toFixed(2)} kg</strong></span>
+                <span><strong id="modal-total-kilos">${calculateTotalKilos(data.items).toFixed(2)} kg</strong></span>
             </div>
         </div>
         
@@ -986,7 +1129,7 @@ function renderEditModal(data) {
                 <button class="cancel-edit-btn" onclick="closeEditModal()">
                     <i class="fas fa-times"></i> Cancelar
                 </button>
-                <button class="save-changes-btn" onclick="saveChanges()" id="saveChangesBtn">
+                <button class="save-changes-btn" onclick="saveChanges()" id="saveChangesBtn" ${!hasChanges && deletedItems.length === 0 ? 'disabled' : ''}>
                     <i class="fas fa-save"></i> Guardar Cambios
                 </button>
             </div>
@@ -998,6 +1141,89 @@ function renderEditModal(data) {
             </div>
         `}
     `;
+}
+
+// Calcular total de kilos considerando eliminados y actualizados
+function calculateTotalKilos(items) {
+    let total = 0;
+    items.forEach(item => {
+        if (!deletedItems.includes(item.id)) {
+            const kilos = updatedItems[item.id] !== undefined ? updatedItems[item.id] : item.kilos;
+            total += kilos;
+        }
+    });
+    return total;
+}
+
+// Actualizar totales después de cambios
+function updateTotals() {
+    const modalBody = document.getElementById('editModalBody');
+    const items = originalItems; // Usar los items originales como referencia
+    
+    const totalKilos = calculateTotalKilos(items);
+    const totalItems = items.length - deletedItems.length;
+    
+    const totalKilosElement = document.getElementById('modal-total-kilos');
+    const totalItemsElement = document.getElementById('modal-items-count');
+    
+    if (totalKilosElement) totalKilosElement.textContent = totalKilos.toFixed(2) + ' kg';
+    if (totalItemsElement) totalItemsElement.textContent = totalItems;
+    
+    // Habilitar/deshabilitar botón de guardar
+    const saveBtn = document.getElementById('saveChangesBtn');
+    if (saveBtn) {
+        const hasChanges = Object.keys(updatedItems).length > 0 || deletedItems.length > 0;
+        saveBtn.disabled = !hasChanges;
+    }
+}
+
+// Registrar cambio de cantidad
+function trackQuantityChange(itemId, newValue) {
+    const originalItem = originalItems.find(item => item.id === itemId);
+    if (!originalItem) return;
+    
+    const originalKilos = originalItem.kilos;
+    const newKilos = parseFloat(newValue) || 0;
+    
+    if (newKilos <= 0) {
+        showToast('La cantidad debe ser mayor a 0', 'warning');
+        // Restaurar valor anterior
+        const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
+        if (input) {
+            input.value = updatedItems[itemId] !== undefined ? updatedItems[itemId] : originalKilos;
+        }
+        return;
+    }
+    
+    if (newKilos === originalKilos) {
+        // Si el valor es igual al original, eliminar de updatedItems
+        delete updatedItems[itemId];
+    } else {
+        // Guardar el nuevo valor
+        updatedItems[itemId] = newKilos;
+    }
+    
+    // Actualizar UI
+    const row = document.querySelector(`.product-row[data-item-id="${itemId}"]`);
+    if (row) {
+        const input = row.querySelector('.quantity-input');
+        const badge = row.querySelector('.pending-badge');
+        
+        if (updatedItems[itemId] !== undefined) {
+            input.classList.add('changed');
+            if (!badge) {
+                const newBadge = document.createElement('span');
+                newBadge.className = 'pending-badge';
+                newBadge.textContent = 'Modificado';
+                row.querySelector('td:first-child').appendChild(newBadge);
+            }
+        } else {
+            input.classList.remove('changed');
+            if (badge) badge.remove();
+        }
+    }
+    
+    updateTotals();
 }
 
 // Marcar item para eliminar
@@ -1012,6 +1238,10 @@ function deleteItem(itemId) {
     
     deletedItems.push(itemId);
     updateTotals();
+    
+    // Mostrar indicador de cambios
+    const changesIndicator = document.querySelector('.changes-indicator');
+    if (changesIndicator) changesIndicator.style.display = 'flex';
 }
 
 // Deshacer eliminación
@@ -1028,29 +1258,9 @@ function undoDelete(itemId) {
     updateTotals();
 }
 
-// Actualizar totales después de eliminaciones
-function updateTotals() {
-    let totalKilos = 0;
-    let totalItems = 0;
-    
-    document.querySelectorAll('.product-row').forEach(row => {
-        const itemId = parseInt(row.dataset.itemId);
-        const kilos = parseFloat(row.dataset.kilos);
-        
-        // Si no está eliminado, contar
-        if (!deletedItems.includes(itemId)) {
-            totalKilos += kilos;
-            totalItems++;
-        }
-    });
-    
-    document.getElementById('modal-items-count').textContent = totalItems;
-    document.getElementById('modal-total-kilos').textContent = totalKilos.toFixed(2) + ' kg';
-}
-
 // Guardar cambios
 function saveChanges() {
-    if (deletedItems.length === 0) {
+    if (deletedItems.length === 0 && Object.keys(updatedItems).length === 0) {
         showToast('No hay cambios para guardar', 'warning');
         closeEditModal();
         return;
@@ -1060,36 +1270,52 @@ function saveChanges() {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     
-    // Enviar petición para eliminar cada item
-    const deletePromises = deletedItems.map(itemId => {
-        return fetch(`/orders/item/${itemId}/eliminar/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/json'
-            }
+    // Preparar las actualizaciones
+    const updates = [];
+    for (const [itemId, newKilos] of Object.entries(updatedItems)) {
+        updates.push({
+            id: parseInt(itemId),
+            kilos: newKilos
         });
-    });
+    }
     
-    Promise.all(deletePromises)
-        .then(responses => {
-            const allSuccess = responses.every(r => r.ok);
-            if (allSuccess) {
-                showToast(`${deletedItems.length} producto(s) eliminado(s) correctamente`, 'success');
-                
-                // Recargar la página después de 1.5 segundos para ver los cambios
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
-            } else {
-                throw new Error('Error al eliminar algunos productos');
-            }
+    // Usar batch update para actualizar múltiples items
+    fetch(`/orders/admin/${currentOrderId}/batch-update/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            updates: updates,
+            deletes: deletedItems
         })
-        .catch(error => {
-            showToast('Error al guardar los cambios: ' + error.message, 'error');
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let message = '';
+            if (data.results.updated.length > 0) {
+                message += `${data.results.updated.length} producto(s) actualizado(s). `;
+            }
+            if (data.results.deleted.length > 0) {
+                message += `${data.results.deleted.length} producto(s) eliminado(s).`;
+            }
+            showToast('✅ ' + message, 'success');
+            
+            // Recargar la página después de 1.5 segundos para ver los cambios
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Error al guardar los cambios');
+        }
+    })
+    .catch(error => {
+        showToast('❌ Error al guardar los cambios: ' + error.message, 'error');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+    });
 }
 
 // Mostrar toast
@@ -1124,6 +1350,7 @@ function closeEditModal() {
     document.getElementById('editOrderModal').style.display = 'none';
     currentOrderId = null;
     deletedItems = [];
+    updatedItems = {};
 }
 
 // Filtrado por estado

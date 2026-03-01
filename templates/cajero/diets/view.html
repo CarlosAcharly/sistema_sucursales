@@ -116,7 +116,7 @@
     </div>
 </div>
 
-<!-- SECCIÓN 2: Tabla editable (Dieta Cerdo) -->
+<!-- SECCIÓN 2: Tabla editable con selector de precio (Kg por defecto) -->
 <div class="fb-card" style="padding: 0; overflow: hidden;">
     <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 15px 20px; color: white;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -138,9 +138,11 @@
                 <th style="width: 5%;">
                     <input type="checkbox" id="select-all" onchange="toggleAll()">
                 </th>
-                <th style="width: 45%;">Ingrediente</th>
-                <th style="width: 20%;">Base (kg)</th>
-                <th style="width: 30%;">Cantidad (kg)</th>
+                <th style="width: 30%;">Ingrediente</th>
+                <th style="width: 15%;">Base (kg)</th>
+                <th style="width: 20%;">Cantidad (kg)</th>
+                <th style="width: 25%;">Tipo de Precio</th>
+                <th style="width: 5%;"></th>
             </tr>
         </thead>
         <tbody id="ingredients-tbody">
@@ -184,26 +186,45 @@
                                step="0.01" 
                                min="0"
                                class="fb-input kilos-input"
-                               style="width: 120px; text-align: right;"
+                               style="width: 100px; text-align: right;"
                                onchange="updateProportionalValues(this, {{ item.id }})"
                                data-original="{{ item.kilos }}"
                                data-base-value="{% for base in item.diet.diet_base.base_ingredients.all %}{% if base.product.id == item.product.id %}{{ base.kilos }}{% endif %}{% endfor %}"
                                data-item-id="{{ item.id }}">
                         <span style="color: #606770; font-size: 12px;">kg</span>
-                        <button type="button" class="fb-btn fb-btn-secondary" style="padding: 4px 8px;" 
-                                onclick="addToCart({{ item.product.id }}, '{{ item.product.name|escapejs }}', {{ item.product.price_kg|default:0 }}, this)"
-                                title="Agregar al carrito (Precio por Kg)">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
                     </div>
+                </td>
+                <td>
+                    <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
+                        {% if item.product.price_kg %}
+                        <option value="kg" data-price="{{ item.product.price_kg }}" selected>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
+                        {% endif %}
+                        {% if item.product.price_bulk %}
+                        <option value="bulk" data-price="{{ item.product.price_bulk }}">Bulto: ${{ item.product.price_bulk|floatformat:2 }}</option>
+                        {% endif %}
+                        {% if item.product.price_wholesale %}
+                        <option value="wholesale" data-price="{{ item.product.price_wholesale }}">Mayoreo: ${{ item.product.price_wholesale|floatformat:2 }}</option>
+                        {% endif %}
+                        {% if item.product.price_special %}
+                        <option value="special" data-price="{{ item.product.price_special }}">Especial: ${{ item.product.price_special|floatformat:2 }}</option>
+                        {% endif %}
+                    </select>
+                </td>
+                <td>
+                    <button type="button" class="fb-btn fb-btn-primary" style="padding: 6px 10px; font-size: 12px;" 
+                            onclick="addToCartWithPrice({{ item.product.id }}, '{{ item.product.name|escapejs }}', this)"
+                            title="Agregar al carrito con precio seleccionado">
+                        <i class="fas fa-cart-plus"></i>
+                    </button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot style="background: #f5f6f7; font-weight: bold;">
             <tr>
-                <td colspan="3" style="text-align: right;">TOTAL DIETA:</td>
+                <td colspan="2" style="text-align: right;">TOTAL DIETA:</td>
                 <td><span id="total-dieta">0.00</span> kg</td>
+                <td colspan="3"></td>
             </tr>
         </tfoot>
     </table>
@@ -254,6 +275,14 @@
 let cart = JSON.parse(localStorage.getItem('posCart')) || [];
 let selectedItems = new Set();
 let baseValues = {};
+
+// Mapeo de tipos de precio
+const priceTypeNames = {
+    'kg': 'Kg',
+    'bulk': 'Bulto',
+    'wholesale': 'Mayoreo',
+    'special': 'Especial'
+};
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', function() {
@@ -366,34 +395,44 @@ function updateSelectedCount() {
     document.getElementById('selected-kilos').textContent = totalKilos.toFixed(2);
 }
 
-function addToCart(productId, productName, productPrice, button) {
+// Función para agregar al carrito con tipo de precio seleccionado
+function addToCartWithPrice(productId, productName, button) {
     const row = button.closest('tr');
     const kilosInput = row.querySelector('.kilos-input');
+    const priceSelector = row.querySelector('.price-type-selector');
+    
     const quantity = parseFloat(kilosInput.value);
-
+    const selectedOption = priceSelector.options[priceSelector.selectedIndex];
+    
     if (!quantity || quantity <= 0) {
         showNotification('❌ Ingresa una cantidad válida', 'error');
         return;
     }
+    
+    // Ya no necesitamos validar si hay opción seleccionada porque siempre hay una por defecto
+    const price = parseFloat(selectedOption.dataset.price);
+    const priceType = selectedOption.value;
+    const priceTypeName = selectedOption.text.split(':')[0];
 
     const item = {
         id: productId,
         name: productName,
-        price: parseFloat(productPrice),
+        price: price,
         quantity: quantity,
         type: 'ingredient',
         unit: 'kg',
-        price_type: 'kg',
-        price_type_name: 'Kg'
+        price_type: priceType,
+        price_type_name: priceTypeName
     };
 
     cart.push(item);
     localStorage.setItem('posCart', JSON.stringify(cart));
 
     updateCartCounter();
-    showNotification(`${productName}: ${quantity}kg agregado al carrito (Precio por Kg)`, 'success');
+    showNotification(`${productName}: ${quantity}kg agregado al carrito (${priceTypeName})`, 'success');
 }
 
+// Función para agregar múltiples ingredientes seleccionados
 function addSelectedToCart() {
     if (selectedItems.size === 0) {
         showNotification('Selecciona al menos un ingrediente', 'warning');
@@ -408,20 +447,31 @@ function addSelectedToCart() {
         const productName = row.dataset.productName;
         const productId = row.dataset.productId;
         const kilosInput = row.querySelector('.kilos-input');
+        const priceSelector = row.querySelector('.price-type-selector');
+        const selectedOption = priceSelector.options[priceSelector.selectedIndex];
+        
         const kilos = parseFloat(kilosInput.value);
+        
+        // Ya no necesitamos validar porque siempre hay opción seleccionada
+        const price = parseFloat(selectedOption.dataset.price);
+        const priceType = selectedOption.value;
+        const priceTypeName = selectedOption.text.split(':')[0];
+        
         totalKg += kilos;
         
         items.push({
             id: productId,
             name: productName,
-            price: 0, // El precio se asignará en el POS
+            price: price,
             quantity: kilos,
             type: 'ingredient',
             unit: 'kg',
-            price_type: 'kg',
-            price_type_name: 'Kg'
+            price_type: priceType,
+            price_type_name: priceTypeName
         });
     });
+    
+    if (items.length === 0) return;
     
     cart = [...cart, ...items];
     localStorage.setItem('posCart', JSON.stringify(cart));
@@ -429,8 +479,7 @@ function addSelectedToCart() {
     updateCartCounter();
     document.getElementById('cart-modal-message').innerHTML = `
         <strong>${items.length}</strong> ingredientes agregados al carrito<br>
-        Total: <strong>${totalKg.toFixed(2)} kg</strong><br>
-        <small>Los precios se asignarán en el punto de venta</small>
+        Total: <strong>${totalKg.toFixed(2)} kg</strong>
     `;
     document.getElementById('cart-modal').style.display = 'flex';
 }
@@ -519,6 +568,21 @@ style.textContent = `
     
     .base-kilos {
         color: #4a5568;
+    }
+    
+    .price-type-selector {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .price-type-selector:hover {
+        border-color: #1877f2;
+    }
+    
+    .price-type-selector:focus {
+        outline: none;
+        border-color: #1877f2;
+        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
     }
 `;
 document.head.appendChild(style);

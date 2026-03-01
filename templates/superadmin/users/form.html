@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="fb-card" style="max-width: 600px; margin: 0 auto;">
+<div class="fb-card" style="max-width: 700px; margin: 0 auto;">
     <!-- Header con ícono y efecto de gradiente -->
     <div class="fb-card-header" style="background: linear-gradient(135deg, #f5f6f7 0%, #ffffff 100%); border-radius: 8px 8px 0 0;">
         <div style="display: flex; align-items: center; gap: 15px;">
@@ -69,7 +69,6 @@
             <label for="{{ form.email.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
                 <i class="fas fa-envelope" style="color: #1877f2;"></i>
                 Correo electrónico
-                <span style="color: #fa383e; font-size: 16px;">*</span>
             </label>
             <div style="position: relative;">
                 <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
@@ -99,7 +98,13 @@
             </label>
             <div style="position: relative;">
                 <i class="fas fa-user-tag" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
-                {{ form.role }}
+                <select name="role" id="id_role" class="fb-select" onchange="toggleBranchFields()">
+                    {% for value, label in form.fields.role.choices %}
+                    <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
             {% if form.role.help_text %}
                 <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
@@ -113,24 +118,76 @@
             {% endif %}
         </div>
 
-        <!-- Campo: Sucursal (dinámico) -->
-        <div class="fb-form-group" id="branch-field" style="margin-bottom: 20px; transition: all 0.3s ease;">
+        <!-- Campo: Sucursal (para CASHIER) -->
+        <div class="fb-form-group" id="branch-field" style="margin-bottom: 20px; display: none;">
             <label for="{{ form.branch.id_for_label }}" style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
-                <i class="fas fa-store" style="color: #1877f2;"></i>
-                Sucursal asignada
+                <i class="fas fa-store" style="color: #42b72a;"></i>
+                Sucursal (para Cajero)
             </label>
             <div style="position: relative;">
                 <i class="fas fa-building" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770; z-index: 1;"></i>
-                {{ form.branch }}
+                <select name="branch" id="id_branch" class="fb-select">
+                    <option value="">Seleccione una sucursal</option>
+                    {% for branch in form.fields.branch.queryset %}
+                    <option value="{{ branch.id }}" {% if form.branch.value|stringformat:"s" == branch.id|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
             <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
-                <i class="fas fa-info-circle"></i> Selecciona la sucursal donde trabajará el usuario
+                <i class="fas fa-info-circle"></i> Selecciona la sucursal donde trabajará el cajero
             </small>
             {% if form.branch.errors %}
                 <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
                     <i class="fas fa-exclamation-triangle"></i> {{ form.branch.errors.0 }}
                 </div>
             {% endif %}
+        </div>
+
+        <!-- Campo: Múltiples sucursales (para ADMIN) -->
+        <div class="fb-form-group" id="branches-field" style="margin-bottom: 20px; display: none;">
+            <label style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                <i class="fas fa-store-alt" style="color: #1877f2;"></i>
+                Sucursales asignadas (para Administrador)
+                <span style="color: #fa383e; font-size: 16px;">*</span>
+            </label>
+            <div style="position: relative;">
+                <i class="fas fa-building" style="position: absolute; left: 12px; top: 15px; color: #606770;"></i>
+                <select name="branches" id="id_branches" multiple class="fb-select-multiple" size="5" style="padding-left: 40px;">
+                    {% for branch in form.fields.branches.queryset %}
+                    <option value="{{ branch.id }}" 
+                        {% if branch.id|stringformat:"s" in form.branches.value|stringformat:"s" %}selected{% endif %}>
+                        {{ branch.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                <i class="fas fa-info-circle"></i> Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples sucursales
+            </small>
+            {% if form.branches.errors %}
+                <div class="fb-alert fb-alert-danger" style="margin-top: 8px; padding: 8px 12px;">
+                    <i class="fas fa-exclamation-triangle"></i> {{ form.branches.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Información para SUPERADMIN -->
+        <div class="fb-form-group" id="superadmin-info" style="margin-bottom: 20px; display: none;">
+            <div style="background: linear-gradient(135deg, #fa383e10 0%, #fa383e20 100%); padding: 16px; border-radius: 10px; border: 1px solid #fa383e30;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="background: #fa383e; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-crown" style="color: white;"></i>
+                    </span>
+                    <div>
+                        <strong style="color: #b92b27;">Super Administrador</strong>
+                        <p style="color: #606770; font-size: 13px; margin: 2px 0 0 0;">
+                            <i class="fas fa-info-circle"></i> Los super administradores tienen acceso a todas las sucursales y no requieren asignación específica.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Campo: Password -->
@@ -146,7 +203,7 @@
             </label>
             <div style="position: relative;">
                 <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
-                {{ form.password }}
+                <input type="password" name="password" id="id_password" class="fb-input">
                 <i class="fas fa-eye" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #606770; font-size: 18px;" onclick="togglePassword()"></i>
             </div>
             {% if not 'Crear' in title %}
@@ -178,7 +235,7 @@
                         </p>
                     </div>
                     <div class="fb-checkbox-group" style="transform: scale(1.2);">
-                        {{ form.is_active }}
+                        <input type="checkbox" name="is_active" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
                     </div>
                 </div>
             </div>
@@ -209,27 +266,28 @@
     </form>
 </div>
 
-<!-- Script mejorado para el campo sucursal -->
+<!-- Script mejorado para los campos de sucursales -->
 <script>
-function toggleBranchField() {
+function toggleBranchFields() {
     let roleSelect = document.getElementById("id_role");
     let branchField = document.getElementById("branch-field");
+    let branchesField = document.getElementById("branches-field");
+    let superadminInfo = document.getElementById("superadmin-info");
     
     if (roleSelect) {
         let role = roleSelect.value;
         
-        if (role === "SUPERADMIN") {
-            branchField.style.opacity = "0.5";
-            branchField.style.pointerEvents = "none";
-            // Deshabilitar el campo branch para superadmin
-            let branchInput = document.getElementById("id_branch");
-            if (branchInput) branchInput.disabled = true;
-        } else {
-            branchField.style.opacity = "1";
-            branchField.style.pointerEvents = "auto";
-            // Habilitar el campo branch para otros roles
-            let branchInput = document.getElementById("id_branch");
-            if (branchInput) branchInput.disabled = false;
+        // Ocultar todos primero
+        branchField.style.display = "none";
+        branchesField.style.display = "none";
+        superadminInfo.style.display = "none";
+        
+        if (role === "CASHIER") {
+            branchField.style.display = "block";
+        } else if (role === "ADMIN") {
+            branchesField.style.display = "block";
+        } else if (role === "SUPERADMIN") {
+            superadminInfo.style.display = "block";
         }
     }
 }
@@ -237,7 +295,7 @@ function toggleBranchField() {
 // Función para mostrar/ocultar contraseña
 function togglePassword() {
     let passwordField = document.getElementById("id_password");
-    let eyeIcon = document.querySelector('.fa-eye');
+    let eyeIcon = document.querySelector('.fa-eye, .fa-eye-slash');
     
     if (passwordField.type === "password") {
         passwordField.type = "text";
@@ -252,29 +310,22 @@ function togglePassword() {
 
 // Ejecutar al cargar
 document.addEventListener("DOMContentLoaded", function() {
-    toggleBranchField();
+    toggleBranchFields();
     
     // Ejecutar cuando cambie el rol
     let roleSelect = document.getElementById("id_role");
     if (roleSelect) {
         roleSelect.addEventListener("change", function() {
-            toggleBranchField();
-        });
-    }
-    
-    // Añadir animación al campo de rol
-    if (roleSelect) {
-        roleSelect.addEventListener('change', function() {
+            toggleBranchFields();
+            // Animación
             this.style.transform = 'scale(1.02)';
             setTimeout(() => {
                 this.style.transform = 'scale(1)';
             }, 200);
         });
     }
-});
-
-// Validación en tiempo real para email
-document.addEventListener('DOMContentLoaded', function() {
+    
+    // Validación en tiempo real para email
     let emailField = document.getElementById('id_email');
     if (emailField) {
         emailField.addEventListener('input', function() {
@@ -327,6 +378,26 @@ document.addEventListener('DOMContentLoaded', function() {
         padding-right: 40px;
     }
     
+    select[multiple] {
+        background-image: none;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+    
+    select[multiple] option {
+        padding: 8px 12px;
+        border-radius: 4px;
+    }
+    
+    select[multiple] option:hover {
+        background-color: #e7f3ff;
+    }
+    
+    select[multiple] option:checked {
+        background-color: #1877f2;
+        color: white;
+    }
+    
     /* Estilo para el ojo de contraseña */
     .fa-eye, .fa-eye-slash {
         transition: color 0.2s;
@@ -334,6 +405,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .fa-eye:hover, .fa-eye-slash:hover {
         color: #1877f2 !important;
+    }
+    
+    /* Checkbox personalizado */
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        accent-color: #1877f2;
     }
 </style>
 

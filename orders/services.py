@@ -1,23 +1,16 @@
 from inventory.models import Inventory, InventoryMovement
 
 def complete_order(order):
-
-    for item in order.items.all():
-
-        inventory, created = Inventory.objects.get_or_create(
-            branch=order.branch,
-            product=item.product,
-            defaults={"stock": 0}
-        )
-
-        inventory.stock += int(item.kilos)
-        inventory.save()
-
-        InventoryMovement.objects.create(
-            inventory=inventory,
-            quantity=int(item.kilos),
-            movement_type="IN"
-        )
-
+    """
+    Completa un pedido (lo marca como COMPLETED)
+    Esta función SOLO cambia el estado, NO modifica el inventario
+    """
+    if order.status != "PENDING":
+        return order
+    
+    # Solo cambiar el estado, NO agregar al inventario
     order.status = "COMPLETED"
+    # NO tocar inventory_added aquí, eso lo hace el cajero
     order.save()
+    
+    return order

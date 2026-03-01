@@ -143,7 +143,8 @@ def order_detail_api(request, order_id):
                 'product_id': item.product.id,
                 'name': item.product.name,
                 'kilos': float(item.kilos),
-                'can_delete': order.status == "PENDING"  # Solo se puede eliminar si está pendiente
+                'can_delete': order.status == "PENDING",  # Solo se puede eliminar si está pendiente
+                'original_kilos': float(item.kilos)  # Guardar valor original para referencia
             })
         
         data = {
@@ -191,8 +192,9 @@ def add_order_to_inventory(request, order_id):
     
     order = get_object_or_404(Order, id=order_id, branch=request.user.branch)
     
-    # Verificar si ya fue agregado
+    # VERIFICACIONES ESTRICTAS
     if order.inventory_added:
+        logger.warning(f"Intento de agregar pedido #{order_id} que ya tiene inventory_added=True")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': False,
@@ -202,6 +204,7 @@ def add_order_to_inventory(request, order_id):
         return redirect("orders:cashier_orders")
     
     if order.status != "COMPLETED":
+        logger.warning(f"Intento de agregar pedido #{order_id} con estado {order.status}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': False,
@@ -215,13 +218,34 @@ def add_order_to_inventory(request, order_id):
         items_errors = 0
         results = []
         
+        # REFRESCAR para asegurar que no cambió
+        order.refresh_from_db()
+        
+        # Verificar nuevamente después del refresh
+        if order.inventory_added:
+            logger.error(f"Pedido #{order_id} cambió a inventory_added=True justo antes de procesar")
+            return JsonResponse({
+                'success': False,
+                'error': 'El pedido ya fue procesado por otra solicitud.'
+            }, status=400)
+        
+        logger.info(f"Procesando pedido #{order_id} para agregar a inventario. Items: {order.items.count()}")
+        
         for item in order.items.all():
             try:
-                kilos = item.kilos
-                # Redondear correctamente
-                cantidad = int(round(float(kilos)))
+                kilos = float(item.kilos)
+                
+                # IMPORTANTE: El inventario usa IntegerField, así que necesitamos decidir cómo manejar decimales
+                # Opción 1: Redondear al entero más cercano
+                cantidad = int(round(kilos))
+                
+                # Opción 2: Si quieres mantener decimales, tendrías que cambiar el modelo Inventory
+                # cantidad = kilos  # Esto requeriría cambiar stock a DecimalField
+                
+                logger.info(f"Item: {item.product.name}, kilos original: {kilos}, cantidad a agregar: {cantidad}")
                 
                 if cantidad <= 0:
+                    logger.warning(f"Cantidad no válida para {item.product.name}: {kilos}")
                     results.append({
                         'product': item.product.name,
                         'status': 'skipped',
@@ -245,10 +269,12 @@ def add_order_to_inventory(request, order_id):
                     movement_type='IN'
                 )
                 
+                logger.info(f"Inventario actualizado: {inventory.product.name} - Stock antes: {stock_antes}, después: {inventory.stock}")
+                
                 results.append({
                     'product': item.product.name,
                     'status': 'success',
-                    'kilos_original': float(kilos),
+                    'kilos_original': kilos,
                     'unidades_agregadas': cantidad,
                     'stock_anterior': stock_antes,
                     'stock_nuevo': inventory.stock
@@ -265,10 +291,13 @@ def add_order_to_inventory(request, order_id):
                     'message': str(e)
                 })
         
-        # Marcar el pedido como agregado al inventario si al menos un item se agregó
+        # Marcar el pedido como agregado al inventario SOLO si al menos un item se agregó
         if items_added > 0:
             order.inventory_added = True
             order.save()
+            logger.info(f"Pedido #{order.id} marcado como inventory_added=True. Items agregados: {items_added}")
+        else:
+            logger.warning(f"Pedido #{order.id} no se marcó como inventory_added porque no se agregaron items")
         
         # Si es una petición AJAX, devolver JSON
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -292,7 +321,7 @@ def add_order_to_inventory(request, order_id):
 
 
 # =============================
-# 🧑‍💼 ADMIN
+# 🧑‍💼 ADMIN - NUEVAS FUNCIONALIDADES
 # =============================
 
 @login_required
@@ -333,9 +362,9 @@ def approve_order(request, order_id):
         return redirect("orders:admin_orders")
     
     if request.method == "POST":
-        # Usar el servicio complete_order
+        # Usar el servicio complete_order que SOLO cambia el estado
         complete_order(order)
-        messages.success(request, f'Pedido #{order.id} aprobado exitosamente.')
+        messages.success(request, f'Pedido #{order.id} aprobado exitosamente. El cajero podrá agregarlo al inventario.')
         return redirect("orders:admin_orders")
     
     return redirect("orders:admin_orders")
@@ -345,20 +374,161 @@ def approve_order(request, order_id):
 def delete_order_item(request, item_id):
     """Eliminar un item específico de un pedido (solo para admin)"""
     if request.user.role != "ADMIN":
-        messages.error(request, "No tienes permiso para acceder a esta página.")
-        return redirect("no_permission")
-
-    item = get_object_or_404(OrderItem, id=item_id)
-    order = item.order
-    
-    if order.status != "PENDING":
-        messages.error(request, "Solo se pueden modificar pedidos pendientes.")
-        return redirect("orders:admin_orders")
+        return JsonResponse({'error': 'No autorizado'}, status=403)
     
     if request.method == "POST":
-        product_name = item.product.name
-        item.delete()
-        messages.success(request, f'Producto "{product_name}" eliminado del pedido #{order.id}.')
-        return redirect("orders:admin_orders")
+        try:
+            item = get_object_or_404(OrderItem, id=item_id)
+            order = item.order
+            
+            if order.status != "PENDING":
+                return JsonResponse({'error': 'Solo se pueden modificar pedidos pendientes.'}, status=400)
+            
+            product_name = item.product.name
+            item.delete()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Producto "{product_name}" eliminado del pedido #{order.id}.',
+                'new_total_kilos': float(order.total_kilos()),
+                'new_items_count': order.items_count()
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
     
-    return redirect("orders:admin_orders")
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def update_order_item(request, item_id):
+    """Actualizar la cantidad de un item específico de un pedido (solo para admin)"""
+    if request.user.role != "ADMIN":
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            new_kilos = float(data.get('kilos', 0))
+            
+            item = get_object_or_404(OrderItem, id=item_id)
+            order = item.order
+            
+            if order.status != "PENDING":
+                return JsonResponse({'error': 'Solo se pueden modificar pedidos pendientes.'}, status=400)
+            
+            if new_kilos <= 0:
+                return JsonResponse({'error': 'La cantidad debe ser mayor a 0.'}, status=400)
+            
+            old_kilos = float(item.kilos)
+            item.kilos = new_kilos
+            item.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Cantidad actualizada de {item.product.name}: {old_kilos} kg → {new_kilos} kg',
+                'new_total_kilos': float(order.total_kilos()),
+                'new_items_count': order.items_count()
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def batch_update_order(request, order_id):
+    """Actualizar múltiples items de un pedido a la vez (solo para admin)"""
+    if request.user.role != "ADMIN":
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+    
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            updates = data.get('updates', [])  # Lista de {id: item_id, kilos: new_kilos}
+            deletes = data.get('deletes', [])  # Lista de item_ids a eliminar
+            
+            order = get_object_or_404(Order, id=order_id)
+            
+            if order.status != "PENDING":
+                return JsonResponse({'error': 'Solo se pueden modificar pedidos pendientes.'}, status=400)
+            
+            results = {
+                'updated': [],
+                'deleted': [],
+                'errors': []
+            }
+            
+            # Procesar actualizaciones
+            with transaction.atomic():
+                for update in updates:
+                    try:
+                        item = OrderItem.objects.get(id=update['id'], order=order)
+                        old_kilos = float(item.kilos)
+                        new_kilos = float(update['kilos'])
+                        
+                        if new_kilos <= 0:
+                            results['errors'].append({
+                                'id': update['id'],
+                                'error': 'La cantidad debe ser mayor a 0'
+                            })
+                            continue
+                        
+                        item.kilos = new_kilos
+                        item.save()
+                        
+                        results['updated'].append({
+                            'id': item.id,
+                            'product': item.product.name,
+                            'old_kilos': old_kilos,
+                            'new_kilos': new_kilos
+                        })
+                        
+                    except OrderItem.DoesNotExist:
+                        results['errors'].append({
+                            'id': update['id'],
+                            'error': 'Item no encontrado'
+                        })
+                    except Exception as e:
+                        results['errors'].append({
+                            'id': update['id'],
+                            'error': str(e)
+                        })
+                
+                # Procesar eliminaciones
+                for item_id in deletes:
+                    try:
+                        item = OrderItem.objects.get(id=item_id, order=order)
+                        product_name = item.product.name
+                        item.delete()
+                        
+                        results['deleted'].append({
+                            'id': item_id,
+                            'product': product_name
+                        })
+                        
+                    except OrderItem.DoesNotExist:
+                        results['errors'].append({
+                            'id': item_id,
+                            'error': 'Item no encontrado'
+                        })
+                        pass
+                    except Exception as e:
+                        results['errors'].append({
+                            'id': item_id,
+                            'error': str(e)
+                        })
+            
+            return JsonResponse({
+                'success': True,
+                'results': results,
+                'new_total_kilos': float(order.total_kilos()),
+                'new_items_count': order.items_count(),
+                'message': f'Actualizados: {len(results["updated"])} productos, Eliminados: {len(results["deleted"])} productos'
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

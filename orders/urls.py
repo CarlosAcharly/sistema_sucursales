@@ -15,4 +15,6 @@ urlpatterns = [
     path("admin/", views.admin_orders, name="admin_orders"),
     path("admin/<int:order_id>/aprobar/", views.approve_order, name="approve_order"),
     path("item/<int:item_id>/eliminar/", views.delete_order_item, name="delete_item"),
+    path("item/<int:item_id>/actualizar/", views.update_order_item, name="update_item"),
+    path("admin/<int:order_id>/batch-update/", views.batch_update_order, name="batch_update_order"),
 ]
