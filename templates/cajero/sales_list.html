@@ -14,7 +14,7 @@
             </p>
         </div>
         <div style="display: flex; gap: 10px;">
-            <a href="{% url 'pos' %}" class="fb-btn fb-btn-success" style="display: flex; align-items: center; gap: 8px;">
+            <a href="{% url 'sales:pos' %}" class="fb-btn fb-btn-success" style="display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-plus-circle"></i>
                 Nueva Venta
             </a>
@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<!-- Estadísticas rápidas -->
+<!-- Estadísticas rápidas actualizadas -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
     <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -57,9 +57,9 @@
     </div>
 </div>
 
-<!-- Filtros y búsqueda -->
+<!-- Filtros y búsqueda mejorados con filtro de estado -->
 <div class="fb-card" style="margin-bottom: 20px; padding: 20px;">
-    <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 15px; align-items: center;">
+    <div style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 15px; align-items: center;">
         <!-- Búsqueda -->
         <div style="position: relative;">
             <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
@@ -68,6 +68,16 @@
                    class="fb-input" 
                    placeholder="Buscar por ID..."
                    style="padding-left: 45px;">
+        </div>
+        
+        <!-- Filtro de estado (NUEVO) -->
+        <div style="position: relative;">
+            <i class="fas fa-filter" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+            <select id="status-filter" class="fb-input" style="padding-left: 45px; min-width: 150px;">
+                <option value="all">Todos los estados</option>
+                <option value="ACTIVE">Activas</option>
+                <option value="CANCELLED">Canceladas</option>
+            </select>
         </div>
         
         <!-- Filtro de fecha -->
@@ -94,22 +104,25 @@
     </div>
 </div>
 
-<!-- Tabla de ventas -->
+<!-- Tabla de ventas actualizada con columna de estado -->
 <div class="fb-card" style="padding: 0; overflow: hidden;">
     <table class="fb-table" id="sales-table">
         <thead>
             <tr>
-                <th style="width: 10%;">
+                <th style="width: 8%;">
                     <i class="fas fa-hashtag"></i> Venta
                 </th>
-                <th style="width: 15%;">
+                <th style="width: 12%;">
                     <i class="fas fa-clock"></i> Fecha
                 </th>
-                <th style="width: 40%;">
+                <th style="width: 35%;">
                     <i class="fas fa-shopping-cart"></i> Productos
                 </th>
-                <th style="width: 15%;">
+                <th style="width: 10%;">
                     <i class="fas fa-dollar-sign"></i> Total
+                </th>
+                <th style="width: 15%;">
+                    <i class="fas fa-circle"></i> Estado
                 </th>
                 <th style="width: 20%;">
                     <i class="fas fa-cog"></i> Acciones
@@ -122,7 +135,8 @@
                 data-id="{{ sale.id }}"
                 data-date="{{ sale.created_at|date:'Y-m-d' }}"
                 data-total="{{ sale.total }}"
-                data-products="{{ sale.items.count }}">
+                data-products="{{ sale.items.count }}"
+                data-status="{{ sale.status }}">
                 <td>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
@@ -140,7 +154,7 @@
                 <td>
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="fb-badge fb-badge-primary" style="background: #e7f3ff; color: #1877f2;">
+                            <span class="fb-badge" style="background: #e7f3ff; color: #1877f2;">
                                 <i class="fas fa-box"></i> {{ sale.items.count }} productos
                             </span>
                         </div>
@@ -148,7 +162,7 @@
                         <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                             {% for item in sale.items.all|slice:":3" %}
                                 <span style="background: #f5f6f7; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-                                    {{ item.product.name|truncatechars:10 }} 
+                                    {{ item.product.name|truncatechars:8 }} 
                                     <span style="color: #1877f2;">{{ item.get_price_type_display }}</span>
                                     x{{ item.quantity }}
                                 </span>
@@ -162,9 +176,20 @@
                     </div>
                 </td>
                 <td>
-                    <span style="font-size: 18px; font-weight: 700; color: #1877f2;">
+                    <span style="font-size: 16px; font-weight: 700; {% if sale.status == 'CANCELLED' %}color: #999; text-decoration: line-through;{% else %}color: #1877f2;{% endif %}">
                         ${{ sale.total|floatformat:2 }}
                     </span>
+                </td>
+                <td>
+                    {% if sale.status == 'ACTIVE' %}
+                        <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 10px; border-radius: 30px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-check-circle"></i> Activa
+                        </span>
+                    {% else %}
+                        <span style="background: #ffebe9; color: #b92b27; padding: 4px 10px; border-radius: 30px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-ban"></i> Cancelada
+                        </span>
+                    {% endif %}
                 </td>
                 <td>
                     <div style="display: flex; gap: 8px;">
@@ -174,22 +199,24 @@
                             <i class="fas fa-eye"></i>
                             Ver
                         </button>
+                        {% if sale.status == 'ACTIVE' %}
                         <button onclick="printSale('{{ sale.id }}')" 
                                 class="fb-btn fb-btn-secondary"
                                 style="padding: 6px 12px; font-size: 12px;">
                             <i class="fas fa-print"></i>
                             Imprimir
                         </button>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align: center; padding: 50px;">
+                <td colspan="6" style="text-align: center; padding: 50px;">
                     <i class="fas fa-shopping-cart" style="font-size: 48px; color: #e4e6eb; margin-bottom: 15px;"></i>
                     <h3 style="color: #050505;">No hay ventas registradas</h3>
                     <p style="color: #606770;">Comienza a vender para ver el historial</p>
-                    <a href="{% url 'pos' %}" class="fb-btn fb-btn-primary" style="margin-top: 15px;">
+                    <a href="{% url 'sales:pos' %}" class="fb-btn fb-btn-primary" style="margin-top: 15px;">
                         <i class="fas fa-plus-circle"></i>
                         Nueva Venta
                     </a>
@@ -200,7 +227,7 @@
     </table>
 </div>
 
-<!-- Modal de detalles de venta -->
+<!-- Modal de detalles de venta (mejorado para mostrar estado) -->
 <div id="sale-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto;">
         <div style="padding: 20px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between; align-items: center;">
@@ -222,7 +249,7 @@
         
         <div style="padding: 20px; border-top: 1px solid #e4e6eb; display: flex; justify-content: flex-end; gap: 10px;">
             <button onclick="closeModal()" class="fb-btn fb-btn-secondary">Cerrar</button>
-            <button onclick="printModalSale()" class="fb-btn fb-btn-primary">
+            <button onclick="printModalSale()" class="fb-btn fb-btn-primary" id="modal-print-btn">
                 <i class="fas fa-print"></i> Imprimir
             </button>
         </div>
@@ -252,17 +279,9 @@ let filteredSales = [];
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// Mapeo de tipos de precio
-const priceTypeNames = {
-    'kg': 'Kg',
-    'bulk': 'Bulto',
-    'wholesale': 'Mayoreo',
-    'special': 'Especial'
-};
-
 // Inicializar datos
 document.addEventListener('DOMContentLoaded', function() {
-    // Recopilar datos de ventas
+    // Recopilar datos de ventas (incluyendo estado)
     document.querySelectorAll('.sale-row').forEach(row => {
         salesData.push({
             element: row,
@@ -270,6 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
             date: row.dataset.date,
             total: parseFloat(row.dataset.total),
             products: parseInt(row.dataset.products),
+            status: row.dataset.status,
             html: row.outerHTML
         });
     });
@@ -278,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Configurar eventos
     document.getElementById('search-input').addEventListener('input', filterSales);
+    document.getElementById('status-filter').addEventListener('change', filterSales);
     document.getElementById('date-filter').addEventListener('change', filterSales);
     document.getElementById('sort-filter').addEventListener('change', sortSales);
     
@@ -290,12 +311,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function filterSales() {
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const statusFilter = document.getElementById('status-filter').value;
     const dateFilter = document.getElementById('date-filter').value;
     const today = new Date().toISOString().split('T')[0];
     
     filteredSales = salesData.filter(sale => {
         // Filtro de búsqueda
         const matchesSearch = sale.id.toString().includes(searchTerm);
+        
+        // Filtro de estado
+        const matchesStatus = statusFilter === 'all' || sale.status === statusFilter;
         
         // Filtro de fecha
         let matchesDate = true;
@@ -313,7 +338,7 @@ function filterSales() {
             matchesDate = saleDate >= monthAgo;
         }
         
-        return matchesSearch && matchesDate;
+        return matchesSearch && matchesStatus && matchesDate;
     });
     
     currentPage = 1;
@@ -349,7 +374,7 @@ function renderTable() {
     } else {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" style="text-align: center; padding: 40px;">
+                <td colspan="6" style="text-align: center; padding: 40px;">
                     <i class="fas fa-search" style="font-size: 40px; color: #e4e6eb; margin-bottom: 15px;"></i>
                     <h3 style="color: #050505;">No se encontraron ventas</h3>
                     <p style="color: #606770;">Prueba con otros filtros</p>
@@ -424,7 +449,7 @@ function viewSaleDetails(saleId) {
             
             modalContent.innerHTML = `
                 <div style="margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
                         <div>
                             <small style="color: #606770;">Fecha</small>
                             <div><i class="fas fa-calendar-alt"></i> ${data.date}</div>
@@ -436,6 +461,15 @@ function viewSaleDetails(saleId) {
                         <div>
                             <small style="color: #606770;">Sucursal</small>
                             <div><i class="fas fa-store-alt"></i> ${data.branch}</div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Estado</small>
+                            <div>
+                                <span style="background: ${data.status === 'ACTIVE' ? '#e3f2e8' : '#ffebe9'}; color: ${data.status === 'ACTIVE' ? '#1b7e3f' : '#b92b27'}; padding: 4px 10px; border-radius: 30px; font-size: 12px; font-weight: 600;">
+                                    <i class="fas ${data.status === 'ACTIVE' ? 'fa-check-circle' : 'fa-ban'}"></i>
+                                    ${data.status === 'ACTIVE' ? 'Activa' : 'Cancelada'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -463,6 +497,12 @@ function viewSaleDetails(saleId) {
                     </table>
                 </div>
             `;
+            
+            // Ocultar botón de imprimir si la venta está cancelada
+            const printBtn = document.getElementById('modal-print-btn');
+            if (printBtn) {
+                printBtn.style.display = data.status === 'ACTIVE' ? 'inline-flex' : 'none';
+            }
         })
         .catch(error => {
             modalContent.innerHTML = `

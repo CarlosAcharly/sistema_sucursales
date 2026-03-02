@@ -1,5 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.db import transaction
 from users.decorators import role_required
 from inventory.models import Inventory, InventoryMovement
@@ -7,13 +8,20 @@ from .models import Sale, SaleItem
 from products.models import Product
 from django.utils.timezone import now
 from django.db.models import Sum, Count
-from inventory.models import Inventory
-from .models import Sale, SaleItem
 import json
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
+
+
+# =============================
+# 🧑‍💼 CAJERO
+# =============================
 
 @login_required
 @role_required(['CASHIER'])
@@ -238,3 +246,173 @@ def sale_detail_api(request, sale_id):
         return JsonResponse({'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# =============================
+# 🧑‍💼 ADMINISTRADOR
+# =============================
+
+@login_required
+@role_required(['ADMIN', 'SUPERADMIN'])
+def admin_sales_list(request):
+    """Lista de ventas para administradores"""
+    user = request.user
+    
+    # Obtener todas las ventas
+    sales = Sale.objects.select_related(
+        'branch', 'cashier', 'cancelled_by'
+    ).prefetch_related('items').all().order_by('-created_at')
+    
+    # Estadísticas
+    total_sales = sales.count()
+    total_amount = sales.aggregate(total=Sum('total'))['total'] or 0
+    active_sales = sales.filter(status='ACTIVE').count()
+    cancelled_sales = sales.filter(status='CANCELLED').count()
+    
+    # Ventas de hoy
+    today = timezone.now().date()
+    sales_today = sales.filter(created_at__date=today)
+    total_today = sales_today.aggregate(total=Sum('total'))['total'] or 0
+    
+    # Obtener todas las sucursales para el filtro
+    from branches.models import Branch
+    branches = Branch.objects.filter(is_active=True)
+    
+    return render(request, 'admin/sales/list.html', {
+        'sales': sales,
+        'total_sales': total_sales,
+        'total_amount': total_amount,
+        'active_sales': active_sales,
+        'cancelled_sales': cancelled_sales,
+        'sales_today': sales_today.count(),
+        'total_today': total_today,
+        'branches': branches,
+    })
+
+
+@login_required
+@role_required(['ADMIN', 'SUPERADMIN'])
+def admin_sale_detail(request, sale_id):
+    """Detalle de venta para administradores"""
+    try:
+        sale = get_object_or_404(
+            Sale.objects.select_related('branch', 'cashier', 'cancelled_by'),
+            id=sale_id
+        )
+        
+        items = []
+        for item in sale.items.all():
+            items.append({
+                'id': item.id,
+                'product_name': item.product.name,
+                'quantity': item.quantity,
+                'price': float(item.price),
+                'price_type': item.get_price_type_display(),
+                'subtotal': float(item.quantity * item.price)
+            })
+        
+        # Si es una petición AJAX, devolver JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            data = {
+                'id': sale.id,
+                'date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
+                'branch': sale.branch.name,
+                'cashier': sale.cashier.get_full_name() or sale.cashier.username,
+                'total': float(sale.total),
+                'status': sale.status,
+                'status_display': sale.get_status_display(),
+                'cancelled_at': sale.cancelled_at.strftime('%d/%m/%Y %H:%M') if sale.cancelled_at else None,
+                'cancelled_by': sale.cancelled_by.get_full_name() or sale.cancelled_by.username if sale.cancelled_by else None,
+                'cancellation_reason': sale.cancellation_reason,
+                'items': items
+            }
+            return JsonResponse(data)
+        
+        # Si es una petición normal, renderizar template
+        return render(request, 'admin/sales/detail.html', {
+            'sale': sale,
+            'items': items
+        })
+        
+    except Sale.DoesNotExist:
+        messages.error(request, 'Venta no encontrada')
+        return redirect('sales:admin_sales_list')
+
+
+@login_required
+@role_required(['ADMIN', 'SUPERADMIN'])
+@transaction.atomic
+def cancel_sale(request, sale_id):
+    """Cancelar una venta y revertir el inventario"""
+    logger.info(f"Iniciando cancelación de venta #{sale_id} por usuario {request.user.username}")
+    
+    if request.method != 'POST':
+        logger.warning(f"Método no permitido: {request.method}")
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        sale = get_object_or_404(Sale, id=sale_id)
+        logger.info(f"Venta encontrada: #{sale.id}, estado: {sale.status}, total: {sale.total}")
+        
+        if sale.status == 'CANCELLED':
+            logger.warning(f"Intento de cancelar venta ya cancelada #{sale_id}")
+            return JsonResponse({'error': 'Esta venta ya está cancelada'}, status=400)
+        
+        # Obtener datos de la solicitud
+        try:
+            data = json.loads(request.body)
+            reason = data.get('reason', '')
+            logger.info(f"Motivo de cancelación: '{reason}'")
+        except json.JSONDecodeError as e:
+            logger.error(f"Error al decodificar JSON: {e}")
+            return JsonResponse({'error': 'Datos inválidos'}, status=400)
+        
+        with transaction.atomic():
+            # Revertir cada item al inventario
+            items_reverted = 0
+            for item in sale.items.all():
+                logger.info(f"Procesando item: {item.product.name}, cantidad: {item.quantity}")
+                
+                inventory, created = Inventory.objects.get_or_create(
+                    branch=sale.branch,
+                    product=item.product,
+                    defaults={'stock': 0}
+                )
+                
+                stock_antes = inventory.stock
+                inventory.stock += item.quantity
+                inventory.save()
+                
+                # Registrar movimiento de reversión
+                InventoryMovement.objects.create(
+                    inventory=inventory,
+                    quantity=item.quantity,
+                    movement_type='IN'
+                )
+                
+                logger.info(f"Inventario actualizado: {inventory.product.name} - {stock_antes} → {inventory.stock}")
+                items_reverted += 1
+            
+            # Actualizar la venta
+            sale.status = 'CANCELLED'
+            sale.cancelled_at = timezone.now()
+            sale.cancelled_by = request.user
+            sale.cancellation_reason = reason
+            sale.save()
+            
+            logger.info(f"Venta #{sale.id} cancelada exitosamente. Items revertidos: {items_reverted}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Venta #{sale.id} cancelada exitosamente',
+            'total_refunded': float(sale.total),
+            'items_reverted': items_reverted
+        })
+        
+    except Sale.DoesNotExist:
+        logger.error(f"Venta #{sale_id} no encontrada")
+        return JsonResponse({'error': 'Venta no encontrada'}, status=404)
+    except Exception as e:
+        logger.error(f"Error al cancelar venta #{sale_id}: {str(e)}")
+        logger.error(traceback.format_exc())
+        return JsonResponse({'error': str(e)}, status=400)

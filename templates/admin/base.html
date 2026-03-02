@@ -554,6 +554,13 @@
                         Productos
                     </a>
                 </li>
+                <!-- -->
+                <li>
+                    <a href="{% url 'sales:admin_sales_list' %}" {% if 'sales' in request.path %}class="active"{% endif %}>
+                        <i class="fa-solid fa-shopping-cart menu-icon"></i>
+                        Ventas
+                    </a>
+                </li>
                 <li>
                     <a href="{% url 'inventory_list' %}" {% if 'inventory' in request.path %}class="active"{% endif %}>
                         <i class="fa-solid fa-warehouse menu-icon"></i>

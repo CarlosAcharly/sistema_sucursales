@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from users.models import User
 from users.decorators import role_required
 from .forms import UserForm
@@ -32,7 +33,8 @@ def redirect_by_role(request):
     if user.is_cashier():
         if not user.branch:
             return redirect('login')
-        return redirect('pos')
+        # CORREGIDO: Usar 'sales:pos' con el namespace
+        return redirect('sales:pos')
 
     return redirect('login')
 

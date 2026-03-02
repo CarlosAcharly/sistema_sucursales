@@ -584,17 +584,17 @@
         </div>
 
         <div class="nav-links" id="navLinks">
-            <a href="{% url 'cajero_dashboard' %}" {% if request.path == '/cajero/' %}class="active"{% endif %}>
+            <a href="{% url 'sales:cajero_dashboard' %}" {% if request.path == '/cajero/' %}class="active"{% endif %}>
                 <i class="fas fa-chart-pie"></i>
                 <span>Dashboard</span>
             </a>
             
-            <a href="{% url 'pos' %}" {% if 'pos' in request.path %}class="active"{% endif %}>
+            <a href="{% url 'sales:pos' %}" {% if 'pos' in request.path %}class="active"{% endif %}>
                 <i class="fas fa-shopping-cart"></i>
                 <span>Punto de Venta</span>
             </a>
             
-            <a href="{% url 'sales_list' %}" {% if 'ventas' in request.path %}class="active"{% endif %}>
+            <a href="{% url 'sales:sales_list' %}" {% if 'ventas' in request.path %}class="active"{% endif %}>
                 <i class="fas fa-history"></i>
                 <span>Ventas</span>
             </a>

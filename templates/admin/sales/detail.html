@@ -1,0 +1,357 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, 
+    {% if sale.status == 'ACTIVE' %}#42b72a, #2d8a1f
+    {% else %}#fa383e, #e03137{% endif %});
+    border-radius: 20px; padding: 30px;">
+    
+    <div style="display: flex; align-items: center; gap: 20px; color: white;">
+        <a href="{% url 'sales:admin_sales_list' %}" class="back-btn" style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                <h1 style="margin: 0; font-size: 28px;">Venta #{{ sale.id }}</h1>
+                <span style="background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 30px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-circle"></i>
+                    {{ sale.get_status_display }}
+                </span>
+            </div>
+            <div style="display: flex; gap: 30px; opacity: 0.9;">
+                <span><i class="fas fa-store"></i> {{ sale.branch.name }}</span>
+                <span><i class="fas fa-user"></i> {{ sale.cashier.get_full_name|default:sale.cashier.username }}</span>
+                <span><i class="fas fa-calendar"></i> {{ sale.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 14px; opacity: 0.9;">Total</div>
+            <div style="font-size: 36px; font-weight: 700;">${{ sale.total|floatformat:2 }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <!-- Productos -->
+    <div class="fb-card" style="border-radius: 16px; padding: 0; overflow: hidden;">
+        <div style="background: #f5f6f7; padding: 20px; border-bottom: 2px solid #e4e6eb;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-boxes" style="color: #4158D0;"></i>
+                Productos Vendidos
+            </h3>
+        </div>
+        
+        <div style="padding: 20px;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #e4e6eb;">
+                        <th style="padding: 12px; text-align: left;">Producto</th>
+                        <th style="padding: 12px; text-align: center;">Cantidad</th>
+                        <th style="padding: 12px; text-align: center;">Tipo</th>
+                        <th style="padding: 12px; text-align: right;">Precio</th>
+                        <th style="padding: 12px; text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr style="border-bottom: 1px solid #f0f2f5;">
+                        <td style="padding: 15px 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #e7f3ff; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-box" style="color: #1877f2;"></i>
+                                </div>
+                                <strong>{{ item.product.name }}</strong>
+                            </div>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: center;">
+                            <span style="font-weight: 600;">{{ item.quantity }}</span>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: center;">
+                            <span style="background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 30px; font-size: 12px;">
+                                {{ item.price_type }}
+                            </span>
+                        </td>
+                        <td style="padding: 15px 12px; text-align: right;">
+                            ${{ item.price|floatformat:2 }}
+                        </td>
+                        <td style="padding: 15px 12px; text-align: right;">
+                            <strong>${{ item.subtotal|floatformat:2 }}</strong>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa;">
+                        <td colspan="4" style="padding: 15px; text-align: right; font-weight: 600;">TOTAL:</td>
+                        <td style="padding: 15px; text-align: right; font-weight: 700; font-size: 18px; color: #1877f2;">
+                            ${{ sale.total|floatformat:2 }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Información adicional -->
+    <div>
+        <!-- Información de cancelación (si está cancelada) -->
+        {% if sale.status == 'CANCELLED' %}
+        <div class="fb-card" style="border-radius: 16px; margin-bottom: 20px; border-left: 4px solid #fa383e;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-ban" style="color: #fa383e;"></i>
+                    Información de Cancelación
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #606770; font-size: 13px;">Cancelado por</span>
+                    <div style="font-weight: 600;">{{ sale.cancelled_by.get_full_name|default:sale.cancelled_by.username }}</div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <span style="color: #606770; font-size: 13px;">Fecha de cancelación</span>
+                    <div>{{ sale.cancelled_at|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div>
+                    <span style="color: #606770; font-size: 13px;">Motivo</span>
+                    <div style="background: #f5f6f7; padding: 10px; border-radius: 8px; margin-top: 5px;">
+                        {{ sale.cancellation_reason|default:"No especificado" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Acciones -->
+        <div class="fb-card" style="border-radius: 16px;">
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 16px 16px 0 0;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-bolt" style="color: #f7b928;"></i>
+                    Acciones
+                </h4>
+            </div>
+            <div style="padding: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="window.print()" class="fb-btn" style="background: white; color: #1877f2; padding: 14px; border: 2px solid #1877f2; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                        <i class="fas fa-print"></i>
+                        Imprimir Ticket
+                    </button>
+                    
+                    {% if sale.status == 'ACTIVE' %}
+                    <button onclick="openCancelModal({{ sale.id }}, {{ sale.total }})" class="fb-btn" style="background: #fa383e; color: white; padding: 14px; border: none; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                        <i class="fas fa-ban"></i>
+                        Cancelar Venta
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'sales:admin_sales_list' %}" class="fb-btn fb-btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-decoration: none;">
+                        <i class="fas fa-arrow-left"></i>
+                        Volver a la lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de cancelación (reutilizado) -->
+<div id="cancelModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header" style="background: #fa383e; color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-triangle"></i> Cancelar Venta
+            </h3>
+            <span class="close" onclick="closeCancelModal()" style="color: white;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <div style="background: #fff4e5; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px 0; color: #bd7b13; font-weight: 600;">
+                    <i class="fas fa-info-circle"></i> ¿Estás seguro de cancelar esta venta?
+                </p>
+                <p style="margin: 0; color: #606770;">
+                    Los productos volverán al inventario automáticamente.
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                    <i class="fas fa-comment"></i> Motivo de cancelación
+                </label>
+                <textarea id="cancel-reason" rows="3" class="fb-input" placeholder="Ej: Cliente devolvió productos, error en la venta, etc."></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeCancelModal()" class="fb-btn fb-btn-secondary">No, mantener</button>
+                <button onclick="confirmCancel()" class="fb-btn" style="background: #fa383e; color: white; border: none;" id="confirmCancelBtn">
+                    <i class="fas fa-ban"></i> Sí, cancelar venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000;"></div>
+
+<style>
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+        transform: translateX(-3px);
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        animation: fadeIn 0.2s ease;
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 10% auto;
+        padding: 0;
+        width: 90%;
+        max-width: 450px;
+        border-radius: 12px;
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+    }
+    
+    .modal-header {
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .close {
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        opacity: 0.8;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    #toast {
+        border-left: 4px solid #1877f2;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+let currentSaleId = null;
+
+function openCancelModal(saleId, total) {
+    currentSaleId = saleId;
+    document.getElementById('cancelModal').style.display = 'block';
+    document.getElementById('cancel-reason').value = '';
+}
+
+function closeCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+    currentSaleId = null;
+}
+
+function confirmCancel() {
+    if (!currentSaleId) return;
+    
+    const reason = document.getElementById('cancel-reason').value;
+    const btn = document.getElementById('confirmCancelBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelando...';
+    
+    fetch(`/sales/admin/${currentSaleId}/cancelar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showToast('Error: ' + data.error, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-ban"></i> Sí, cancelar venta';
+        }
+    })
+    .catch(error => {
+        showToast('Error de conexión', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-ban"></i> Sí, cancelar venta';
+    });
+}
+
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = message;
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCancelModal();
+    }
+});
+
+// Clic fuera del modal
+window.onclick = function(event) {
+    const modal = document.getElementById('cancelModal');
+    if (event.target == modal) {
+        closeCancelModal();
+    }
+}
+</script>
+{% endblock %}
