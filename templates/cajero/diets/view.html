@@ -492,7 +492,7 @@ function updateCartCounter() {
 }
 
 function goToCart() {
-    window.location.href = '{% url "pos" %}';
+    window.location.href = '{% url "sales:pos" %}';
 }
 
 function showNotification(message, type) {
@@ -530,7 +530,7 @@ function closeCartModal() {
 }
 
 function proceedToCheckout() {
-    window.location.href = '{% url "pos" %}';
+    window.location.href = '{% url "sales:pos" %}';
 }
 
 // Tecla ESC para cerrar modal
