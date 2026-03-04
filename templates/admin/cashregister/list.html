@@ -1,0 +1,248 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Header con título -->
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-cash-register" style="color: #1877f2;"></i>
+            Cortes de Caja - Administración
+        </h2>
+        <button onclick="window.print()" class="fb-btn fb-btn-primary">
+            <i class="fa-solid fa-print"></i>
+            Imprimir Reporte
+        </button>
+    </div>
+</div>
+
+<!-- Filtros estilo Facebook -->
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <form method="get" id="filterForm" style="display: contents;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                    <i class="fa-solid fa-store"></i> Sucursal
+                </label>
+                <select name="sucursal" class="fb-input" style="width: 100%;">
+                    <option value="">Todas las sucursales</option>
+                    {% for suc in sucursales %}
+                    <option value="{{ suc.id }}" {% if filtros.sucursal == suc.id|stringformat:"s" %}selected{% endif %}>
+                        {{ suc.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                    <i class="fa-solid fa-circle"></i> Estado
+                </label>
+                <select name="estado" class="fb-input" style="width: 100%;">
+                    <option value="">Todos</option>
+                    {% for key, value in estados %}
+                    <option value="{{ key }}" {% if filtros.estado == key %}selected{% endif %}>
+                        {{ value }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                    <i class="fa-solid fa-calendar"></i> Desde
+                </label>
+                <input type="date" name="desde" class="fb-input" style="width: 100%;" value="{{ filtros.desde }}">
+            </div>
+            
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                    <i class="fa-solid fa-calendar"></i> Hasta
+                </label>
+                <input type="date" name="hasta" class="fb-input" style="width: 100%;" value="{{ filtros.hasta }}">
+            </div>
+            
+            <div style="display: flex; align-items: flex-end; gap: 8px;">
+                <button type="submit" class="fb-btn fb-btn-primary" style="flex: 1;">
+                    <i class="fa-solid fa-search"></i> Filtrar
+                </button>
+                <a href="{% url 'cashregister:admin_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1;">
+                    <i class="fa-solid fa-times"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estadísticas Globales -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Total Cortes</h4>
+            <i class="fa-solid fa-calculator stat-icon" style="color: #1877f2;"></i>
+        </div>
+        <div class="stat-number">{{ estadisticas.total_cortes }}</div>
+        <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <small style="color: #42b72a;">
+                <i class="fa-solid fa-circle"></i> {{ estadisticas.cortes_cerrados }} Cerrados
+            </small>
+            <small style="color: #f7b928;">
+                <i class="fa-solid fa-circle"></i> {{ estadisticas.cortes_abiertos }} Abiertos
+            </small>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Total Ventas</h4>
+            <i class="fa-solid fa-dollar-sign stat-icon" style="color: #42b72a;"></i>
+        </div>
+        <div class="stat-number">${{ estadisticas.total_ventas|floatformat:2 }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Diferencia Total</h4>
+            <i class="fa-solid fa-chart-line stat-icon" style="color: #fa383e;"></i>
+        </div>
+        <div class="stat-number {% if estadisticas.total_diferencia >= 0 %}" style="color: #42b72a;{% else %}" style="color: #fa383e;{% endif %}">
+            ${{ estadisticas.total_diferencia|floatformat:2 }}
+        </div>
+    </div>
+</div>
+
+<!-- Resumen por Sucursal -->
+<div class="fb-card" style="margin-bottom: 25px;">
+    <div class="fb-card-header">
+        <h3><i class="fa-solid fa-store" style="color: #1877f2;"></i> Resumen por Sucursal</h3>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f6f7;">
+                    <th style="padding: 12px; text-align: left; color: #606770;">Sucursal</th>
+                    <th style="padding: 12px; text-align: center; color: #606770;">Cortes</th>
+                    <th style="padding: 12px; text-align: right; color: #606770;">Ventas</th>
+                    <th style="padding: 12px; text-align: right; color: #606770;">Diferencia</th>
+                    <th style="padding: 12px; text-align: center; color: #606770;">Abiertos</th>
+                    <th style="padding: 12px; text-align: center; color: #606770;">Cerrados</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in sucursales_data %}
+                <tr style="border-bottom: 1px solid #e4e6eb;">
+                    <td style="padding: 12px;"><strong>{{ data.nombre }}</strong></td>
+                    <td style="padding: 12px; text-align: center;">{{ data.total_cortes }}</td>
+                    <td style="padding: 12px; text-align: right;">${{ data.total_ventas|floatformat:2 }}</td>
+                    <td style="padding: 12px; text-align: right; {% if data.total_diferencia >= 0 %}color: #42b72a;{% else %}color: #fa383e;{% endif %}">
+                        ${{ data.total_diferencia|floatformat:2 }}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                            {{ data.abiertos }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                            {{ data.cerrados }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 30px; text-align: center; color: #606770;">
+                        <i class="fa-solid fa-store" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>No hay datos para mostrar</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Lista de Cortes -->
+<div class="fb-card">
+    <div class="fb-card-header">
+        <h3><i class="fa-solid fa-list" style="color: #1877f2;"></i> Listado de Cortes</h3>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f6f7;">
+                    <th style="padding: 12px; text-align: left;">ID</th>
+                    <th style="padding: 12px; text-align: left;">Sucursal</th>
+                    <th style="padding: 12px; text-align: left;">Cajero</th>
+                    <th style="padding: 12px; text-align: left;">Apertura</th>
+                    <th style="padding: 12px; text-align: left;">Cierre</th>
+                    <th style="padding: 12px; text-align: center;">Ventas</th>
+                    <th style="padding: 12px; text-align: right;">Inicial</th>
+                    <th style="padding: 12px; text-align: right;">Final Sist.</th>
+                    <th style="padding: 12px; text-align: right;">Final Real</th>
+                    <th style="padding: 12px; text-align: right;">Diferencia</th>
+                    <th style="padding: 12px; text-align: center;">Estado</th>
+                    <th style="padding: 12px; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for corte in cortes %}
+                <tr style="border-bottom: 1px solid #e4e6eb;">
+                    <td style="padding: 12px;"><strong>#{{ corte.id }}</strong></td>
+                    <td style="padding: 12px;">
+                        <span style="background: #e7f3ff; color: #1877f2; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                            {{ corte.branch.name }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px;">{{ corte.cajero.get_full_name|default:corte.cajero.username }}</td>
+                    <td style="padding: 12px;">{{ corte.fecha_apertura|date:"d/m/Y H:i" }}</td>
+                    <td style="padding: 12px;">
+                        {% if corte.fecha_cierre %}
+                            {{ corte.fecha_cierre|date:"d/m/Y H:i" }}
+                        {% else %}
+                            <span style="color: #606770;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="background: #1877f2; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
+                            {{ corte.ventas.count }}
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: right;">${{ corte.monto_inicial|floatformat:2 }}</td>
+                    <td style="padding: 12px; text-align: right;">${{ corte.monto_final_sistema|default:0|floatformat:2 }}</td>
+                    <td style="padding: 12px; text-align: right;">${{ corte.monto_final_real|default:0|floatformat:2 }}</td>
+                    <td style="padding: 12px; text-align: right; {% if corte.diferencia >= 0 %}color: #42b72a;{% else %}color: #fa383e;{% endif %}">
+                        ${{ corte.diferencia|floatformat:2 }}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        {% if corte.estado == 'ABIERTO' %}
+                        <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                            Abierto
+                        </span>
+                        {% else %}
+                        <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                            Cerrado
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <a href="{% url 'cashregister:admin_detail' corte.id %}" class="fb-btn fb-btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="12" style="padding: 40px; text-align: center; color: #606770;">
+                        <i class="fa-solid fa-cash-register" style="font-size: 48px; margin-bottom: 15px;"></i>
+                        <h3 style="color: #050505;">No hay cortes de caja</h3>
+                        <p>Los cortes de caja aparecerán aquí cuando los cajeros comiencen a registrarlos</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

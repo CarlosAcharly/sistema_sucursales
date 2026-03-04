@@ -862,9 +862,7 @@ function procesarVenta() {
         if (data.success) {
             ventaActualId = data.venta_id;
             
-            // ✅ ACTUALIZAR EL NÚMERO DE TICKET EN EL HEADER CON EL ID REAL DE LA VENTA
             document.getElementById('ticket-number').textContent = ventaActualId;
-            
             const totalVenta = document.getElementById('total').innerText;
             
             cart = {};
@@ -882,14 +880,20 @@ function procesarVenta() {
                 dietItems = [];
             }
             
+            // ✅ Restablecer el botón después de éxito
+            btnProcesar.disabled = false;
+            btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
+            
         } else {
             showNotification(data.error || 'Error al procesar la venta', 'error');
+            // ✅ Restablecer el botón en caso de error
             btnProcesar.disabled = false;
             btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
         }
     })
     .catch(error => {
         showNotification('Error de conexión', 'error');
+        // ✅ Restablecer el botón en caso de error de conexión
         btnProcesar.disabled = false;
         btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
     });

@@ -567,6 +567,13 @@
                         Inventario
                     </a>
                 </li>
+                <!--corte de caja -->
+                <li>
+                    <a href="{% url 'cashregister:admin_list' %}" {% if 'cashregister/admin' in request.path %}class="active"{% endif %}>
+                        <i class="fa-solid fa-cash-register menu-icon"></i>
+                        Cortes de Caja
+                    </a>
+                </li>
                 <li>
                     <a href="{% url 'transfer_list' %}" {% if 'transfer' in request.path %}class="active"{% endif %}>
                         <i class="fa-solid fa-right-left menu-icon"></i>

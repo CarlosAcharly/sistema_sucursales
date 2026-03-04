@@ -1,0 +1,210 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Header con navegación -->
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{% url 'cashregister:admin_list' %}" class="fb-btn fb-btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i>
+                Volver
+            </a>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-cash-register" style="color: #1877f2;"></i>
+                Corte de Caja #{{ corte.id }}
+            </h2>
+        </div>
+        <div>
+            <span style="background: {% if corte.estado == 'ABIERTO' %}#fef3c7; color: #92400e;{% else %}#d1fae5; color: #065f46;{% endif %} padding: 8px 16px; border-radius: 20px; font-weight: 600;">
+                <i class="fa-solid {% if corte.estado == 'ABIERTO' %}fa-clock{% else %}fa-check-circle{% endif %}"></i>
+                {{ corte.get_estado_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Corte en Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Sucursal</h4>
+            <i class="fa-solid fa-store stat-icon" style="color: #1877f2;"></i>
+        </div>
+        <div class="stat-number" style="font-size: 20px;">{{ corte.branch.name }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Cajero</h4>
+            <i class="fa-solid fa-user stat-icon" style="color: #1877f2;"></i>
+        </div>
+        <div class="stat-number" style="font-size: 20px;">{{ corte.cajero.get_full_name|default:corte.cajero.username }}</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Apertura</h4>
+            <i class="fa-solid fa-play stat-icon" style="color: #42b72a;"></i>
+        </div>
+        <div class="stat-number" style="font-size: 18px;">{{ corte.fecha_apertura|date:"d/m/Y" }}</div>
+        <small style="color: #606770;">{{ corte.fecha_apertura|date:"H:i" }}</small>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <h4>Cierre</h4>
+            <i class="fa-solid fa-stop stat-icon" style="color: #fa383e;"></i>
+        </div>
+        <div class="stat-number" style="font-size: 18px;">
+            {% if corte.fecha_cierre %}
+                {{ corte.fecha_cierre|date:"d/m/Y" }}
+            {% else %}
+                <span style="color: #606770;">En curso</span>
+            {% endif %}
+        </div>
+        {% if corte.fecha_cierre %}
+        <small style="color: #606770;">{{ corte.fecha_cierre|date:"H:i" }}</small>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Resumen Financiero -->
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 10px;">
+    <div class="stat-card" style="border-top-color: #1877f2;">
+        <div class="stat-header">
+            <h4>Monto Inicial</h4>
+            <i class="fa-solid fa-coins stat-icon" style="color: #1877f2;"></i>
+        </div>
+        <div class="stat-number">${{ corte.monto_inicial|floatformat:2 }}</div>
+    </div>
+
+    <div class="stat-card" style="border-top-color: #42b72a;">
+        <div class="stat-header">
+            <h4>Total Ventas</h4>
+            <i class="fa-solid fa-shopping-cart stat-icon" style="color: #42b72a;"></i>
+        </div>
+        <div class="stat-number">${{ total_ventas|floatformat:2 }}</div>
+        <small style="color: #606770;">{{ ventas.count }} ventas</small>
+    </div>
+
+    <div class="stat-card" style="border-top-color: #f7b928;">
+        <div class="stat-header">
+            <h4>Total Sistema</h4>
+            <i class="fa-solid fa-computer stat-icon" style="color: #f7b928;"></i>
+        </div>
+        <div class="stat-number">${{ corte.monto_final_sistema|default:total_ventas|floatformat:2 }}</div>
+    </div>
+
+    <div class="stat-card" style="border-top-color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
+        <div class="stat-header">
+            <h4>Diferencia</h4>
+            <i class="fa-solid fa-chart-line stat-icon" style="color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %};"></i>
+        </div>
+        <div class="stat-number" style="color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
+            {% if corte.diferencia > 0 %}+{% endif %}${{ corte.diferencia|floatformat:2 }}
+        </div>
+    </div>
+</div>
+
+{% if corte.monto_final_real %}
+<!-- Detalle del Cierre -->
+<div class="fb-card" style="margin-top: 20px;">
+    <div class="fb-card-header">
+        <h3><i class="fa-solid fa-lock-open" style="color: #1877f2;"></i> Detalle del Cierre</h3>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div>
+            <p style="color: #606770; margin-bottom: 5px;">Monto Real Contado</p>
+            <h4 style="color: #1877f2;">${{ corte.monto_final_real|floatformat:2 }}</h4>
+        </div>
+        <div>
+            <p style="color: #606770; margin-bottom: 5px;">Fecha de Cierre</p>
+            <h4 style="color: #050505;">{{ corte.fecha_cierre|date:"d/m/Y H:i" }}</h4>
+        </div>
+        <div>
+            <p style="color: #606770; margin-bottom: 5px;">Duración del Corte</p>
+            <h4 style="color: #050505;">{{ corte.duracion }}</h4>
+        </div>
+        {% if corte.observaciones %}
+        <div style="grid-column: 1/-1;">
+            <p style="color: #606770; margin-bottom: 5px;">Observaciones</p>
+            <div style="background: #f5f6f7; padding: 15px; border-radius: 8px;">
+                {{ corte.observaciones }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Ventas del Corte -->
+<div class="fb-card" style="margin-top: 20px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3><i class="fa-solid fa-receipt" style="color: #1877f2;"></i> Ventas del Corte</h3>
+        <span style="background: #1877f2; color: white; padding: 5px 15px; border-radius: 20px;">
+            {{ ventas.count }} ventas
+        </span>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f6f7;">
+                    <th style="padding: 12px; text-align: left;">ID Venta</th>
+                    <th style="padding: 12px; text-align: left;">Fecha</th>
+                    <th style="padding: 12px; text-align: left;">Hora</th>
+                    <th style="padding: 12px; text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas %}
+                <tr style="border-bottom: 1px solid #e4e6eb;">
+                    <td style="padding: 12px;"><strong>#{{ venta.id }}</strong></td>
+                    <td style="padding: 12px;">{{ venta.created_at|date:"d/m/Y" }}</td>
+                    <td style="padding: 12px;">{{ venta.created_at|date:"H:i" }}</td>
+                    <td style="padding: 12px; text-align: right; color: #1877f2; font-weight: 600;">
+                        ${{ venta.total|floatformat:2 }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="padding: 40px; text-align: center; color: #606770;">
+                        <i class="fa-solid fa-shopping-cart" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>No hay ventas en este corte</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot style="background: #f0f2f5;">
+                <tr>
+                    <td colspan="3" style="padding: 12px; text-align: right; font-weight: 600;">TOTAL:</td>
+                    <td style="padding: 12px; text-align: right; font-weight: 700; color: #1877f2; font-size: 16px;">
+                        ${{ total_ventas|floatformat:2 }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Gráfica de Ventas por Hora (si hay suficientes datos) -->
+{% if ventas_por_hora|length > 1 %}
+<div class="fb-card" style="margin-top: 20px;">
+    <div class="fb-card-header">
+        <h3><i class="fa-solid fa-chart-bar" style="color: #1877f2;"></i> Ventas por Hora</h3>
+    </div>
+    
+    <div style="display: flex; gap: 20px; align-items: flex-end; height: 200px; padding: 20px 0;">
+        {% for hora in ventas_por_hora %}
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 100%; background: #e7f3ff; height: {{ hora.total|floatformat:0|default:0 }}px; max-height: 150px; min-height: 20px; border-radius: 4px 4px 0 0; background: #1877f2;"></div>
+            <span style="margin-top: 8px; font-size: 11px; color: #606770;">{{ hora.hora }}</span>
+            <span style="font-size: 11px; font-weight: 600;">${{ hora.total|floatformat:0 }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
