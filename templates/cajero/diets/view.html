@@ -51,7 +51,7 @@
     </div>
 </div>
 
-<!-- SECCIÓN 1: Tabla base (Kilos por Tonelada) - COLAPSABLE -->
+<!-- SECCIÓN 1: Tabla base (Kilos por Tonelada) - COLAPSABLE Y OCULTA POR DEFECTO -->
 <div class="fb-card" style="margin-bottom: 20px; padding: 0; overflow: hidden;">
     <div style="background: linear-gradient(135deg, #4a5568, #2d3748); padding: 15px 20px; color: white; cursor: pointer;" 
          onclick="toggleBaseTable()">
@@ -64,12 +64,12 @@
                 <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px;">
                     <i class="fas fa-lock"></i> Solo referencia
                 </span>
-                <i class="fas fa-chevron-up" id="toggle-icon" style="font-size: 18px; transition: transform 0.3s;"></i>
+                <i class="fas fa-chevron-down" id="toggle-icon" style="font-size: 18px; transition: transform 0.3s;"></i>
             </div>
         </div>
     </div>
 
-    <div id="base-table-container" style="transition: all 0.3s ease;">
+    <div id="base-table-container" style="display: none; transition: all 0.3s ease;">
         <table class="fb-table" style="margin: 0; background: #f8f9fa;">
             <thead>
                 <tr>
@@ -295,6 +295,16 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTotalKilos();
     updateSelectedCount();
     updateCartCounter();
+    
+    // Inicializar la tabla base como oculta
+    const baseTable = document.getElementById('base-table-container');
+    const toggleIcon = document.getElementById('toggle-icon');
+    
+    if (baseTable && toggleIcon) {
+        baseTable.style.display = 'none';
+        toggleIcon.classList.remove('fa-chevron-up');
+        toggleIcon.classList.add('fa-chevron-down');
+    }
 });
 
 // Función para ocultar/mostrar tabla base

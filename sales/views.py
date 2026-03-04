@@ -15,6 +15,8 @@ from datetime import timedelta
 from decimal import Decimal
 import logging
 import traceback
+import pytz  # Asegúrate de tener pytz instalado
+
 
 logger = logging.getLogger(__name__)
 
@@ -102,20 +104,31 @@ def pos_view(request):
 @role_required(['CASHIER'])
 def sales_list(request):
     branch = request.user.branch
-    today = timezone.now().date()
+    
+    # Obtener la fecha actual en la zona horaria local
+    local_tz = timezone.get_current_timezone()
+    now_local = timezone.localtime(timezone.now())
+    today = now_local.date()
     yesterday = today - timedelta(days=1)
     
     # Obtener todas las ventas de la sucursal
     sales = Sale.objects.filter(branch=branch).prefetch_related('items__product').order_by('-created_at')
     
-    # Ventas de hoy
-    sales_today = sales.filter(created_at__date=today)
-    sales_today_count = sales_today.count()
-    total_today = sales_today.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    # Ventas de hoy (solo activas para estadísticas)
+    sales_today_active = sales.filter(
+        created_at__date=today, 
+        status='ACTIVE'
+    )
+    sales_today_count = sales_today_active.count()
+    total_today = sales_today_active.aggregate(total=Sum('total'))['total'] or Decimal('0')
     
-    # Ventas de ayer
-    sales_yesterday = Sale.objects.filter(branch=branch, created_at__date=yesterday)
-    total_yesterday = sales_yesterday.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    # Ventas de ayer (solo activas)
+    sales_yesterday_active = Sale.objects.filter(
+        branch=branch, 
+        status='ACTIVE',
+        created_at__date=yesterday
+    )
+    total_yesterday = sales_yesterday_active.aggregate(total=Sum('total'))['total'] or Decimal('0')
     
     # Calcular porcentaje de crecimiento
     if total_yesterday > 0:
@@ -131,8 +144,8 @@ def sales_list(request):
     else:
         average_ticket = Decimal('0')
     
-    # Total general de ventas
-    total_sum = sales.aggregate(total=Sum('total'))['total'] or Decimal('0')
+    # Total general de ventas (solo activas)
+    total_sum = sales.filter(status='ACTIVE').aggregate(total=Sum('total'))['total'] or Decimal('0')
     
     return render(request, 'cajero/sales_list.html', {
         'sales': sales,
@@ -143,7 +156,6 @@ def sales_list(request):
         'average_ticket': average_ticket,
         'total_sum': total_sum,
     })
-
 
 @login_required
 @role_required(['CASHIER'])
@@ -237,7 +249,10 @@ def sale_detail_api(request, sale_id):
             'subtotal': subtotal,
             'cashier': sale.cashier.get_full_name() or sale.cashier.username,
             'branch': sale.branch.name,
-            'items': items
+            'items': items,
+            # ✅ AGREGAR ESTOS CAMPOS
+            'status': sale.status,
+            'status_display': sale.get_status_display()
         }
         
         return JsonResponse(data)
@@ -246,7 +261,6 @@ def sale_detail_api(request, sale_id):
         return JsonResponse({'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 
 # =============================
 # 🧑‍💼 ADMINISTRADOR

@@ -18,7 +18,7 @@
         <div style="display: flex; gap: 15px;">
             <div style="text-align: center; background: #e7f3ff; padding: 8px 16px; border-radius: 8px;">
                 <small style="color: #606770; display: block;">Total dietas</small>
-                <strong style="color: #1877f2; font-size: 20px;">{{ diets|length }}</strong>
+                <strong style="color: #1877f2; font-size: 20px;" id="total-dietas">{{ diets|length }}</strong>
             </div>
             <div style="text-align: center; background: #e3f2e8; padding: 8px 16px; border-radius: 8px;">
                 <small style="color: #606770; display: block;">Activas</small>
@@ -28,11 +28,34 @@
     </div>
 </div>
 
+<!-- Buscador de dietas (NUEVO) -->
+<div class="fb-card" style="margin-bottom: 20px; padding: 15px;">
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="flex: 1; position: relative;">
+            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+            <input type="text" 
+                   id="search-diets" 
+                   class="fb-input" 
+                   placeholder="Buscar dieta por nombre..."
+                   style="padding-left: 45px; height: 48px; width: 100%;"
+                   autocomplete="off">
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="fb-btn fb-btn-secondary" onclick="clearSearch()" id="clear-search" style="display: none;">
+                <i class="fas fa-times"></i> Limpiar
+            </button>
+            <span style="color: #606770; font-size: 14px; display: flex; align-items: center;" id="results-count">
+                <i class="fas fa-drumstick-bite"></i> <span id="displayed-count">{{ diets|length }}</span> mostradas
+            </span>
+        </div>
+    </div>
+</div>
+
 {% if diets %}
     <!-- Grid de dietas -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
+    <div id="diets-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
         {% for diet in diets %}
-        <div class="diet-card" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;"
+        <div class="diet-card" data-diet-name="{{ diet.diet_base.name|lower }}" data-diet-id="{{ diet.id }}" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;"
              onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';"
              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.1)';">
             
@@ -42,7 +65,7 @@
                     <div>
                         <h3 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-utensils"></i>
-                            {{ diet.diet_base.name }}
+                            <span class="diet-name">{{ diet.diet_base.name }}</span>
                         </h3>
                         <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 13px;">
                             <i class="fas fa-calendar-alt"></i> Creada: {{ diet.diet_base.created_at|date:"d/m/Y" }}
@@ -54,7 +77,7 @@
                 </div>
             </div>
             
-            <!-- Contenido de la dieta -->
+            <!-- Contenido de la dieta (se mantiene igual) -->
             <div style="padding: 20px;">
                 <!-- Descripción -->
                 {% if diet.diet_base.description %}
@@ -159,6 +182,13 @@
             </div>
         </div>
         {% endfor %}
+    </div>
+    
+    <!-- Mensaje de "No se encontraron resultados" (inicialmente oculto) -->
+    <div id="no-results-message" style="display: none; text-align: center; padding: 40px;">
+        <i class="fas fa-search" style="font-size: 48px; color: #e4e6eb; margin-bottom: 15px;"></i>
+        <h3 style="color: #050505;">No se encontraron dietas</h3>
+        <p style="color: #606770;">Prueba con otro término de búsqueda</p>
     </div>
     
     <!-- Resumen adicional -->
@@ -266,12 +296,78 @@
         font-size: 12px;
         font-weight: 600;
     }
+    
+    /* Estilo para el input de búsqueda */
+    #search-diets {
+        transition: all 0.3s ease;
+        border: 2px solid #e4e6eb;
+    }
+    
+    #search-diets:focus {
+        border-color: #1877f2;
+        box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+        outline: none;
+    }
 </style>
 
-<!-- Script para tooltips y mejoras -->
+<!-- Script para búsqueda en tiempo real -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Agregar tooltips a los elementos
+    const searchInput = document.getElementById('search-diets');
+    const dietCards = document.querySelectorAll('.diet-card');
+    const clearButton = document.getElementById('clear-search');
+    const displayedCount = document.getElementById('displayed-count');
+    const totalDietas = document.getElementById('total-dietas');
+    const noResultsMessage = document.getElementById('no-results-message');
+    const dietsGrid = document.getElementById('diets-grid');
+    
+    function filterDiets() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        dietCards.forEach(card => {
+            const dietName = card.dataset.dietName;
+            const matches = dietName.includes(searchTerm);
+            
+            if (matches) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Actualizar contador
+        displayedCount.textContent = visibleCount;
+        
+        // Mostrar/ocultar botón de limpiar
+        if (searchTerm.length > 0) {
+            clearButton.style.display = 'inline-flex';
+        } else {
+            clearButton.style.display = 'none';
+        }
+        
+        // Mostrar mensaje de "no resultados" si es necesario
+        if (visibleCount === 0 && dietCards.length > 0) {
+            noResultsMessage.style.display = 'block';
+            dietsGrid.style.display = 'none';
+        } else {
+            noResultsMessage.style.display = 'none';
+            dietsGrid.style.display = 'grid';
+        }
+    }
+    
+    // Evento de búsqueda en tiempo real
+    searchInput.addEventListener('input', filterDiets);
+    
+    // Función para limpiar búsqueda
+    window.clearSearch = function() {
+        searchInput.value = '';
+        filterDiets();
+        searchInput.focus();
+    };
+    
+    // Agregar tooltips a los badges (código existente)
     const badges = document.querySelectorAll('.fb-badge');
     badges.forEach(badge => {
         badge.addEventListener('mouseenter', function() {

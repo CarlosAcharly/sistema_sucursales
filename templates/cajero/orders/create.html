@@ -69,10 +69,10 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="fb-btn fb-btn-secondary" onclick="clearOrder()">
+                        <button type="button" class="fb-btn fb-btn-secondary" onclick="openClearModal()">
                             <i class="fas fa-trash"></i> Limpiar
                         </button>
-                        <button type="submit" class="fb-btn fb-btn-primary" id="submitBtn" disabled>
+                        <button type="button" class="fb-btn fb-btn-primary" id="submitBtn" disabled onclick="openConfirmModal()">
                             <i class="fas fa-paper-plane"></i> Crear Pedido
                         </button>
                     </div>
@@ -94,6 +94,82 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmación - Limpiar Pedido -->
+<div id="clearModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header" style="background: #fa383e; color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-triangle"></i> Limpiar Pedido
+            </h3>
+            <span class="close" onclick="closeClearModal()" style="color: white;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="background: #ffebe9; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                    <i class="fas fa-trash" style="font-size: 30px; color: #fa383e;"></i>
+                </div>
+                <h4 style="color: #050505; margin-bottom: 10px;">¿Estás seguro?</h4>
+                <p style="color: #606770;">Se eliminarán todos los productos del pedido actual.</p>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closeClearModal()" class="fb-btn fb-btn-secondary" style="flex: 1;">Cancelar</button>
+                <button onclick="confirmClear()" class="fb-btn" style="flex: 1; background: #fa383e; color: white; border: none;">Sí, limpiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación - Crear Pedido -->
+<div id="confirmOrderModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header" style="background: #42b72a; color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-check-circle"></i> Confirmar Pedido
+            </h3>
+            <span class="close" onclick="closeConfirmModal()" style="color: white;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #050505;">Resumen del Pedido</h4>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Productos:</span>
+                    <strong id="modal-items-count">0</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Total kilos:</span>
+                    <strong id="modal-kilos">0.00 kg</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid #e4e6eb;">
+                    <span style="font-weight: 600;">¿Enviar pedido?</span>
+                </div>
+            </div>
+            
+            <div style="background: #e7f3ff; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #1877f2; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i>
+                    El pedido quedará pendiente para aprobación del administrador.
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeConfirmModal()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                <button onclick="submitOrder()" class="fb-btn fb-btn-success" id="modal-confirm-btn">
+                    <i class="fas fa-check-circle"></i> Confirmar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
 
 <style>
 .create-order-container {
@@ -333,6 +409,84 @@
     font-size: 14px;
 }
 
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: white;
+    margin: 10% auto;
+    padding: 0;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close {
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.close:hover {
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+#toast {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .order-layout {
@@ -364,7 +518,7 @@ function addToOrder(productId, productName) {
     const existingProduct = selectedProducts.find(p => p.id === productId);
     
     if (existingProduct) {
-        alert('Este producto ya está en el pedido');
+        showToast('❌ Este producto ya está en el pedido', 'error');
         return;
     }
     
@@ -376,6 +530,7 @@ function addToOrder(productId, productName) {
     });
     
     updateOrderDisplay();
+    showToast(`✓ ${productName} agregado al pedido`, 'success');
 }
 
 function updateOrderDisplay() {
@@ -444,33 +599,102 @@ function updateKilos(index, value) {
 }
 
 function removeProduct(index) {
+    const productName = selectedProducts[index].name;
     selectedProducts.splice(index, 1);
     updateOrderDisplay();
+    showToast(`✓ ${productName} eliminado del pedido`, 'info');
 }
 
-function clearOrder() {
-    if (selectedProducts.length > 0 && confirm('¿Estás seguro de limpiar el pedido?')) {
-        selectedProducts = [];
-        updateOrderDisplay();
+// Funciones para el modal de limpiar
+function openClearModal() {
+    if (selectedProducts.length === 0) {
+        showToast('No hay productos para limpiar', 'warning');
+        return;
     }
+    document.getElementById('clearModal').style.display = 'block';
 }
 
-// Validar el formulario antes de enviar
-document.getElementById('orderForm').addEventListener('submit', function(e) {
-    const productsWithKilos = selectedProducts.filter(p => parseFloat(p.kilos) > 0);
-    
-    if (productsWithKilos.length === 0) {
-        e.preventDefault();
-        alert('Debes agregar al menos un producto con cantidad válida');
+function closeClearModal() {
+    document.getElementById('clearModal').style.display = 'none';
+}
+
+function confirmClear() {
+    selectedProducts = [];
+    updateOrderDisplay();
+    closeClearModal();
+    showToast('✅ Pedido limpiado correctamente', 'success');
+}
+
+// Funciones para el modal de confirmar pedido
+function openConfirmModal() {
+    if (selectedProducts.length === 0) {
+        showToast('No hay productos en el pedido', 'error');
         return;
     }
     
-    // Verificar que todos los productos tengan kilos válidos
+    // Validar que todos los productos tengan kilos válidos
     const invalidProducts = selectedProducts.filter(p => !p.kilos || parseFloat(p.kilos) <= 0);
     if (invalidProducts.length > 0) {
-        e.preventDefault();
-        alert('Todos los productos deben tener una cantidad válida en kilos');
+        showToast('Todos los productos deben tener una cantidad válida en kilos', 'error');
+        return;
     }
+    
+    // Actualizar resumen en el modal
+    const totalKilos = parseFloat(document.getElementById('totalKilos').textContent);
+    document.getElementById('modal-items-count').textContent = selectedProducts.length;
+    document.getElementById('modal-kilos').textContent = totalKilos.toFixed(2) + ' kg';
+    
+    document.getElementById('confirmOrderModal').style.display = 'block';
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmOrderModal').style.display = 'none';
+}
+
+function submitOrder() {
+    const btn = document.getElementById('modal-confirm-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    
+    // Enviar el formulario
+    document.getElementById('orderForm').submit();
+}
+
+// Función para mostrar toast
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    let icon = 'fa-info-circle';
+    let color = '#1877f2';
+    
+    if (type === 'success') {
+        icon = 'fa-check-circle';
+        color = '#42b72a';
+    } else if (type === 'error') {
+        icon = 'fa-exclamation-circle';
+        color = '#fa383e';
+    } else if (type === 'warning') {
+        icon = 'fa-exclamation-triangle';
+        color = '#f7b928';
+    }
+    
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${icon}" style="color: ${color};"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = color;
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Validar el formulario antes de enviar (por si acaso)
+document.getElementById('orderForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevenir envío directo, usar el modal en su lugar
 });
 
 // Búsqueda de productos
@@ -487,5 +711,26 @@ document.getElementById('productSearch')?.addEventListener('input', function(e) 
         }
     });
 });
+
+// Cerrar modales con tecla ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeClearModal();
+        closeConfirmModal();
+    }
+});
+
+// Clic fuera del modal para cerrar
+window.onclick = function(event) {
+    const clearModal = document.getElementById('clearModal');
+    const confirmModal = document.getElementById('confirmOrderModal');
+    
+    if (event.target == clearModal) {
+        closeClearModal();
+    }
+    if (event.target == confirmModal) {
+        closeConfirmModal();
+    }
+}
 </script>
 {% endblock %}

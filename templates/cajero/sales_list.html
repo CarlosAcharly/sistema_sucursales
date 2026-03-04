@@ -70,7 +70,7 @@
                    style="padding-left: 45px;">
         </div>
         
-        <!-- Filtro de estado (NUEVO) -->
+        <!-- Filtro de estado -->
         <div style="position: relative;">
             <i class="fas fa-filter" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
             <select id="status-filter" class="fb-input" style="padding-left: 45px; min-width: 150px;">
@@ -227,7 +227,7 @@
     </table>
 </div>
 
-<!-- Modal de detalles de venta (mejorado para mostrar estado) -->
+<!-- Modal de detalles de venta -->
 <div id="sale-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
     <div style="background: white; border-radius: 12px; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto;">
         <div style="padding: 20px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between; align-items: center;">
@@ -278,6 +278,95 @@ let salesData = [];
 let filteredSales = [];
 let currentPage = 1;
 const itemsPerPage = 10;
+
+// Función para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    // Verificar si ya existe una notificación y eliminarla
+    const existingNotification = document.getElementById('dynamic-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.id = 'dynamic-notification';
+    
+    // Configurar colores según el tipo
+    let bgColor, iconColor, icon;
+    switch(type) {
+        case 'success':
+            bgColor = '#42b72a';
+            icon = 'fa-check-circle';
+            break;
+        case 'error':
+            bgColor = '#fa383e';
+            icon = 'fa-exclamation-circle';
+            break;
+        case 'warning':
+            bgColor = '#f7b928';
+            icon = 'fa-exclamation-triangle';
+            break;
+        default:
+            bgColor = '#1877f2';
+            icon = 'fa-info-circle';
+    }
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 2000;
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    notification.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Agregar estilos para animaciones si no existen
+if (!document.querySelector('#notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'notification-styles';
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // Inicializar datos
 document.addEventListener('DOMContentLoaded', function() {
@@ -515,11 +604,158 @@ function viewSaleDetails(saleId) {
 }
 
 function printSale(saleId) {
-    window.print();
+    // Mostrar notificación de carga
+    showNotification('🖨️ Preparando ticket...', 'info');
+    
+    // Obtener los detalles de la venta
+    fetch(`/sales/api/${saleId}/`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error al cargar los detalles de la venta');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Obtener datos del cliente (si existen en el DOM)
+            const clienteNombre = document.getElementById('cliente-nombre')?.value || 'Cliente Mostrador';
+            const clienteDireccion = document.getElementById('cliente-direccion')?.value || '';
+            const clienteTelefono = document.getElementById('cliente-telefono')?.value || '';
+            
+            // Generar items HTML
+            let itemsHtml = '';
+            data.items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td style="text-align: left; padding: 3px 0;">${item.product_name.substring(0, 20)}${item.product_name.length > 20 ? '…' : ''}</td>
+                        <td style="text-align: center; padding: 3px 0;">${item.quantity}</td>
+                        <td style="text-align: right; padding: 3px 0;">$${item.subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Crear el contenido del ticket
+            const ticketContent = `
+                <html>
+                    <head>
+                        <title>Ticket de Venta #${saleId}</title>
+                        <style>
+                            body { 
+                                font-family: 'Courier New', monospace; 
+                                width: 72mm; 
+                                margin: 0 auto; 
+                                font-size: 11px;
+                                padding: 5px;
+                            }
+                            .header { text-align: center; margin-bottom: 10px; }
+                            .header h3 { margin: 2px 0; font-size: 14px; }
+                            .header p { margin: 2px 0; }
+                            .divider { 
+                                border-top: 1px dashed #000; 
+                                margin: 8px 0; 
+                            }
+                            table { 
+                                width: 100%; 
+                                border-collapse: collapse; 
+                            }
+                            th { 
+                                text-align: left; 
+                                padding: 5px 0;
+                                border-bottom: 1px solid #000;
+                            }
+                            td { padding: 3px 0; }
+                            .total { 
+                                text-align: right; 
+                                font-weight: bold;
+                                font-size: 13px;
+                                margin-top: 8px;
+                            }
+                            .footer { 
+                                text-align: center; 
+                                margin-top: 15px;
+                                font-size: 10px;
+                            }
+                            @media print {
+                                body { width: 72mm; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h3>{{ request.user.branch.name }}</h3>
+                            <p>${data.date}</p>
+                            <p>Ticket #${data.id}</p>
+                            <p>Atendió: ${data.cashier}</p>
+                        </div>
+                        
+                        <div class="divider"></div>
+                        
+                        ${clienteNombre !== 'Cliente Mostrador' ? `
+                            <div style="margin: 5px 0;">
+                                <p><strong>Cliente:</strong> ${clienteNombre}</p>
+                                ${clienteDireccion ? `<p><strong>Dirección:</strong> ${clienteDireccion}</p>` : ''}
+                                ${clienteTelefono ? `<p><strong>Teléfono:</strong> ${clienteTelefono}</p>` : ''}
+                            </div>
+                            <div class="divider"></div>
+                        ` : ''}
+                        
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th style="text-align: center;">Cant</th>
+                                    <th style="text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="total">
+                            <p>Total: $${data.total.toFixed(2)}</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>¡Gracias por su compra!</p>
+                        </div>
+                    </body>
+                </html>
+            `;
+            
+            // Abrir ventana de impresión
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(ticketContent);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            // Imprimir después de que cargue el contenido
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+            
+            showNotification('✅ Ticket listo para imprimir', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('❌ Error al generar el ticket', 'error');
+        });
 }
 
+// Función para imprimir desde el modal
 function printModalSale() {
-    window.print();
+    const saleId = document.getElementById('modal-sale-id').textContent.replace('#', '');
+    if (saleId) {
+        printSale(saleId);
+    } else {
+        showNotification('❌ No hay venta seleccionada', 'error');
+    }
 }
 
 function closeModal() {

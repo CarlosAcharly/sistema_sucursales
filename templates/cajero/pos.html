@@ -23,8 +23,9 @@
 
 <div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 25px;">
     <!-- ================= TICKET (IZQUIERDA) ================= -->
-    <div class="fb-card" style="padding: 0; overflow: hidden; height: fit-content; position: sticky; top: 90px;">
-        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 20px; color: white;">
+    <div class="fb-card" style="padding: 0; overflow: hidden; height: 80vh; position: sticky; top: 90px; display: flex; flex-direction: column;">
+        <!-- Header del ticket - FIJO (SIN SCROLL) -->
+        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 20px; color: white; flex-shrink: 0;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                 <i class="fas fa-receipt" style="font-size: 24px;"></i>
                 <h3 style="margin: 0;">Ticket de Venta</h3>
@@ -35,7 +36,8 @@
             </div>
         </div>
 
-        <div style="padding: 20px;">
+        <!-- Contenido del ticket - CON SCROLL (todo se mueve junto) -->
+        <div style="flex: 1; overflow-y: auto; padding: 20px;" id="ticket-scroll">
             <!-- Datos del Cliente (Expandible) -->
             <div id="cliente-section" style="margin-bottom: 15px; border: 1px solid #e4e6eb; border-radius: 8px; overflow: hidden;">
                 <div style="background: #f5f6f7; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleCliente()">
@@ -74,10 +76,10 @@
                 </div>
             </div>
 
-            <!-- Tabla de productos en ticket -->
-            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;" id="ticket-scroll">
+            <!-- Tabla de productos en ticket - SIN SCROLL INTERNO -->
+            <div style="margin-bottom: 20px;">
                 <table style="width: 100%; border-collapse: collapse;" id="ticket-table">
-                    <thead style="position: sticky; top: 0; background: #f5f6f7;">
+                    <thead style="background: #f5f6f7;">
                         <tr>
                             <th style="padding: 12px; text-align: left; color: #606770; font-size: 12px;">Producto</th>
                             <th style="padding: 12px; text-align: center; color: #606770; font-size: 12px;">Tipo</th>
@@ -151,7 +153,7 @@
             </div>
         </div>
 
-        <!-- Resultados del buscador (ahora en cards también) -->
+        <!-- Resultados del buscador (en cards) -->
         <div id="search-results" style="display: none; margin-bottom: 20px;">
             <div class="fb-card" style="padding: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -164,7 +166,7 @@
             </div>
         </div>
 
-        <!-- Grid de productos -->
+        <!-- Grid de productos (se mantiene igual) -->
         <div class="fb-card" style="padding: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
@@ -203,7 +205,7 @@
 
                     <strong style="display: block; margin-bottom: 5px; color: #050505; text-align: center;">{{ item.product.name }}</strong>
                     
-                    <!-- Selector de tipo de precio - Kg seleccionado por defecto si existe -->
+                    <!-- Selector de tipo de precio -->
                     <div style="margin: 10px 0;">
                         <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
                             {% if item.product.price_kg %}
@@ -221,7 +223,7 @@
                         </select>
                     </div>
 
-                    <!-- Precio seleccionado (se actualiza dinámicamente) -->
+                    <!-- Precio seleccionado -->
                     <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
                         {% if item.product.price_kg %}
                             ${{ item.product.price_kg|floatformat:2 }}
@@ -330,7 +332,7 @@
     </div>
 </div>
 
-<!-- Ticket oculto para impresión - Optimizado para impresora térmica -->
+<!-- Ticket oculto para impresión -->
 <div id="ticket-print" style="display: none;">
     <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 5px; margin: 0 auto; background: white; font-size: 10px;">
         <div style="text-align: center; margin-bottom: 5px;">
@@ -387,7 +389,7 @@ let dietItems = JSON.parse(localStorage.getItem('posCart')) || [];
 let currentTicketNumber = Math.floor(Math.random() * 10000);
 let ventaActualId = null;
 
-// Mapeo de tipos de precio para mostrar en el ticket
+// Mapeo de tipos de precio
 const priceTypeNames = {
     'kg': 'Kg',
     'bulk': 'Bulto',
@@ -417,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const selector = card.querySelector('.price-type-selector');
         const priceDisplay = card.querySelector('.selected-price');
         
-        // Si hay precio por kg, seleccionarlo por defecto y mostrar el precio
         if (priceKg) {
             priceDisplay.textContent = '$' + priceKg.toFixed(2);
             priceDisplay.dataset.price = priceKg;
@@ -440,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         searchTimeout = setTimeout(() => searchProducts(e.target.value), 300);
     });
 
-    // Cerrar resultados al hacer click fuera
+    // Cerrar resultados
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#product-search') && !e.target.closest('#search-results')) {
             document.getElementById('search-results').style.display = 'none';
@@ -448,13 +449,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Cargar items de dieta si existen
+    // Cargar items de dieta
     loadDietItems();
     
     // Actualizar número de ticket
     document.getElementById('ticket-number').textContent = currentTicketNumber;
 });
 
+// Funciones del ticket
 function toggleCliente() {
     const form = document.getElementById('cliente-form');
     const arrow = document.getElementById('cliente-arrow');
@@ -468,8 +470,6 @@ function toggleCliente() {
     }
 }
 
-// Función para cargar items de dieta
-// Función para cargar items de dieta - CORREGIDA
 function loadDietItems() {
     if (dietItems.length > 0) {
         const dietIndicator = document.getElementById('diet-indicator');
@@ -483,20 +483,17 @@ function loadDietItems() {
         
         dietItems.forEach(item => {
             if (item.type === 'ingredient') {
-                // Buscar el producto en el inventario por nombre
                 const product = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
                 if (product) {
-                    // Usar el precio y tipo de precio guardados en el item de dieta
                     cart[product.id] = {
                         name: item.name,
-                        price: item.price || 0,  // Usar el precio guardado
-                        priceType: item.price_type || 'kg',  // Usar el tipo guardado
-                        priceTypeName: item.price_type_name || 'Kg',  // Usar el nombre guardado
+                        price: item.price || 0,
+                        priceType: item.price_type || 'kg',
+                        priceTypeName: item.price_type_name || 'Kg',
                         quantity: item.quantity || 1,
                         fromDiet: true
                     };
                 } else {
-                    // Si no encuentra el producto por nombre, intentar por ID
                     const productById = products.find(p => p.id == item.id);
                     if (productById) {
                         cart[productById.id] = {
@@ -513,16 +510,11 @@ function loadDietItems() {
         });
         
         renderTicket();
-        
-        // Limpiar localStorage después de cargar (opcional, puedes comentar si quieres mantener)
-        // localStorage.removeItem('posCart');
-        
-        // Mostrar resumen de lo cargado
+        localStorage.removeItem('posCart');
         console.log('Items de dieta cargados:', Object.keys(cart).length);
     }
 }
 
-// Función para limpiar items de dieta
 function clearDietItems() {
     for (let id in cart) {
         if (cart[id].fromDiet) {
@@ -535,7 +527,6 @@ function clearDietItems() {
     showNotification('Items de dieta removidos', 'info');
 }
 
-// Función de búsqueda predictiva (ahora en cards)
 function searchProducts(query) {
     query = query.toLowerCase().trim();
     const resultsContainer = document.getElementById('results-container');
@@ -554,12 +545,9 @@ function searchProducts(query) {
 
     if (matches.length > 0) {
         resultsContainer.innerHTML = matches.map(p => {
-            // Determinar precio por defecto (Kg si existe)
             const defaultPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial;
             const defaultPriceType = p.priceKg ? 'kg' : p.priceBulk ? 'bulk' : p.priceWholesale ? 'wholesale' : p.priceSpecial ? 'special' : null;
-            const defaultPriceTypeName = defaultPriceType ? priceTypeNames[defaultPriceType] : '';
             
-            // Generar opciones de precio para el selector
             let priceOptions = '';
             if (p.priceKg) {
                 priceOptions += `<option value="kg" data-price="${p.priceKg}" ${p.priceKg === defaultPrice ? 'selected' : ''}>Kg: $${p.priceKg.toFixed(2)}</option>`;
@@ -634,7 +622,6 @@ function searchProducts(query) {
     }
 }
 
-// Filtrar productos
 function filterProducts(filter) {
     const grid = document.getElementById('products-grid');
     const searchResults = document.getElementById('search-results');
@@ -654,7 +641,6 @@ function filterProducts(filter) {
     }
 }
 
-// Función para agregar producto con precio seleccionado
 function addProductWithPrice(id, name, button) {
     const card = button.closest('.product-card');
     const selector = card.querySelector('.price-type-selector');
@@ -673,12 +659,10 @@ function addProductWithPrice(id, name, button) {
     addProductToCart(id, name, price, priceType, priceTypeName);
 }
 
-// Función para agregar al carrito
 function addProductToCart(id, name, price, priceType, priceTypeName) {
     price = parseFloat(price);
 
     if (cart[id]) {
-        // Si ya existe, verificar si es el mismo tipo de precio
         if (cart[id].priceType === priceType) {
             cart[id].quantity += 1;
         } else {
@@ -806,7 +790,6 @@ function clearCart() {
         document.getElementById('diet-indicator').style.display = 'none';
         renderTicket();
         
-        // Limpiar localStorage si había items de dieta
         if (dietItems.length > 0) {
             localStorage.removeItem('posCart');
             dietItems = [];
@@ -820,17 +803,14 @@ function abrirModalConfirmacion() {
         return;
     }
     
-    // Calcular totales
     const total = parseFloat(document.getElementById('total').innerText);
     const subtotal = parseFloat(document.getElementById('subtotal').innerText);
     const cantidadProductos = Object.keys(cart).length;
     
-    // Obtener datos del cliente
     const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
     const clienteDireccion = document.getElementById('cliente-direccion').value || '-';
     const clienteTelefono = document.getElementById('cliente-telefono').value || '-';
     
-    // Actualizar modal
     document.getElementById('modal-cantidad-productos').textContent = cantidadProductos;
     document.getElementById('modal-subtotal').textContent = subtotal.toFixed(2);
     document.getElementById('modal-total').textContent = '$' + total.toFixed(2);
@@ -880,26 +860,23 @@ function procesarVenta() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            ventaActualId = data.venta_id || Math.floor(Math.random() * 10000);
+            ventaActualId = data.venta_id;
             
-            // Guardar el total antes de limpiar
+            // ✅ ACTUALIZAR EL NÚMERO DE TICKET EN EL HEADER CON EL ID REAL DE LA VENTA
+            document.getElementById('ticket-number').textContent = ventaActualId;
+            
             const totalVenta = document.getElementById('total').innerText;
             
-            // Limpiar carrito ANTES de cerrar el modal de confirmación
             cart = {};
-            renderTicket(); // Esto actualiza la vista del ticket
+            renderTicket();
             
-            // Cerrar modal de confirmación
             cerrarModalConfirmacion();
             
-            // Actualizar modal de éxito con los datos de la venta
             document.getElementById('exito-venta-id').textContent = ventaActualId;
             document.getElementById('exito-total').textContent = '$' + totalVenta;
             
-            // Mostrar modal de éxito
             document.getElementById('ventaExitosaModal').style.display = 'block';
             
-            // Opcional: limpiar localStorage si había items de dieta
             if (dietItems.length > 0) {
                 localStorage.removeItem('posCart');
                 dietItems = [];
@@ -919,33 +896,27 @@ function procesarVenta() {
 }
 
 function finalizarVenta() {
-    // Cerrar modal de éxito
     document.getElementById('ventaExitosaModal').style.display = 'none';
     
-    // Resetear todo para una nueva venta
     cart = {};
     renderTicket();
     
-    // Generar nuevo número de ticket
+    // ✅ GENERAR NUEVO NÚMERO ALEATORIO PARA LA SIGUIENTE VENTA
     currentTicketNumber = Math.floor(Math.random() * 10000);
     document.getElementById('ticket-number').textContent = currentTicketNumber;
     
-    // Limpiar campos del cliente
     document.getElementById('cliente-nombre').value = '';
     document.getElementById('cliente-direccion').value = '';
     document.getElementById('cliente-telefono').value = '';
     
-    // Ocultar indicador de dieta si estaba visible
     document.getElementById('diet-indicator').style.display = 'none';
     
-    // Limpiar localStorage
     localStorage.removeItem('posCart');
     dietItems = [];
     
     showNotification('✅ Venta completada. Listo para nueva venta', 'success');
 }
 
-// Modificar también la función cerrarModalExito para que no recargue la página
 function cerrarModalExito() {
     document.getElementById('ventaExitosaModal').style.display = 'none';
     finalizarVenta();
@@ -954,12 +925,10 @@ function cerrarModalExito() {
 function imprimirTicketVenta() {
     if (!ventaActualId) return;
     
-    // Obtener datos del cliente
     const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
     const clienteDireccion = document.getElementById('cliente-direccion').value || '';
     const clienteTelefono = document.getElementById('cliente-telefono').value || '';
     
-    // Llenar datos de impresión
     document.getElementById('print-ticket-number').textContent = ventaActualId;
     document.getElementById('print-direccion').textContent = clienteDireccion;
     document.getElementById('print-telefono').textContent = clienteTelefono;
@@ -967,20 +936,28 @@ function imprimirTicketVenta() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Generar items para impresión (formato compacto)
     let itemsHtml = '';
-    let total = 0;
+    let total = parseFloat(document.getElementById('exito-total').textContent.replace('$', ''));
     
-    for (let id in cart) {
-        let item = cart[id];
-        let rowTotal = item.price * item.quantity;
-        total += rowTotal;
-        
-        itemsHtml += `
+    // Si hay items en el carrito (por si acaso), mostrarlos
+    if (Object.keys(cart).length > 0) {
+        for (let id in cart) {
+            let item = cart[id];
+            let rowTotal = item.price * item.quantity;
+            
+            itemsHtml += `
+                <tr>
+                    <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
+                    <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
+                    <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+    } else {
+        // Si no hay items, mostrar mensaje genérico
+        itemsHtml = `
             <tr>
-                <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
-                <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
-                <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
+                <td colspan="3" style="text-align: center; padding: 10px;">Venta #${ventaActualId}</td>
             </tr>
         `;
     }
@@ -988,7 +965,6 @@ function imprimirTicketVenta() {
     document.getElementById('print-items').innerHTML = itemsHtml;
     document.getElementById('print-total').textContent = total.toFixed(2);
     
-    // Crear una nueva ventana para imprimir
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
@@ -1016,17 +992,6 @@ function imprimirTicketVenta() {
         printWindow.print();
         printWindow.close();
     }, 500);
-}
-
-function cerrarModalExito() {
-    document.getElementById('ventaExitosaModal').style.display = 'none';
-    finalizarVenta();
-}
-
-function finalizarVenta() {
-    document.getElementById('ventaExitosaModal').style.display = 'none';
-    // Recargar la página para empezar una nueva venta
-    location.reload();
 }
 
 function showNotification(message, type) {
@@ -1064,18 +1029,15 @@ function getCSRFToken() {
 }
 
 function imprimirTicket() {
-    // Función para imprimir sin guardar (solo vista previa)
     if (Object.keys(cart).length === 0) {
         showNotification('No hay productos en el ticket', 'error');
         return;
     }
     
-    // Obtener datos del cliente
     const clienteNombre = document.getElementById('cliente-nombre').value || 'Cliente Mostrador';
     const clienteDireccion = document.getElementById('cliente-direccion').value || '';
     const clienteTelefono = document.getElementById('cliente-telefono').value || '';
     
-    // Llenar datos de impresión
     document.getElementById('print-ticket-number').textContent = currentTicketNumber;
     document.getElementById('print-direccion').textContent = clienteDireccion;
     document.getElementById('print-telefono').textContent = clienteTelefono;
@@ -1083,7 +1045,6 @@ function imprimirTicket() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Generar items para impresión (formato compacto)
     let itemsHtml = '';
     let total = 0;
     
@@ -1104,7 +1065,6 @@ function imprimirTicket() {
     document.getElementById('print-items').innerHTML = itemsHtml;
     document.getElementById('print-total').textContent = total.toFixed(2);
     
-    // Crear una nueva ventana para imprimir
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
@@ -1134,7 +1094,7 @@ function imprimirTicket() {
     }, 500);
 }
 
-// Estilos adicionales
+// Estilos adicionales para el scroll
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
@@ -1250,6 +1210,30 @@ style.textContent = `
             transform: translateY(0);
             opacity: 1;
         }
+    }
+    
+    /* Estilo para el scroll del ticket */
+    #ticket-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: #1877f2 #f0f2f5;
+    }
+    
+    #ticket-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #ticket-scroll::-webkit-scrollbar-track {
+        background: #f0f2f5;
+        border-radius: 10px;
+    }
+    
+    #ticket-scroll::-webkit-scrollbar-thumb {
+        background: #1877f2;
+        border-radius: 10px;
+    }
+    
+    #ticket-scroll::-webkit-scrollbar-thumb:hover {
+        background: #166fe5;
     }
 `;
 document.head.appendChild(style);

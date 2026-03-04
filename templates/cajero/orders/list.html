@@ -684,43 +684,139 @@ window.onclick = function(event) {
     }
 }
 
+// Función mejorada para ver detalles del pedido
 function viewOrderDetails(orderId) {
-    fetch(`/orders/api/${orderId}/`)
-        .then(response => response.json())
+    // Mostrar loading en el modal
+    const modal = document.getElementById('orderModal');
+    const orderDetails = document.getElementById('orderDetails');
+    
+    orderDetails.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
+            <p style="margin-top: 15px; color: #606770;">Cargando detalles del pedido #${orderId}...</p>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    // Construir URL correctamente (asegurando que no haya espacios)
+    const url = `/orders/api/${orderId}/`;
+    console.log('Cargando pedido desde:', url);
+    
+    fetch(url)
+        .then(response => {
+            console.log('Respuesta status:', response.status);
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `Error ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Datos recibidos:', data);
+            
             if (data.error) {
-                alert(data.error);
-                return;
+                throw new Error(data.error);
             }
             
+            // Generar HTML para los productos
             let productsHtml = '';
-            data.products.forEach(product => {
-                productsHtml += `
-                    <div class="product-item">
-                        <span class="product-name">${product.name}</span>
-                        <span class="product-kilos">${product.kilos} kg</span>
-                    </div>
-                `;
-            });
+            if (data.products && data.products.length > 0) {
+                data.products.forEach(product => {
+                    productsHtml += `
+                        <div class="product-item" style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f2f5;">
+                            <span class="product-name" style="color: #050505; font-size: 13px;"><strong>${product.name}</strong></span>
+                            <span class="product-kilos" style="color: #606770; font-size: 13px; font-weight: 600;">${product.kilos} kg</span>
+                        </div>
+                    `;
+                });
+            } else {
+                productsHtml = '<p style="color: #606770; text-align: center;">No hay productos en este pedido</p>';
+            }
             
-            document.getElementById('orderDetails').innerHTML = `
+            // Determinar el color del badge según el estado
+            let statusColor = '';
+            let statusBg = '';
+            switch(data.status) {
+                case 'PENDING':
+                    statusBg = '#fff4e5';
+                    statusColor = '#bd7b13';
+                    break;
+                case 'APPROVED':
+                    statusBg = '#e7f3ff';
+                    statusColor = '#1877f2';
+                    break;
+                case 'COMPLETED':
+                    statusBg = '#e3f2e8';
+                    statusColor = '#1b7e3f';
+                    break;
+                case 'CANCELLED':
+                    statusBg = '#ffebe9';
+                    statusColor = '#b92b27';
+                    break;
+                default:
+                    statusBg = '#e4e6eb';
+                    statusColor = '#606770';
+            }
+            
+            // Actualizar contenido del modal
+            orderDetails.innerHTML = `
                 <div class="order-detail-info">
-                    <p><strong>Pedido #:</strong> ${data.id}</p>
-                    <p><strong>Fecha:</strong> ${data.date}</p>
-                    <p><strong>Estado:</strong> <span class="status-badge status-${data.status.toLowerCase()}">${data.status}</span></p>
-                    <p><strong>Inventario:</strong> ${data.inventory_added ? '✓ Agregado' : '✗ Pendiente'}</p>
-                    <h4 style="margin-top: 20px; margin-bottom: 10px;">Productos:</h4>
-                    <div class="products-list">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
+                        <div>
+                            <small style="color: #606770;">Pedido #</small>
+                            <div style="font-weight: 600; font-size: 18px;">${data.id}</div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Fecha</small>
+                            <div><i class="fas fa-calendar-alt" style="color: #1877f2;"></i> ${data.date}</div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Estado</small>
+                            <div>
+                                <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 30px; font-size: 12px; font-weight: 600; display: inline-block;">
+                                    ${data.status_display || data.status}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Inventario</small>
+                            <div>
+                                <span style="color: ${data.inventory_added ? '#1b7e3f' : '#bd7b13'};">
+                                    <i class="fas ${data.inventory_added ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                    ${data.inventory_added ? 'Agregado' : 'Pendiente'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top: 20px; margin-bottom: 15px; color: #050505; font-size: 16px;">
+                        <i class="fas fa-boxes" style="color: #1877f2;"></i> Productos
+                    </h4>
+                    <div class="products-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #e4e6eb; border-radius: 8px; padding: 10px;">
                         ${productsHtml}
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 2px dashed #e4e6eb;">
+                        <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                            <span>Total kilos:</span>
+                            <span style="color: #1877f2; font-size: 18px;">${data.total_kilos.toFixed(2)} kg</span>
+                        </div>
                     </div>
                 </div>
             `;
-            
-            modal.style.display = 'block';
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Error al cargar los detalles del pedido');
+            console.error('Error completo:', error);
+            orderDetails.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #fa383e; margin-bottom: 15px;"></i>
+                    <p style="color: #050505; font-weight: 600;">Error al cargar los detalles</p>
+                    <p style="color: #606770; margin-top: 10px;">${error.message}</p>
+                    <p style="color: #999; font-size: 12px; margin-top: 10px;">URL intentada: /orders/api/${orderId}/</p>
+                </div>
+            `;
         });
 }
 </script>
