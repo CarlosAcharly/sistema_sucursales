@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SABIX - Sistema Agrosucursales</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Elementos decorativos de fondo */
+        .bg-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+
+        .bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .circle1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            right: -100px;
+        }
+
+        .circle2 {
+            width: 400px;
+            height: 400px;
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -5s;
+        }
+
+        .circle3 {
+            width: 200px;
+            height: 200px;
+            bottom: 50px;
+            right: 200px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        /* Contenedor principal */
+        .landing-container {
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 1200px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: fadeInUp 1s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Grid de contenido */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+        }
+
+        /* Lado izquierdo - Información */
+        .info-side {
+            padding: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .logo-area {
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .sabix-title {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .sabix-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .features {
+            margin-top: 40px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            animation: slideIn 0.5s ease;
+            animation-fill-mode: both;
+        }
+
+        .feature-item:nth-child(1) { animation-delay: 0.2s; }
+        .feature-item:nth-child(2) { animation-delay: 0.4s; }
+        .feature-item:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .feature-text h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .feature-text p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        /* Lado derecho - Acceso */
+        .access-side {
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: white;
+        }
+
+        .welcome-message {
+            margin-bottom: 40px;
+        }
+
+        .welcome-message h2 {
+            color: #050505;
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .welcome-message p {
+            color: #606770;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f5f6f7;
+            border-radius: 16px;
+            transition: transform 0.3s;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #606770;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .access-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            width: 100%;
+        }
+
+        .access-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .access-button i {
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .access-button:hover i {
+            transform: translateX(5px);
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            color: #606770;
+            font-size: 13px;
+        }
+
+        .footer-note i {
+            color: #fa383e;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-side {
+                padding: 40px;
+                text-align: center;
+            }
+            
+            .feature-item {
+                justify-content: center;
+            }
+            
+            .sabix-title {
+                font-size: 36px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .landing-container {
+                width: 95%;
+                border-radius: 20px;
+            }
+            
+            .info-side, .access-side {
+                padding: 30px;
+            }
+            
+            .sabix-title {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Elementos decorativos -->
+    <div class="bg-decoration">
+        <div class="bg-circle circle1"></div>
+        <div class="bg-circle circle2"></div>
+        <div class="bg-circle circle3"></div>
+    </div>
+
+    <!-- Contenedor principal -->
+    <div class="landing-container">
+        <div class="content-grid">
+            <!-- Lado izquierdo - Información del sistema -->
+            <div class="info-side">
+                <div class="logo-area">
+                    <div class="logo-icon">
+                        <i class="fas fa-seedling"></i>
+                    </div>
+                    <h1 class="sabix-title">SABIX</h1>
+                    <div class="sabix-subtitle">Sistema Agrosucursales</div>
+                </div>
+
+                <div class="features">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Gestión Multi-sucursal</h3>
+                            <p>Administra múltiples sucursales desde una sola plataforma</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Control de Inventario</h3>
+                            <p>Seguimiento en tiempo real de tu stock</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h3>Reportes y Análisis</h3>
+                            <p>Toma decisiones basadas en datos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lado derecho - Acceso al sistema -->
+            <div class="access-side">
+                <div class="welcome-message">
+                    <h2>¡Bienvenido a SABIX!</h2>
+                    <p>El sistema integral para la gestión de tus agrosucursales. Controla ventas, inventario, transferencias y más desde un solo lugar.</p>
+                </div>
+
+                <!-- Estadísticas rápidas (opcional, puedes quitarlas si prefieres) -->
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">100+</div>
+                        <div class="stat-label">Sucursales</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Disponibilidad</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Seguro</div>
+                    </div>
+                </div>
+
+                <!-- Botón de acceso al login -->
+                <a href="{% url 'login' %}" class="access-button">
+                    <span>Acceder al Sistema</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+
+                <div class="footer-note">
+                    <i class="fas fa-heart"></i> SABIX - Simplificando tu negocio agrícola y ganadero
+                    <br>
+                    <i class="fas fa-heart"></i> SABIX - Correo: <a href="mailto:ch3179694@gmail.com"
+                     style="color: #5538fa; text-decoration: none;">ch3179694@gmail.com</a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

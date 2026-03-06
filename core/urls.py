@@ -21,9 +21,12 @@ from dashboard.views import superadmin_dashboard, admin_dashboard
 from sales.views import pos_view
 from django.urls import include
 from django.contrib.auth import views as auth_views
+from . import views
 
 
 urlpatterns = [
+    path('', views.landing_page, name='landing'),
+
     path('admin/', admin.site.urls),
     path('redirect/', redirect_by_role, name='redirect'),
     path('superadmin/', superadmin_dashboard, name='superadmin_dashboard'),
