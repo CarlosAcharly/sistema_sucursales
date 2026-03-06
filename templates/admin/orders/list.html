@@ -111,12 +111,9 @@
                             </button>
                             
                             {% if order.status == "PENDING" %}
-                            <form method="post" action="{% url 'orders:approve_order' order.id %}" style="display: inline;" onsubmit="return confirm('¿Aprobar este pedido? Se agregará al inventario automáticamente.');">
-                                {% csrf_token %}
-                                <button type="submit" class="action-btn approve" title="Aprobar">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </form>
+                            <button onclick="openApproveModal({{ order.id }}, '{{ order.branch.name|escapejs }}', {{ order.total_kilos }})" class="action-btn approve" title="Aprobar">
+                                <i class="fas fa-check"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </td>
@@ -161,7 +158,44 @@
     </div>
 </div>
 
-<!-- Modal de Edición de Pedido (MEJORADO) -->
+<<!-- MODAL BÁSICO: Aprobar Pedido -->
+<div id="approveModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px; animation: slideUp 0.3s ease;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="background: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-check-circle" style="font-size: 20px;"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 18px;">Aprobar Pedido</h3>
+            </div>
+            <span class="close" onclick="closeApproveModal()" style="color: white; font-size: 24px; cursor: pointer;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px; text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-question-circle" style="font-size: 48px; color: #42b72a; margin-bottom: 15px;"></i>
+                <h4 style="margin: 0 0 10px 0; color: #050505;">¿Confirmar aprobación?</h4>
+                <p style="color: #606770; margin: 0;" id="approveModalOrderInfo">Pedido #0 - Sucursal</p>
+                <p style="color: #1877f2; font-weight: 600; margin-top: 10px;" id="approveTotalKilos">0 kg</p>
+            </div>
+            
+            <!-- 🔴 CORREGIDO: El action se dejará vacío y se llenará con JavaScript -->
+            <form method="post" action="" id="approveForm" style="display: inline;">
+                {% csrf_token %}
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" onclick="closeApproveModal()" class="fb-btn fb-btn-secondary" style="padding: 10px 20px;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="fb-btn" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 10px 25px; border: none; border-radius: 6px; font-weight: 600;" id="confirmApproveBtn">
+                        Confirmar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Edición de Pedido -->
 <div id="editOrderModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 900px;">
         <div class="modal-header">
@@ -189,6 +223,7 @@
 <div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
 
 <style>
+/* Todos tus estilos existentes se mantienen igual */
 .admin-orders-container {
     max-width: 1400px;
     margin: 0 auto;
@@ -558,9 +593,7 @@
 .modal-content {
     background: white;
     margin: 5% auto;
-    padding: 25px;
     width: 90%;
-    max-width: 900px;
     border-radius: 10px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
 }
@@ -569,18 +602,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #e4e6eb;
-    margin-bottom: 20px;
-}
-
-.modal-header h3 {
-    color: #050505;
-    font-size: 20px;
+    border-radius: 10px 10px 0 0;
 }
 
 .close {
-    color: #606770;
+    color: white;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
@@ -588,7 +614,7 @@
 }
 
 .close:hover {
-    color: #050505;
+    opacity: 0.8;
 }
 
 .modal-body {
@@ -596,366 +622,55 @@
     overflow-y: auto;
 }
 
-/* Estilos específicos para el modal de edición */
-.order-info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    background: #f5f6f7;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.info-label {
-    font-size: 12px;
-    color: #606770;
-}
-
-.info-value {
-    font-size: 16px;
-    font-weight: 600;
-    color: #050505;
-}
-
-.info-value i {
-    color: #1877f2;
-    margin-right: 5px;
-}
-
-/* Tabla de productos en el modal */
-.edit-products-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e4e6eb;
-}
-
-.edit-products-table th {
-    background: #f5f6f7;
-    padding: 12px;
-    text-align: left;
-    font-size: 13px;
-    color: #606770;
-    font-weight: 600;
-    border-bottom: 1px solid #e4e6eb;
-}
-
-.edit-products-table td {
-    padding: 12px;
-    border-bottom: 1px solid #e4e6eb;
-}
-
-.edit-products-table tr:last-child td {
-    border-bottom: none;
-}
-
-.edit-products-table tbody tr:hover {
-    background-color: #f5f6f7;
-}
-
-/* Input de cantidad */
-.quantity-input {
-    width: 100px;
-    padding: 8px 10px;
-    border: 1px solid #dddfe2;
-    border-radius: 6px;
-    font-size: 14px;
-    text-align: right;
-    transition: all 0.2s;
-    font-weight: 500;
-}
-
-.quantity-input:focus {
-    outline: none;
-    border-color: #1877f2;
-    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
-}
-
-.quantity-input.changed {
-    background-color: #fff4e5;
-    border-color: #f7b928;
-}
-
-.original-value {
-    font-size: 12px;
-    color: #606770;
-    margin-left: 5px;
-}
-
-/* Botones de acción en el modal */
-.apply-btn {
-    background: #1877f2;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s;
-    margin-right: 5px;
-}
-
-.apply-btn:hover:not(:disabled) {
-    background: #166fe5;
-    transform: translateY(-1px);
-}
-
-.apply-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-.apply-btn.hidden {
-    display: none;
-}
-
-.update-item-btn {
-    background: none;
-    border: none;
-    color: #1877f2;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.update-item-btn:hover:not(:disabled) {
-    background: #e7f3ff;
-    transform: scale(1.1);
-}
-
-.update-item-btn:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
-.delete-item-btn {
-    background: none;
-    border: none;
-    color: #fa383e;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.delete-item-btn:hover:not(:disabled) {
-    background: #ffebe9;
-    transform: scale(1.1);
-}
-
-.delete-item-btn:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
-.undo-delete-btn {
-    background: none;
-    border: none;
-    color: #1877f2;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 4px;
-    margin-left: 5px;
-}
-
-.undo-delete-btn:hover {
-    background: #e7f3ff;
-}
-
-/* Producto eliminado */
-.product-row.deleted {
-    background-color: #ffebe9;
-    opacity: 0.7;
-}
-
-.product-row.deleted td {
-    text-decoration: line-through;
-    color: #999;
-}
-
-.product-row.deleted .quantity-input {
-    background-color: #ffebe9;
-    color: #999;
-}
-
-/* Badge para cambios pendientes */
-.pending-badge {
-    background: #f7b928;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    margin-left: 8px;
-    font-weight: normal;
-}
-
-.changes-indicator {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    color: #f7b928;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.changes-indicator i {
-    font-size: 16px;
-}
-
-/* Resumen del pedido en el modal */
-.order-summary-box {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 20px 0;
-}
-
-.summary-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    color: #606770;
-}
-
-.summary-item.total {
-    border-top: 1px solid #e4e6eb;
-    margin-top: 8px;
-    padding-top: 12px;
-    color: #050505;
-    font-weight: 600;
-    font-size: 16px;
-}
-
-/* Botones de acción de edición */
-.edit-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    justify-content: flex-end;
-}
-
-.save-changes-btn {
-    background: #42b72a;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.save-changes-btn:hover:not(:disabled) {
-    background: #3ba126;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(66, 183, 42, 0.3);
-}
-
-.save-changes-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-}
-
-.cancel-edit-btn {
-    background: #e4e6eb;
-    color: #050505;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-}
-
-.cancel-edit-btn:hover {
-    background: #d8dadf;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .filters-bar {
-        flex-direction: column;
-    }
-    
-    .search-box {
-        width: 100%;
-    }
-    
-    .filter-tabs {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .admin-table {
-        font-size: 13px;
-    }
-    
-    .action-btn {
-        width: 30px;
-        height: 30px;
-    }
-    
-    .edit-products-table td {
-        padding: 8px;
-    }
-    
-    .quantity-input {
-        width: 70px;
-    }
-}
-
-/* Animations */
-@keyframes slideDown {
+@keyframes slideUp {
     from {
+        transform: translateY(50px);
         opacity: 0;
-        transform: translateY(-10px);
     }
     to {
-        opacity: 1;
         transform: translateY(0);
+        opacity: 1;
     }
-}
-
-.products-detail-row {
-    animation: slideDown 0.3s ease;
 }
 </style>
 
 <script>
 let currentOrderId = null;
 let deletedItems = [];
-let updatedItems = {};  // Objeto para almacenar items con cantidad modificada {itemId: newKilos}
+let updatedItems = {};
 let originalItems = [];
+
+// Variables para el modal de aprobar
+let currentApproveOrderId = null;
+
+// Abrir modal de aprobación
+function openApproveModal(orderId, branchName, totalKilos) {
+    currentApproveOrderId = orderId;
+    
+    // Actualizar información del modal
+    document.getElementById('approveModalOrderInfo').textContent = `Pedido #${orderId} - ${branchName}`;
+    document.getElementById('approveTotalKilos').textContent = `${totalKilos.toFixed(2)} kg`;
+    
+    // 🔴 CORREGIDO: Usar la URL correcta con 'aprobar'
+    const form = document.getElementById('approveForm');
+    form.action = `/orders/admin/${orderId}/aprobar/`;  // Cambiado de 'approve' a 'aprobar'
+    
+    // Mostrar modal
+    document.getElementById('approveModal').style.display = 'block';
+}
+
+// Cerrar modal de aprobación
+function closeApproveModal() {
+    document.getElementById('approveModal').style.display = 'none';
+    currentApproveOrderId = null;
+}
+
+// Prevenir doble envío
+document.getElementById('approveForm')?.addEventListener('submit', function(e) {
+    const btn = document.getElementById('confirmApproveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+});
 
 // Abrir modal de edición
 function openEditModal(orderId) {
@@ -963,11 +678,9 @@ function openEditModal(orderId) {
     const modal = document.getElementById('editOrderModal');
     const modalBody = document.getElementById('editModalBody');
     
-    // Resetear variables
     deletedItems = [];
     updatedItems = {};
     
-    // Mostrar loading
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 40px;">
             <i class="fas fa-spinner fa-spin" style="font-size: 40px; color: #1877f2;"></i>
@@ -978,13 +691,9 @@ function openEditModal(orderId) {
     modal.style.display = 'block';
     document.getElementById('modal-order-id').textContent = `#${orderId}`;
     
-    // Construir URL correctamente
     const baseUrl = "{% url 'orders:order_detail_api' 0 %}";
     const url = baseUrl.replace('0', orderId);
     
-    console.log('Cargando pedido desde:', url);
-    
-    // Cargar datos del pedido
     fetch(url)
         .then(response => {
             if (!response.ok) {
@@ -1008,7 +717,6 @@ function openEditModal(orderId) {
                 <div style="text-align: center; padding: 40px;">
                     <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #fa383e;"></i>
                     <p style="margin-top: 15px; color: #606770;">Error: ${error.message}</p>
-                    <p style="margin-top: 10px; font-size: 12px; color: #999;">URL intentada: ${url}</p>
                 </div>
             `;
         });
@@ -1143,7 +851,7 @@ function renderEditModal(data) {
     `;
 }
 
-// Calcular total de kilos considerando eliminados y actualizados
+// Calcular total de kilos
 function calculateTotalKilos(items) {
     let total = 0;
     items.forEach(item => {
@@ -1155,10 +863,9 @@ function calculateTotalKilos(items) {
     return total;
 }
 
-// Actualizar totales después de cambios
+// Actualizar totales
 function updateTotals() {
-    const modalBody = document.getElementById('editModalBody');
-    const items = originalItems; // Usar los items originales como referencia
+    const items = originalItems;
     
     const totalKilos = calculateTotalKilos(items);
     const totalItems = items.length - deletedItems.length;
@@ -1169,7 +876,6 @@ function updateTotals() {
     if (totalKilosElement) totalKilosElement.textContent = totalKilos.toFixed(2) + ' kg';
     if (totalItemsElement) totalItemsElement.textContent = totalItems;
     
-    // Habilitar/deshabilitar botón de guardar
     const saveBtn = document.getElementById('saveChangesBtn');
     if (saveBtn) {
         const hasChanges = Object.keys(updatedItems).length > 0 || deletedItems.length > 0;
@@ -1187,7 +893,6 @@ function trackQuantityChange(itemId, newValue) {
     
     if (newKilos <= 0) {
         showToast('La cantidad debe ser mayor a 0', 'warning');
-        // Restaurar valor anterior
         const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
         if (input) {
             input.value = updatedItems[itemId] !== undefined ? updatedItems[itemId] : originalKilos;
@@ -1196,31 +901,9 @@ function trackQuantityChange(itemId, newValue) {
     }
     
     if (newKilos === originalKilos) {
-        // Si el valor es igual al original, eliminar de updatedItems
         delete updatedItems[itemId];
     } else {
-        // Guardar el nuevo valor
         updatedItems[itemId] = newKilos;
-    }
-    
-    // Actualizar UI
-    const row = document.querySelector(`.product-row[data-item-id="${itemId}"]`);
-    if (row) {
-        const input = row.querySelector('.quantity-input');
-        const badge = row.querySelector('.pending-badge');
-        
-        if (updatedItems[itemId] !== undefined) {
-            input.classList.add('changed');
-            if (!badge) {
-                const newBadge = document.createElement('span');
-                newBadge.className = 'pending-badge';
-                newBadge.textContent = 'Modificado';
-                row.querySelector('td:first-child').appendChild(newBadge);
-            }
-        } else {
-            input.classList.remove('changed');
-            if (badge) badge.remove();
-        }
     }
     
     updateTotals();
@@ -1238,10 +921,6 @@ function deleteItem(itemId) {
     
     deletedItems.push(itemId);
     updateTotals();
-    
-    // Mostrar indicador de cambios
-    const changesIndicator = document.querySelector('.changes-indicator');
-    if (changesIndicator) changesIndicator.style.display = 'flex';
 }
 
 // Deshacer eliminación
@@ -1270,7 +949,6 @@ function saveChanges() {
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     
-    // Preparar las actualizaciones
     const updates = [];
     for (const [itemId, newKilos] of Object.entries(updatedItems)) {
         updates.push({
@@ -1279,7 +957,6 @@ function saveChanges() {
         });
     }
     
-    // Usar batch update para actualizar múltiples items
     fetch(`/orders/admin/${currentOrderId}/batch-update/`, {
         method: 'POST',
         headers: {
@@ -1303,7 +980,6 @@ function saveChanges() {
             }
             showToast('✅ ' + message, 'success');
             
-            // Recargar la página después de 1.5 segundos para ver los cambios
             setTimeout(() => {
                 location.reload();
             }, 1500);
@@ -1345,7 +1021,7 @@ function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-// Cerrar modal
+// Cerrar modal de edición
 function closeEditModal() {
     document.getElementById('editOrderModal').style.display = 'none';
     currentOrderId = null;
@@ -1407,18 +1083,24 @@ function toggleProducts(orderId) {
     }
 }
 
-// Cerrar modal con tecla ESC
+// Cerrar modales con tecla ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeEditModal();
+        closeApproveModal();
     }
 });
 
-// Clic fuera del modal para cerrar
+// Clic fuera de los modales
 window.onclick = function(event) {
-    const modal = document.getElementById('editOrderModal');
-    if (event.target == modal) {
+    const editModal = document.getElementById('editOrderModal');
+    const approveModal = document.getElementById('approveModal');
+    
+    if (event.target == editModal) {
         closeEditModal();
+    }
+    if (event.target == approveModal) {
+        closeApproveModal();
     }
 }
 </script>

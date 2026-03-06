@@ -17,4 +17,5 @@ urlpatterns = [
     path("item/<int:item_id>/eliminar/", views.delete_order_item, name="delete_item"),
     path("item/<int:item_id>/actualizar/", views.update_order_item, name="update_item"),
     path("admin/<int:order_id>/batch-update/", views.batch_update_order, name="batch_update_order"),
+    path('api/order/<int:order_id>/items/', views.order_items_api, name='order_items_api'),
 ]

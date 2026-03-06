@@ -109,7 +109,7 @@
 
             <!-- Botones de acción -->
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px;">
-                <button onclick="clearCart()" class="fb-btn fb-btn-secondary" style="justify-content: center; padding: 12px;">
+                <button onclick="abrirModalLimpiar()" class="fb-btn fb-btn-secondary" style="justify-content: center; padding: 12px;">
                     <i class="fas fa-trash"></i>
                     Limpiar
                 </button>
@@ -255,15 +255,16 @@
     </div>
 </div>
 
-<!-- Modal de Confirmación de Venta -->
+<!-- MODAL DE CONFIRMACIÓN DE VENTA (AJUSTADO) -->
 <div id="confirmarVentaModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 450px;">
+    <div class="modal-content" style="max-width: 550px;">
         <div class="modal-header">
             <h3><i class="fas fa-shopping-cart"></i> Confirmar Venta</h3>
             <span class="close" onclick="cerrarModalConfirmacion()">&times;</span>
         </div>
         
         <div class="modal-body">
+            <!-- Todo el contenido existente se mantiene igual -->
             <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                 <h4 style="margin: 0 0 15px 0; color: #050505;">Resumen de la Venta</h4>
                 
@@ -282,6 +283,58 @@
                     <strong style="font-size: 24px; color: #1877f2;" id="modal-total">$0.00</strong>
                 </div>
             </div>
+
+            <!-- Campo para monto recibido -->
+            <div style="background: #e7f3ff; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #1877f2; font-size: 16px;">
+                    <i class="fas fa-money-bill"></i> Pago del Cliente
+                </h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 14px;">¿Con cuánto paga?</label>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div style="position: relative; flex: 1; min-width: 150px;">
+                            <span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770; font-weight: 600;">$</span>
+                            <input type="number" 
+                                   id="monto-recibido" 
+                                   class="fb-input" 
+                                   placeholder="0.00" 
+                                   min="0" 
+                                   step="0.01"
+                                   style="padding-left: 30px; font-size: 18px; font-weight: 600; width: 100%;"
+                                   oninput="calcularCambio()">
+                        </div>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <button type="button" class="fb-btn fb-btn-secondary" style="padding: 10px 15px;" onclick="setMontoSugerido(500)">$500</button>
+                            <button type="button" class="fb-btn fb-btn-secondary" style="padding: 10px 15px;" onclick="setMontoSugerido(200)">$200</button>
+                            <button type="button" class="fb-btn fb-btn-secondary" style="padding: 10px 15px;" onclick="setMontoSugerido(100)">$100</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculadora de cambio -->
+                <div style="background: white; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="text-align: center; flex: 1;">
+                        <span style="color: #606770; font-size: 12px;">Total</span>
+                        <strong style="display: block; font-size: 16px;" id="modal-total-cambio">$0.00</strong>
+                    </div>
+                    <div><i class="fas fa-arrow-right" style="color: #1877f2;"></i></div>
+                    <div style="text-align: center; flex: 1;">
+                        <span style="color: #606770; font-size: 12px;">Recibido</span>
+                        <strong style="display: block; font-size: 16px;" id="modal-recibido-preview">$0.00</strong>
+                    </div>
+                    <div><i class="fas fa-equals" style="color: #42b72a;"></i></div>
+                    <div style="text-align: center; flex: 1;">
+                        <span style="color: #606770; font-size: 12px;">Cambio</span>
+                        <strong style="display: block; font-size: 16px;" id="modal-cambio-preview">$0.00</strong>
+                    </div>
+                </div>
+                
+                <!-- Mensaje de error -->
+                <div id="pago-insuficiente" style="display: none; background: #ffebe9; color: #b92b27; padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center;">
+                    <i class="fas fa-exclamation-circle"></i> El monto recibido es insuficiente
+                </div>
+            </div>
             
             <div style="background: #e7f3ff; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                 <h4 style="margin: 0 0 10px 0; color: #1877f2; font-size: 14px;">
@@ -294,9 +347,9 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button onclick="cerrarModalConfirmacion()" class="fb-btn fb-btn-secondary">Cancelar</button>
-                <button onclick="procesarVenta()" class="fb-btn fb-btn-success" id="btn-procesar-venta">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; position: sticky; bottom: 0; background: white; padding-top: 10px;">
+                <button onclick="cerrarModalConfirmacion()" class="fb-btn fb-btn-secondary" style="padding: 12px 20px;">Cancelar</button>
+                <button onclick="procesarVenta()" class="fb-btn fb-btn-success" id="btn-procesar-venta" style="padding: 12px 20px;">
                     <i class="fas fa-check-circle"></i> Confirmar Venta
                 </button>
             </div>
@@ -304,9 +357,9 @@
     </div>
 </div>
 
-<!-- Modal de Venta Exitosa -->
+<!-- MODAL DE VENTA EXITOSA (ACTUALIZADO CON CAMBIO) -->
 <div id="ventaExitosaModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-content" style="max-width: 450px;">
         <div class="modal-header" style="background: #42b72a; color: white;">
             <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-check-circle"></i> ¡Venta Exitosa!
@@ -318,7 +371,22 @@
             <i class="fas fa-check-circle" style="font-size: 64px; color: #42b72a; margin-bottom: 20px;"></i>
             
             <h4 style="color: #050505; margin-bottom: 10px;">Venta #<span id="exito-venta-id"></span></h4>
-            <p style="color: #606770; margin-bottom: 20px;">Total: <strong style="font-size: 20px; color: #1877f2;" id="exito-total">$0.00</strong></p>
+            
+            <!-- Resumen de pago y cambio -->
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Total:</span>
+                    <strong style="font-size: 18px; color: #1877f2;" id="exito-total">$0.00</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Recibido:</span>
+                    <strong style="font-size: 18px;" id="exito-recibido">$0.00</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px dashed #e4e6eb;">
+                    <span style="color: #606770; font-weight: 600;">Cambio:</span>
+                    <strong style="font-size: 24px; color: #42b72a;" id="exito-cambio">$0.00</strong>
+                </div>
+            </div>
             
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button onclick="imprimirTicketVenta()" class="fb-btn fb-btn-primary">
@@ -332,7 +400,33 @@
     </div>
 </div>
 
-<!-- Ticket oculto para impresión -->
+<!-- MODAL DE LIMPIAR TICKET (AJUSTADO) -->
+<div id="limpiarTicketModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 380px;">
+        <div class="modal-header" style="background: #fa383e; color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-triangle"></i> Limpiar Ticket
+            </h3>
+            <span class="close" onclick="cerrarModalLimpiar()" style="color: white;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+            <i class="fas fa-trash-alt" style="font-size: 48px; color: #fa383e; margin-bottom: 15px;"></i>
+            <h4 style="color: #050505; margin-bottom: 10px;">¿Eliminar todos los productos?</h4>
+            <p style="color: #606770; margin-bottom: 25px;">Esta acción no se puede deshacer.</p>
+            
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="cerrarModalLimpiar()" class="fb-btn fb-btn-secondary" style="padding: 12px 25px; flex: 1;">
+                    Cancelar
+                </button>
+                <button onclick="confirmarLimpiarTicket()" class="fb-btn" style="background: #fa383e; color: white; padding: 12px 25px; border: none; flex: 1;">
+                    <i class="fas fa-trash"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Ticket oculto para impresión (ACTUALIZADO CON CAMBIO) -->
 <div id="ticket-print" style="display: none;">
     <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 5px; margin: 0 auto; background: white; font-size: 10px;">
         <div style="text-align: center; margin-bottom: 5px;">
@@ -373,6 +467,8 @@
         
         <div style="text-align: right;">
             <p style="margin: 2px 0;">Total: $<span id="print-total"></span></p>
+            <p style="margin: 2px 0;">Recibido: $<span id="print-recibido"></span></p>
+            <p style="margin: 2px 0;">Cambio: $<span id="print-cambio"></span></p>
         </div>
         
         <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
@@ -388,6 +484,8 @@ let searchTimeout;
 let dietItems = JSON.parse(localStorage.getItem('posCart')) || [];
 let currentTicketNumber = Math.floor(Math.random() * 10000);
 let ventaActualId = null;
+let montoRecibidoGlobal = 0;
+let cambioGlobal = 0;
 
 // Mapeo de tipos de precio
 const priceTypeNames = {
@@ -784,17 +882,60 @@ function removeFromCart(id) {
     renderTicket();
 }
 
-function clearCart() {
-    if (Object.keys(cart).length > 0 && confirm('¿Limpiar todo el ticket?')) {
-        cart = {};
-        document.getElementById('diet-indicator').style.display = 'none';
-        renderTicket();
-        
-        if (dietItems.length > 0) {
-            localStorage.removeItem('posCart');
-            dietItems = [];
-        }
+// 🔴 NUEVO: Funciones para el modal de limpiar
+function abrirModalLimpiar() {
+    if (Object.keys(cart).length === 0) {
+        showNotification('No hay productos en el ticket', 'error');
+        return;
     }
+    document.getElementById('limpiarTicketModal').style.display = 'block';
+}
+
+function cerrarModalLimpiar() {
+    document.getElementById('limpiarTicketModal').style.display = 'none';
+}
+
+function confirmarLimpiarTicket() {
+    cart = {};
+    document.getElementById('diet-indicator').style.display = 'none';
+    renderTicket();
+    
+    if (dietItems.length > 0) {
+        localStorage.removeItem('posCart');
+        dietItems = [];
+    }
+    
+    cerrarModalLimpiar();
+    showNotification('🧹 Ticket limpiado', 'success');
+}
+
+// 🔴 NUEVO: Funciones para el cálculo de cambio
+function setMontoSugerido(monto) {
+    document.getElementById('monto-recibido').value = monto;
+    calcularCambio();
+}
+
+function calcularCambio() {
+    const total = parseFloat(document.getElementById('modal-total').innerText.replace('$', ''));
+    const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+    const cambio = montoRecibido - total;
+    
+    // Actualizar previews
+    document.getElementById('modal-total-cambio').innerHTML = '$' + total.toFixed(2);
+    document.getElementById('modal-recibido-preview').innerHTML = '$' + montoRecibido.toFixed(2);
+    document.getElementById('modal-cambio-preview').innerHTML = '$' + (cambio >= 0 ? cambio.toFixed(2) : '0.00');
+    
+    // Mostrar/ocultar mensaje de pago insuficiente
+    const pagoInsuficiente = document.getElementById('pago-insuficiente');
+    if (montoRecibido < total) {
+        pagoInsuficiente.style.display = 'block';
+    } else {
+        pagoInsuficiente.style.display = 'none';
+    }
+    
+    // Guardar valores globalmente
+    montoRecibidoGlobal = montoRecibido;
+    cambioGlobal = cambio >= 0 ? cambio : 0;
 }
 
 function abrirModalConfirmacion() {
@@ -818,6 +959,15 @@ function abrirModalConfirmacion() {
     document.getElementById('modal-cliente-direccion').textContent = clienteDireccion;
     document.getElementById('modal-cliente-telefono').textContent = clienteTelefono;
     
+    // Resetear campo de monto
+    document.getElementById('monto-recibido').value = '';
+    document.getElementById('modal-total-cambio').innerHTML = '$' + total.toFixed(2);
+    document.getElementById('modal-recibido-preview').innerHTML = '$0.00';
+    document.getElementById('modal-cambio-preview').innerHTML = '$0.00';
+    document.getElementById('pago-insuficiente').style.display = 'none';
+    montoRecibidoGlobal = 0;
+    cambioGlobal = 0;
+    
     document.getElementById('confirmarVentaModal').style.display = 'block';
 }
 
@@ -828,6 +978,13 @@ function cerrarModalConfirmacion() {
 function procesarVenta() {
     if (Object.keys(cart).length === 0) {
         showNotification('El carrito está vacío', 'error');
+        return;
+    }
+
+    // Validar que el monto sea suficiente
+    const total = parseFloat(document.getElementById('total').innerText);
+    if (montoRecibidoGlobal < total) {
+        showNotification('❌ El monto recibido es insuficiente', 'error');
         return;
     }
 
@@ -865,13 +1022,19 @@ function procesarVenta() {
             document.getElementById('ticket-number').textContent = ventaActualId;
             const totalVenta = document.getElementById('total').innerText;
             
+            // Guardar datos para el modal de éxito
+            const totalNumerico = parseFloat(totalVenta);
+            
             cart = {};
             renderTicket();
             
             cerrarModalConfirmacion();
             
+            // Actualizar modal de éxito
             document.getElementById('exito-venta-id').textContent = ventaActualId;
             document.getElementById('exito-total').textContent = '$' + totalVenta;
+            document.getElementById('exito-recibido').textContent = '$' + montoRecibidoGlobal.toFixed(2);
+            document.getElementById('exito-cambio').textContent = '$' + cambioGlobal.toFixed(2);
             
             document.getElementById('ventaExitosaModal').style.display = 'block';
             
@@ -880,20 +1043,17 @@ function procesarVenta() {
                 dietItems = [];
             }
             
-            // ✅ Restablecer el botón después de éxito
             btnProcesar.disabled = false;
             btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
             
         } else {
             showNotification(data.error || 'Error al procesar la venta', 'error');
-            // ✅ Restablecer el botón en caso de error
             btnProcesar.disabled = false;
             btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
         }
     })
     .catch(error => {
         showNotification('Error de conexión', 'error');
-        // ✅ Restablecer el botón en caso de error de conexión
         btnProcesar.disabled = false;
         btnProcesar.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar Venta';
     });
@@ -905,7 +1065,7 @@ function finalizarVenta() {
     cart = {};
     renderTicket();
     
-    // ✅ GENERAR NUEVO NÚMERO ALEATORIO PARA LA SIGUIENTE VENTA
+    // GENERAR NUEVO NÚMERO ALEATORIO PARA LA SIGUIENTE VENTA
     currentTicketNumber = Math.floor(Math.random() * 10000);
     document.getElementById('ticket-number').textContent = currentTicketNumber;
     
@@ -917,6 +1077,8 @@ function finalizarVenta() {
     
     localStorage.removeItem('posCart');
     dietItems = [];
+    montoRecibidoGlobal = 0;
+    cambioGlobal = 0;
     
     showNotification('✅ Venta completada. Listo para nueva venta', 'success');
 }
@@ -940,9 +1102,16 @@ function imprimirTicketVenta() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    let itemsHtml = '';
-    let total = parseFloat(document.getElementById('exito-total').textContent.replace('$', ''));
+    // Agregar datos de pago al ticket
+    const total = document.getElementById('exito-total').textContent;
+    const recibido = document.getElementById('exito-recibido').textContent;
+    const cambio = document.getElementById('exito-cambio').textContent;
     
+    document.getElementById('print-total').textContent = total.replace('$', '');
+    document.getElementById('print-recibido').textContent = recibido.replace('$', '');
+    document.getElementById('print-cambio').textContent = cambio.replace('$', '');
+    
+    let itemsHtml = '';
     // Si hay items en el carrito (por si acaso), mostrarlos
     if (Object.keys(cart).length > 0) {
         for (let id in cart) {
@@ -967,7 +1136,6 @@ function imprimirTicketVenta() {
     }
     
     document.getElementById('print-items').innerHTML = itemsHtml;
-    document.getElementById('print-total').textContent = total.toFixed(2);
     
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -1048,6 +1216,10 @@ function imprimirTicket() {
     document.getElementById('print-cliente-nombre').textContent = clienteNombre;
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
+    
+    // Limpiar datos de pago (aún no hay venta)
+    document.getElementById('print-recibido').textContent = '0.00';
+    document.getElementById('print-cambio').textContent = '0.00';
     
     let itemsHtml = '';
     let total = 0;
@@ -1148,73 +1320,137 @@ style.textContent = `
         justify-content: center;
     }
     
-    .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        animation: fadeIn 0.2s ease;
+    /* Modal - CORREGIDO para mejor visualización */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    animation: fadeIn 0.2s ease;
+    overflow-y: auto; /* Permite scroll en el fondo si es necesario */
+}
+
+.modal-content {
+    background: white;
+    margin: 20px auto; /* Margen superior e inferior para centrar con espacio */
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    animation: slideDown 0.3s ease;
+    position: relative;
+    max-height: 90vh; /* Altura máxima del 90% de la pantalla */
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e4e6eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* No se encoge */
+    border-radius: 16px 16px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #050505;
+    font-size: 20px;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto; /* Scroll interno si el contenido es muy largo */
+    flex: 1; /* Ocupa el espacio disponible */
+    max-height: calc(90vh - 80px); /* Altura máxima menos el header */
+}
+
+.close {
+    color: #606770;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.close:hover {
+    color: #050505;
+}
+
+/* Animaciones mejoradas */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
     }
-    
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
     .modal-content {
-        background: white;
-        margin: 10% auto;
-        padding: 0;
-        width: 90%;
-        max-width: 450px;
-        border-radius: 10px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        animation: slideUp 0.3s ease;
-    }
-    
-    .modal-header {
-        padding: 20px;
-        border-bottom: 1px solid #e4e6eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .modal-header h3 {
-        margin: 0;
-        color: #050505;
-    }
-    
-    .close {
-        color: #606770;
-        font-size: 24px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
-    
-    .close:hover {
-        color: #050505;
+        margin: 10px auto;
+        max-height: 95vh;
+        width: 95%;
     }
     
     .modal-body {
-        padding: 20px;
+        padding: 15px;
     }
     
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+    .modal-header {
+        padding: 15px;
     }
     
-    @keyframes slideUp {
-        from {
-            transform: translateY(50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+    .modal-header h3 {
+        font-size: 18px;
     }
+}
+
+/* Ajustes específicos para el modal de confirmación (que tiene más contenido) */
+#confirmarVentaModal .modal-content {
+    max-width: 550px; /* Un poco más ancho para el contenido de pago */
+}
+
+/* Ajustes para el modal de limpiar (más pequeño) */
+#limpiarTicketModal .modal-content {
+    max-width: 380px;
+}
+
+/* Estilo para el scroll dentro del modal */
+.modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f0f2f5;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #1877f2;
+    border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #166fe5;
+}
     
     /* Estilo para el scroll del ticket */
     #ticket-scroll {

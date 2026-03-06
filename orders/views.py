@@ -11,6 +11,8 @@ import logging
 import json
 from decimal import Decimal
 
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -532,3 +534,29 @@ def batch_update_order(request, order_id):
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+@login_required
+def order_items_api(request, order_id):
+    """API para obtener los items de un pedido"""
+    try:
+        order = Order.objects.get(id=order_id, branch=request.user.branch)
+        items = []
+        for item in order.items.all():
+            items.append({
+                'id': item.id,
+                'name': item.product.name,
+                'kilos': float(item.kilos),
+                'product_id': item.product.id
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items,
+            'total_items': len(items),
+            'total_kilos': float(order.total_kilos)
+        })
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'Pedido no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

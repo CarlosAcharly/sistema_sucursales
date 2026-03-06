@@ -158,13 +158,10 @@
                 {% if transfer.status == 'PENDING' %}
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         {% if all_available %}
-                            <form method="post" action="{% url 'transfer_process' transfer.id %}" onsubmit="return confirm('¿Confirmas que deseas procesar esta transferencia? Se moverá el stock de las sucursales.');">
-                                {% csrf_token %}
-                                <button type="submit" class="fb-btn" style="width: 100%; background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 14px; border: none; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
-                                    <i class="fa-solid fa-circle-check"></i>
-                                    Procesar Transferencia
-                                </button>
-                            </form>
+                            <button onclick="openProcessModal()" class="fb-btn" style="width: 100%; background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 14px; border: none; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                                <i class="fa-solid fa-circle-check"></i>
+                                Procesar Transferencia
+                            </button>
                         {% else %}
                             <div style="background: #ffebe9; padding: 15px; border-radius: 12px; color: #b92b27; display: flex; align-items: center; gap: 10px;">
                                 <i class="fa-solid fa-circle-exclamation" style="font-size: 20px;"></i>
@@ -175,13 +172,10 @@
                             </div>
                         {% endif %}
                         
-                        <form method="post" action="{% url 'transfer_cancel' transfer.id %}" onsubmit="return confirm('¿Estás seguro de cancelar esta transferencia?');">
-                            {% csrf_token %}
-                            <button type="submit" class="fb-btn" style="width: 100%; background: white; color: #fa383e; padding: 14px; border: 2px solid #fa383e; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
-                                <i class="fa-solid fa-ban"></i>
-                                Cancelar Transferencia
-                            </button>
-                        </form>
+                        <button onclick="openCancelModal()" class="fb-btn" style="width: 100%; background: white; color: #fa383e; padding: 14px; border: 2px solid #fa383e; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;">
+                            <i class="fa-solid fa-ban"></i>
+                            Cancelar Transferencia
+                        </button>
                     </div>
                 {% elif transfer.status == 'COMPLETED' %}
                     <div style="background: #e3f2e8; padding: 20px; border-radius: 12px; text-align: center;">
@@ -206,6 +200,160 @@
     </div>
 </div>
 
+<!-- MODAL MEJORADO: Procesar Transferencia -->
+<div id="processModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px; animation: slideUp 0.3s ease;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 25px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-circle-check" style="font-size: 24px;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 20px;">Procesar Transferencia</h3>
+                    <p style="margin: 5px 0 0; opacity: 0.9; font-size: 13px;">#{{ transfer.id }} - {{ transfer.from_branch.name }} → {{ transfer.to_branch.name }}</p>
+                </div>
+            </div>
+            <span class="close" onclick="closeProcessModal()" style="color: white; font-size: 28px; cursor: pointer;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <!-- Resumen de la transferencia -->
+            <div style="background: #f0f8ff; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #42b72a;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="background: #42b72a20; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-cubes" style="color: #42b72a; font-size: 22px;"></i>
+                    </div>
+                    <div>
+                        <span style="color: #606770; font-size: 12px;">Total de productos</span>
+                        <div style="font-size: 24px; font-weight: 700; color: #42b72a;">{{ transfer.total_items }}</div>
+                    </div>
+                </div>
+                
+                <div style="background: white; padding: 15px; border-radius: 10px;">
+                    <p style="margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-circle-info" style="color: #42b72a;"></i>
+                        <strong>¿Estás seguro de procesar esta transferencia?</strong>
+                    </p>
+                    <ul style="margin: 0; padding-left: 20px; color: #606770; font-size: 13px;">
+                        <li>Se restará el stock de la sucursal origen</li>
+                        <li>Se agregará el stock a la sucursal destino</li>
+                        <li>El estado cambiará a "Completada"</li>
+                        <li>Esta acción no se puede deshacer</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Lista de productos a transferir -->
+            <div style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #e4e6eb; border-radius: 10px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f5f6f7; position: sticky; top: 0;">
+                        <tr>
+                            <th style="padding: 10px; text-align: left; font-size: 12px;">Producto</th>
+                            <th style="padding: 10px; text-align: center; font-size: 12px;">Cantidad</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in transfer.items.all %}
+                        <tr style="border-bottom: 1px solid #f0f2f5;">
+                            <td style="padding: 10px;">{{ item.product.name }}</td>
+                            <td style="padding: 10px; text-align: center; font-weight: 600;">{{ item.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <form method="post" action="{% url 'transfer_process' transfer.id %}" id="process-form">
+                {% csrf_token %}
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                        <i class="fa-regular fa-note-sticky"></i> Notas adicionales (opcional)
+                    </label>
+                    <textarea name="notes" rows="2" class="fb-input" placeholder="Agregar comentarios sobre la transferencia..." style="width: 100%; padding: 10px; border: 1px solid #dddfe2; border-radius: 8px;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeProcessModal()" class="fb-btn fb-btn-secondary" style="padding: 12px 20px;">
+                        <i class="fa-solid fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="fb-btn" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px;" id="confirmProcessBtn">
+                        <i class="fa-solid fa-circle-check"></i> Confirmar Proceso
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL MEJORADO: Cancelar Transferencia -->
+<div id="cancelModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px; animation: slideUp 0.3s ease;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #fa383e, #e03137); color: white; padding: 25px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fa-solid fa-ban" style="font-size: 24px;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 20px;">Cancelar Transferencia</h3>
+                    <p style="margin: 5px 0 0; opacity: 0.9; font-size: 13px;">#{{ transfer.id }} - {{ transfer.from_branch.name }} → {{ transfer.to_branch.name }}</p>
+                </div>
+            </div>
+            <span class="close" onclick="closeCancelModal()" style="color: white; font-size: 28px; cursor: pointer;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <!-- Alerta de advertencia -->
+            <div style="background: #fff4e5; padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #fa383e;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: #fa383e; font-size: 20px;"></i>
+                    <strong style="color: #bd7b13;">¿Estás seguro de cancelar esta transferencia?</strong>
+                </div>
+                <p style="margin: 0; color: #606770; font-size: 13px;">
+                    Esta acción no se puede deshacer. La transferencia quedará marcada como cancelada y no podrá ser procesada.
+                </p>
+            </div>
+            
+            <!-- Resumen de la transferencia -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: #606770;">Productos a transferir:</span>
+                    <strong>{{ transfer.total_items }}</strong>
+                </div>
+                <div style="max-height: 100px; overflow-y: auto;">
+                    {% for item in transfer.items.all %}
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e4e6eb;">
+                        <span style="font-size: 13px;">{{ item.product.name }}</span>
+                        <span style="font-weight: 600;">{{ item.quantity }} uds</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <form method="post" action="{% url 'transfer_cancel' transfer.id %}" id="cancel-form">
+                {% csrf_token %}
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px;">
+                        <i class="fa-regular fa-note-sticky"></i> Motivo de cancelación <span style="color: #fa383e;">*</span>
+                    </label>
+                    <textarea name="reason" id="cancel-reason" rows="3" class="fb-input" required placeholder="Ej: Producto no disponible, error en la solicitud, etc." style="width: 100%; padding: 10px; border: 1px solid #dddfe2; border-radius: 8px;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeCancelModal()" class="fb-btn fb-btn-secondary" style="padding: 12px 20px;">
+                        <i class="fa-solid fa-times"></i> No, mantener
+                    </button>
+                    <button type="submit" class="fb-btn" style="background: linear-gradient(135deg, #fa383e, #e03137); color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px;" id="confirmCancelBtn">
+                        <i class="fa-solid fa-ban"></i> Sí, cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
+
 <style>
     .back-btn:hover {
         background: rgba(255,255,255,0.3) !important;
@@ -216,5 +364,135 @@
         transform: translateY(-2px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
     }
+    
+    /* Estilos del modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        animation: fadeIn 0.2s ease;
+    }
+    
+    .modal-content {
+        background: white;
+        margin: 5% auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .close {
+        transition: all 0.2s;
+    }
+    
+    .close:hover {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    #toast {
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
+
+<script>
+// Funciones para el modal de procesar
+function openProcessModal() {
+    document.getElementById('processModal').style.display = 'block';
+}
+
+function closeProcessModal() {
+    document.getElementById('processModal').style.display = 'none';
+}
+
+// Funciones para el modal de cancelar
+function openCancelModal() {
+    document.getElementById('cancelModal').style.display = 'block';
+    document.getElementById('cancel-reason').value = '';
+}
+
+function closeCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+}
+
+// Validar motivo de cancelación antes de enviar
+document.getElementById('cancel-form')?.addEventListener('submit', function(e) {
+    const reason = document.getElementById('cancel-reason').value.trim();
+    if (!reason) {
+        e.preventDefault();
+        showToast('❌ Debes ingresar un motivo de cancelación', 'error');
+    }
+});
+
+// Mostrar toast
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = message;
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Cerrar modales con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeProcessModal();
+        closeCancelModal();
+    }
+});
+
+// Clic fuera del modal
+window.onclick = function(event) {
+    const processModal = document.getElementById('processModal');
+    const cancelModal = document.getElementById('cancelModal');
+    
+    if (event.target == processModal) {
+        closeProcessModal();
+    }
+    if (event.target == cancelModal) {
+        closeCancelModal();
+    }
+}
+</script>
 {% endblock %}
