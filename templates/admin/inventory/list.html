@@ -168,35 +168,28 @@
                         </div>
                     </td>
                     
-                    <td style="padding: 20px; text-align: center;">
-                        <div style="display: flex; gap: 10px; justify-content: center;">
-                            <!-- Botón para agregar inventario -->
-                            <a href="{% url 'inventory_create' %}?branch={{ item.branch.id }}&product={{ item.product.id }}" 
-                               class="action-button add-stock" 
-                               style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
-                               title="Agregar stock">
-                                <i class="fa-solid fa-plus"></i>
-                            </a>
-                            
-                            <!-- Botón para ver movimientos (opcional) -->
-                            <a href="#" 
-                               class="action-button view-movements" 
-                               style="background: #e7f3ff; color: #1877f2; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
-                               title="Ver movimientos">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
-                            </a>
-                            
-                            <!-- Botón para editar (solo admin) -->
-                            {% if request.user.role != 'CASHIER' %}
-                            <a href="#" 
-                               class="action-button edit" 
-                               style="background: #fff4e5; color: #f7b928; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
-                               title="Editar">
-                                <i class="fa-solid fa-pen"></i>
-                            </a>
-                            {% endif %}
-                        </div>
-                    </td>
+                    <!-- SOLO REEMPLAZA LA SECCIÓN DE ACCIONES (las líneas 177-215 aproximadamente) -->
+<td style="padding: 20px; text-align: center;">
+    <div style="display: flex; gap: 10px; justify-content: center;">
+        <!-- Botón para agregar inventario (siempre visible) -->
+        <a href="{% url 'inventory_create' %}?branch={{ item.branch.id }}&product={{ item.product.id }}" 
+           class="action-button add-stock" 
+           style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
+           title="Agregar stock">
+            <i class="fa-solid fa-plus"></i>
+        </a>
+        
+        <!-- Botón para editar (solo admin) - AHORA FUNCIONA -->
+        {% if request.user.role != 'CASHIER' %}
+        <a href="{% url 'inventory_edit' item.id %}" 
+           class="action-button edit" 
+           style="background: #fff4e5; color: #f7b928; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.3s;"
+           title="Editar inventario">
+            <i class="fa-solid fa-pen"></i>
+        </a>
+        {% endif %}
+    </div>
+</td>
                 </tr>
                 {% endfor %}
             </tbody>

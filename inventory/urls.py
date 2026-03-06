@@ -11,6 +11,7 @@ urlpatterns = [
     path('transfers/<int:transfer_id>/', views.transfer_detail, name='transfer_detail'),
     path('transfers/<int:transfer_id>/process/', views.transfer_process, name='transfer_process'),
     path('transfers/<int:transfer_id>/cancel/', views.transfer_cancel, name='transfer_cancel'),
+    path('editar/<int:inventory_id>/', views.inventory_edit, name='inventory_edit'),
     
     # API
     path('api/branch-inventory/', views.get_branch_inventory, name='branch_inventory_api'),

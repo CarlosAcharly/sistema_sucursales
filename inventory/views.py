@@ -334,3 +334,29 @@ def get_branch_inventory(request):
     } for item in inventory]
     
     return JsonResponse({'inventory': data})
+
+@login_required
+@role_required(['ADMIN', 'SUPERADMIN'])
+def inventory_edit(request, inventory_id):
+    """Editar un registro de inventario existente"""
+    inventory = get_object_or_404(Inventory, id=inventory_id)
+    
+    # ✅ Los administradores tienen acceso total a todas las sucursales
+    # No hay restricciones
+    
+    if request.method == 'POST':
+        form = InventoryForm(request.POST, instance=inventory)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'✅ Inventario de {inventory.product.name} actualizado correctamente.')
+            return redirect('inventory_list')
+        else:
+            messages.error(request, '❌ Por favor corrige los errores en el formulario.')
+    else:
+        form = InventoryForm(instance=inventory)
+    
+    return render(request, 'admin/inventory/edit.html', {
+        'form': form,
+        'inventory': inventory,
+        'is_edit': True
+    })

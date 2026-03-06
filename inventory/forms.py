@@ -10,6 +10,12 @@ class InventoryForm(forms.ModelForm):
             'product': forms.Select(attrs={'class': 'form-control'}),
             'stock': forms.NumberInput(attrs={'class': 'form-control'}),
         }
+    
+    def clean_stock(self):
+        stock = self.cleaned_data.get('stock')
+        if stock < 0:
+            raise forms.ValidationError('El stock no puede ser negativo.')
+        return stock
 
 
 class TransferForm(forms.ModelForm):

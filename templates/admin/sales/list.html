@@ -16,8 +16,76 @@
     </div>
 </div>
 
-<!-- Estadísticas -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px;">
+<!-- Filtros por período -->
+<div class="fb-card" style="margin-bottom: 20px; padding: 20px; border-radius: 16px;">
+    <form method="get" id="filter-form">
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr) auto; gap: 15px; align-items: end;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar-alt" style="margin-right: 5px; color: #4158D0;"></i>
+                    Período
+                </label>
+                <select name="period" id="period-select" class="fb-input" onchange="toggleDateInputs()">
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>Todos</option>
+                    <option value="day" {% if selected_period == 'day' %}selected{% endif %}>Día específico</option>
+                    <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Mes específico</option>
+                    <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Año específico</option>
+                    <option value="range" {% if selected_period == 'range' %}selected{% endif %}>Rango personalizado</option>
+                </select>
+            </div>
+            
+            <div id="day-input" style="display: none;">
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar-day" style="margin-right: 5px; color: #C850C0;"></i>
+                    Fecha
+                </label>
+                <input type="date" name="date" value="{{ selected_date }}" class="fb-input">
+            </div>
+            
+            <div id="month-input" style="display: none;">
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar-alt" style="margin-right: 5px; color: #C850C0;"></i>
+                    Mes
+                </label>
+                <input type="month" name="month" value="{{ selected_month }}" class="fb-input">
+            </div>
+            
+            <div id="year-input" style="display: none;">
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar" style="margin-right: 5px; color: #C850C0;"></i>
+                    Año
+                </label>
+                <input type="number" name="year" value="{{ selected_year|default:'' }}" min="2020" max="2030" class="fb-input" placeholder="2024">
+            </div>
+            
+            <div id="range-inputs" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; grid-column: span 2;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                        <i class="fas fa-calendar-plus" style="margin-right: 5px; color: #42b72a;"></i>
+                        Desde
+                    </label>
+                    <input type="date" name="date_from" value="{{ date_from }}" class="fb-input">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                        <i class="fas fa-calendar-check" style="margin-right: 5px; color: #42b72a;"></i>
+                        Hasta
+                    </label>
+                    <input type="date" name="date_to" value="{{ date_to }}" class="fb-input">
+                </div>
+            </div>
+            
+            <div>
+                <button type="submit" class="fb-btn fb-btn-primary" style="padding: 12px 24px;">
+                    <i class="fas fa-filter"></i> Aplicar
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Estadísticas globales del período -->
+<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 25px;">
     <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: linear-gradient(135deg, #4158D0, #C850C0); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
@@ -26,6 +94,7 @@
             <div>
                 <span style="color: #606770; font-size: 13px;">Total ventas</span>
                 <div style="font-size: 24px; font-weight: 600; color: #050505;">{{ total_sales }}</div>
+                <small style="color: #606770;">{{ period_label }}</small>
             </div>
         </div>
     </div>
@@ -60,14 +129,101 @@
                 <i class="fas fa-dollar-sign" style="color: white;"></i>
             </div>
             <div>
-                <span style="color: #606770; font-size: 13px;">Total hoy</span>
-                <div style="font-size: 24px; font-weight: 600; color: #f7b928;">${{ total_today|floatformat:2 }}</div>
+                <span style="color: #606770; font-size: 13px;">Total período</span>
+                <div style="font-size: 24px; font-weight: 600; color: #f7b928;">${{ total_period|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stat-card" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-chart-line" style="color: white;"></i>
+            </div>
+            <div>
+                <span style="color: #606770; font-size: 13px;">Ticket promedio</span>
+                <div style="font-size: 24px; font-weight: 600; color: #667eea;">${{ average_ticket|floatformat:2 }}</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Filtros -->
+<!-- 🔥 NUEVO: Resumen por sucursal (justo debajo de estadísticas globales) -->
+<div class="fb-card" style="margin-bottom: 25px; padding: 20px; border-radius: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-store" style="color: #4158D0;"></i>
+            Resumen por Sucursal - {{ period_label }}
+        </h3>
+        <span style="background: #e7f3ff; color: #4158D0; padding: 6px 14px; border-radius: 30px; font-size: 13px;">
+            <i class="fas fa-chart-pie"></i> {{ branch_summary|length }} sucursales
+        </span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+        {% for branch_data in branch_summary %}
+        <div style="background: linear-gradient(135deg, #f8f9fa, #f0f2f5); padding: 18px; border-radius: 14px; border-left: 4px solid #4158D0; transition: all 0.3s;" 
+             onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="background: #4158D0; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-store" style="color: white; font-size: 16px;"></i>
+                    </div>
+                    <strong style="font-size: 16px; color: #050505;">{{ branch_data.branch__name }}</strong>
+                </div>
+                <span style="background: white; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; color: #4158D0;">
+                    {{ branch_data.total_sales }} ventas
+                </span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <div style="background: white; padding: 10px; border-radius: 10px;">
+                    <span style="color: #606770; font-size: 11px;">Total</span>
+                    <div style="font-weight: 700; color: #1877f2;">${{ branch_data.total_amount|floatformat:2 }}</div>
+                </div>
+                <div style="background: white; padding: 10px; border-radius: 10px;">
+                    <span style="color: #606770; font-size: 11px;">Ticket prom.</span>
+                    <div style="font-weight: 700; color: #667eea;">
+                        ${{ branch_data.avg_ticket|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <div style="flex: 1; background: #e3f2e8; padding: 8px; border-radius: 8px; text-align: center;">
+                    <span style="color: #1b7e3f; font-size: 11px;">Activas</span>
+                    <div style="font-weight: 600; color: #42b72a;">{{ branch_data.active_count }}</div>
+                </div>
+                <div style="flex: 1; background: #ffebe9; padding: 8px; border-radius: 8px; text-align: center;">
+                    <span style="color: #b92b27; font-size: 11px;">Canceladas</span>
+                    <div style="font-weight: 600; color: #fa383e;">{{ branch_data.cancelled_count }}</div>
+                </div>
+            </div>
+            
+            <!-- Barra de progreso del total -->
+            {% if total_percentages %}
+            <div style="margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="color: #606770; font-size: 10px;">% del total</span>
+                    <span style="font-weight: 600; font-size: 11px;">{{ branch_data.percentage|floatformat:1 }}%</span>
+                </div>
+                <div style="height: 4px; background: #e4e6eb; border-radius: 2px; overflow: hidden;">
+<div style="width: {{ branch_data.percentage|floatformat:0 }}%; height: 100%; background: linear-gradient(90deg, #4158D0, #C850C0);"></div>            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 12px;">
+            <i class="fas fa-store" style="font-size: 40px; color: #e4e6eb; margin-bottom: 10px;"></i>
+            <h4 style="color: #606770;">No hay datos para mostrar</h4>
+            <p style="color: #606770;">Prueba con otros filtros de período</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Filtros adicionales (búsqueda, sucursal, estado) -->
 <div class="fb-card" style="margin-bottom: 20px; padding: 20px; border-radius: 16px;">
     <div style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 15px; align-items: center;">
         <div style="position: relative;">
@@ -177,6 +333,7 @@
                 <td colspan="8" style="padding: 60px; text-align: center;">
                     <i class="fas fa-shopping-cart" style="font-size: 50px; color: #e4e6eb; margin-bottom: 15px;"></i>
                     <h3>No hay ventas registradas</h3>
+                    <p style="color: #606770;">Prueba con otros filtros de período</p>
                 </td>
             </tr>
             {% endfor %}
@@ -308,12 +465,35 @@
 </style>
 
 <script>
+// Función para mostrar/ocultar inputs según el período seleccionado
+function toggleDateInputs() {
+    const period = document.getElementById('period-select').value;
+    
+    document.getElementById('day-input').style.display = 'none';
+    document.getElementById('month-input').style.display = 'none';
+    document.getElementById('year-input').style.display = 'none';
+    document.getElementById('range-inputs').style.display = 'none';
+    
+    if (period === 'day') {
+        document.getElementById('day-input').style.display = 'block';
+    } else if (period === 'month') {
+        document.getElementById('month-input').style.display = 'block';
+    } else if (period === 'year') {
+        document.getElementById('year-input').style.display = 'block';
+    } else if (period === 'range') {
+        document.getElementById('range-inputs').style.display = 'grid';
+    }
+}
+
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    toggleDateInputs();
+});
+
 let currentSaleId = null;
-let currentSaleTotal = null;
 
 function openCancelModal(saleId, total) {
     currentSaleId = saleId;
-    currentSaleTotal = total;
     document.getElementById('cancelModal').style.display = 'block';
     document.getElementById('cancel-reason').value = '';
 }
@@ -374,7 +554,7 @@ function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-// Filtros
+// Filtros de búsqueda
 document.getElementById('search-input').addEventListener('input', filterTable);
 document.getElementById('branch-filter').addEventListener('change', filterTable);
 document.getElementById('status-filter').addEventListener('change', filterTable);

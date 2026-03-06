@@ -15,6 +15,7 @@ from datetime import timedelta
 from decimal import Decimal
 import logging
 import traceback
+from branches.models import Branch
 import pytz  # Asegúrate de tener pytz instalado
 
 
@@ -269,28 +270,95 @@ def sale_detail_api(request, sale_id):
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
 def admin_sales_list(request):
-    """Lista de ventas para administradores"""
+    """Lista de ventas para administradores con filtros por período"""
     user = request.user
     
-    # Obtener todas las ventas
+    # Obtener filtros de período
+    period = request.GET.get('period', 'all')
+    selected_date = request.GET.get('date', '')
+    selected_month = request.GET.get('month', '')
+    selected_year = request.GET.get('year', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Base queryset
     sales = Sale.objects.select_related(
         'branch', 'cashier', 'cancelled_by'
     ).prefetch_related('items').all().order_by('-created_at')
     
-    # Estadísticas
+    # Aplicar filtros de período
+    if period == 'day' and selected_date:
+        sales = sales.filter(created_at__date=selected_date)
+        period_label = f"Día: {selected_date}"
+    elif period == 'month' and selected_month:
+        year, month = selected_month.split('-')
+        sales = sales.filter(
+            created_at__year=year,
+            created_at__month=month
+        )
+        period_label = f"Mes: {selected_month}"
+    elif period == 'year' and selected_year:
+        sales = sales.filter(created_at__year=selected_year)
+        period_label = f"Año: {selected_year}"
+    elif period == 'range' and date_from and date_to:
+        sales = sales.filter(
+            created_at__date__gte=date_from,
+            created_at__date__lte=date_to
+        )
+        period_label = f"Del {date_from} al {date_to}"
+    else:
+        period_label = "Todos los tiempos"
+    
+    # Estadísticas del período
     total_sales = sales.count()
     total_amount = sales.aggregate(total=Sum('total'))['total'] or 0
     active_sales = sales.filter(status='ACTIVE').count()
     cancelled_sales = sales.filter(status='CANCELLED').count()
     
-    # Ventas de hoy
-    today = timezone.now().date()
-    sales_today = sales.filter(created_at__date=today)
-    total_today = sales_today.aggregate(total=Sum('total'))['total'] or 0
+    # Ticket promedio (calculado aquí, no en el template)
+    average_ticket = total_amount / total_sales if total_sales > 0 else 0
     
-    # Obtener todas las sucursales para el filtro
-    from branches.models import Branch
-    branches = Branch.objects.filter(is_active=True)
+    # Resumen por sucursal
+    branch_summary = sales.values(
+        'branch__name', 'status'
+    ).annotate(
+        total_sales=Count('id'),
+        total_amount=Sum('total')
+    ).order_by('branch__name')
+    
+    # Procesar para agrupar por sucursal
+    branch_data = {}
+    for item in branch_summary:
+        branch_name = item['branch__name']
+        if branch_name not in branch_data:
+            branch_data[branch_name] = {
+                'branch__name': branch_name,
+                'total_sales': 0,
+                'total_amount': 0,
+                'active_count': 0,
+                'cancelled_count': 0
+            }
+        branch_data[branch_name]['total_sales'] += item['total_sales']
+        branch_data[branch_name]['total_amount'] += item['total_amount'] or 0
+        if item['status'] == 'ACTIVE':
+            branch_data[branch_name]['active_count'] = item['total_sales']
+        else:
+            branch_data[branch_name]['cancelled_count'] = item['total_sales']
+    
+    # Calcular ticket promedio por sucursal y porcentajes
+    total_period_amount = total_amount
+    for branch_name, data in branch_data.items():
+        # Ticket promedio por sucursal
+        if data['total_sales'] > 0:
+            data['avg_ticket'] = data['total_amount'] / data['total_sales']
+        else:
+            data['avg_ticket'] = 0
+        
+        # Porcentaje del total
+        if total_period_amount > 0:
+            data['percentage'] = (data['total_amount'] / total_period_amount) * 100
+        else:
+            data['percentage'] = 0
     
     return render(request, 'admin/sales/list.html', {
         'sales': sales,
@@ -298,12 +366,18 @@ def admin_sales_list(request):
         'total_amount': total_amount,
         'active_sales': active_sales,
         'cancelled_sales': cancelled_sales,
-        'sales_today': sales_today.count(),
-        'total_today': total_today,
-        'branches': branches,
+        'total_period': total_amount,
+        'average_ticket': average_ticket,
+        'branches': Branch.objects.filter(is_active=True),
+        'branch_summary': branch_data.values(),
+        'period_label': period_label,
+        'selected_period': period,
+        'selected_date': selected_date,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
+        'date_from': date_from,
+        'date_to': date_to,
     })
-
-
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
 def admin_sale_detail(request, sale_id):

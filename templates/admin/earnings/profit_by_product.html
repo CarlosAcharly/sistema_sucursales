@@ -2,20 +2,30 @@
 {% load static %}
 
 {% block content %}
-<div class="fb-card" style="margin-bottom: 20px;">
-    <div class="fb-card-header">
-        <h2 style="margin: 0;"><i class="fas fa-chart-bar"></i> Rentabilidad por Producto</h2>
+<!-- Header mejorado con gradiente -->
+<div class="fb-card" style="margin-bottom: 25px; background: linear-gradient(135deg, #4158D0 0%, #C850C0 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; align-items: center; gap: 20px; color: white;">
+        <div style="background: rgba(255,255,255,0.2); width: 70px; height: 70px; border-radius: 18px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+            <i class="fas fa-chart-line" style="font-size: 35px;"></i>
+        </div>
+        <div>
+            <h1 style="margin: 0; font-size: 28px;">Rentabilidad por Producto</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">Analiza la rentabilidad de cada producto en tus sucursales</p>
+        </div>
     </div>
 </div>
 
-<!-- Filtros -->
-<div class="fb-card" style="margin-bottom: 20px;">
+<!-- Filtros mejorados -->
+<div class="fb-card" style="border-radius: 16px; padding: 25px; margin-bottom: 25px;">
     <form method="get">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
             <div>
-                <label style="display: block; margin-bottom: 5px; color: #606770;">Sucursal</label>
-                <select name="branch" class="fb-input">
-                    <option value="">Todas</option>
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-store" style="margin-right: 5px; color: #4158D0;"></i>
+                    Sucursal
+                </label>
+                <select name="branch" class="modern-select" style="width: 100%; padding: 12px 15px; border: 2px solid #f0f2f5; border-radius: 12px; background: white;">
+                    <option value="">Todas las sucursales</option>
                     {% for branch in branches %}
                     <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
                         {{ branch.name }}
@@ -24,92 +34,289 @@
                 </select>
             </div>
             <div>
-                <label style="display: block; margin-bottom: 5px; color: #606770;">Desde</label>
-                <input type="date" name="date_from" value="{{ date_from }}" class="fb-input">
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar-alt" style="margin-right: 5px; color: #C850C0;"></i>
+                    Desde
+                </label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="modern-input" style="width: 100%; padding: 12px 15px; border: 2px solid #f0f2f5; border-radius: 12px;">
             </div>
             <div>
-                <label style="display: block; margin-bottom: 5px; color: #606770;">Hasta</label>
-                <input type="date" name="date_to" value="{{ date_to }}" class="fb-input">
+                <label style="display: block; margin-bottom: 8px; color: #606770; font-size: 13px; font-weight: 500;">
+                    <i class="fas fa-calendar-check" style="margin-right: 5px; color: #4158D0;"></i>
+                    Hasta
+                </label>
+                <input type="date" name="date_to" value="{{ date_to }}" class="modern-input" style="width: 100%; padding: 12px 15px; border: 2px solid #f0f2f5; border-radius: 12px;">
             </div>
             <div>
-                <button type="submit" class="fb-btn fb-btn-primary">
-                    <i class="fas fa-filter"></i> Aplicar
+                <button type="submit" class="fb-btn" style="background: linear-gradient(135deg, #4158D0, #C850C0); color: white; padding: 12px 25px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; width: 100%; justify-content: center;">
+                    <i class="fas fa-filter"></i>
+                    Aplicar Filtros
                 </button>
             </div>
         </div>
     </form>
 </div>
 
-<!-- Totales -->
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px;">
-    <div class="stat-card" style="background: white; padding: 20px;">
-        <span style="color: #606770;">Total Ingresos</span>
-        <h3 style="margin: 10px 0; color: #1877f2;">${{ totals.total_revenue|floatformat:2 }}</h3>
+<!-- Cards de estadísticas mejoradas -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+    <div class="stat-card" style="background: linear-gradient(135deg, #4158D0, #7349b8); border-radius: 16px; padding: 25px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <span style="opacity: 0.9; font-size: 14px;">Total Ingresos</span>
+                <h2 style="margin: 10px 0; font-size: 32px;">${{ totals.total_revenue|floatformat:2 }}</h2>
+                <span style="opacity: 0.8; font-size: 13px;">
+                    <i class="fas fa-arrow-up"></i> Ventas del período
+                </span>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-dollar-sign" style="font-size: 24px;"></i>
+            </div>
+        </div>
     </div>
-    <div class="stat-card" style="background: white; padding: 20px;">
-        <span style="color: #606770;">Total Costos</span>
-        <h3 style="margin: 10px 0; color: #f7b928;">${{ totals.total_cost|floatformat:2 }}</h3>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #f7b928, #f39c12); border-radius: 16px; padding: 25px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <span style="opacity: 0.9; font-size: 14px;">Total Costos</span>
+                <h2 style="margin: 10px 0; font-size: 32px;">${{ totals.total_cost|floatformat:2 }}</h2>
+                <span style="opacity: 0.8; font-size: 13px;">
+                    <i class="fas fa-tag"></i> Precio de compra
+                </span>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-coins" style="font-size: 24px;"></i>
+            </div>
+        </div>
     </div>
-    <div class="stat-card" style="background: white; padding: 20px;">
-        <span style="color: #606770;">Ganancia Total</span>
-        <h3 style="margin: 10px 0; color: #42b72a;">${{ totals.total_profit|floatformat:2 }}</h3>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); border-radius: 16px; padding: 25px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <span style="opacity: 0.9; font-size: 14px;">Ganancia Total</span>
+                <h2 style="margin: 10px 0; font-size: 32px;">${{ totals.total_profit|floatformat:2 }}</h2>
+                <span style="opacity: 0.8; font-size: 13px;">
+                    <i class="fas fa-chart-line"></i> Margen: 
+                    {% if totals.total_revenue %}
+                        {{ totals.total_profit|floatformat:2 }} / {{ totals.total_revenue|floatformat:2 }} = 
+                        {% widthratio totals.total_profit totals.total_revenue 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </span>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-trend-up" style="font-size: 24px;"></i>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Tabla de productos -->
-<div class="fb-card" style="padding: 0; overflow: hidden;">
-    <table class="fb-table">
-        <thead>
-            <tr>
-                <th>Producto</th>
-                <th>Unidades</th>
-                <th>Transacciones</th>
-                <th>Precio Venta Prom.</th>
-                <th>Precio Compra Prom.</th>
-                <th>Ingresos</th>
-                <th>Costos</th>
-                <th>Ganancia</th>
-                <th>Margen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products_stats %}
-            <tr>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-box" style="color: #1877f2;"></i>
+<!-- Tabla de productos mejorada -->
+<div class="fb-card" style="padding: 0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="background: linear-gradient(135deg, #f8f9fa, #f0f2f5); padding: 20px; border-bottom: 1px solid #e4e6eb;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #050505;">
+            <i class="fas fa-chart-pie" style="color: #4158D0;"></i>
+            Análisis por Producto
+            <span style="background: white; padding: 4px 12px; border-radius: 30px; font-size: 13px; margin-left: 10px;">
+                {{ products_stats|length }} productos
+            </span>
+        </h3>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="modern-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 18px; text-align: left; color: #606770; font-size: 13px;">Producto</th>
+                    <th style="padding: 18px; text-align: center; color: #606770; font-size: 13px;">Unidades</th>
+                    <th style="padding: 18px; text-align: center; color: #606770; font-size: 13px;">Transacciones</th>
+                    <th style="padding: 18px; text-align: right; color: #606770; font-size: 13px;">Precio Venta</th>
+                    <th style="padding: 18px; text-align: right; color: #606770; font-size: 13px;">Precio Compra</th>
+                    <th style="padding: 18px; text-align: right; color: #606770; font-size: 13px;">Ingresos</th>
+                    <th style="padding: 18px; text-align: right; color: #606770; font-size: 13px;">Costos</th>
+                    <th style="padding: 18px; text-align: right; color: #606770; font-size: 13px;">Ganancia</th>
+                    <th style="padding: 18px; text-align: center; color: #606770; font-size: 13px;">Margen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products_stats %}
+                <tr class="product-row" style="border-bottom: 1px solid #f0f2f5; transition: all 0.3s;">
+                    <td style="padding: 18px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: linear-gradient(135deg, #4158D020, #C850C020); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-box" style="color: #4158D0;"></i>
+                            </div>
+                            <div>
+                                <strong style="font-size: 15px;">{{ product.product__name }}</strong>
+                                {% if product.product__description %}
+                                <div style="font-size: 11px; color: #606770;">{{ product.product__description|truncatechars:30 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div>
-                            <strong>{{ product.product__name }}</strong>
-                            {% if product.product__description %}
-                            <div style="font-size: 11px; color: #606770;">{{ product.product__description|truncatechars:30 }}</div>
-                            {% endif %}
+                    </td>
+                    <td style="padding: 18px; text-align: center;">
+                        <span style="font-weight: 600;">{{ product.units_sold }}</span>
+                    </td>
+                    <td style="padding: 18px; text-align: center;">
+                        <span style="background: #e7f3ff; color: #4158D0; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            {{ product.transactions }}
+                        </span>
+                    </td>
+                    <td style="padding: 18px; text-align: right;">
+                        <strong>${{ product.avg_sale_price|floatformat:2 }}</strong>
+                    </td>
+                    <td style="padding: 18px; text-align: right;">
+                        <span style="color: #f7b928;">${{ product.avg_cost_price|floatformat:2 }}</span>
+                    </td>
+                    <td style="padding: 18px; text-align: right; color: #4158D0;">
+                        ${{ product.revenue|floatformat:2 }}
+                    </td>
+                    <td style="padding: 18px; text-align: right; color: #f7b928;">
+                        ${{ product.cost|floatformat:2 }}
+                    </td>
+                    <td style="padding: 18px; text-align: right; color: #42b72a; font-weight: 600;">
+                        ${{ product.profit|floatformat:2 }}
+                    </td>
+                    <td style="padding: 18px; text-align: center;">
+                        {% with product.margin|floatformat:1 as margin_value %}
+                        <div class="margin-badge" style="display: inline-block; padding: 4px 12px; border-radius: 30px; font-weight: 600; font-size: 12px;
+                            {% if margin_value|add:'0' >= 50 %}
+                                background: #42b72a20; color: #42b72a;
+                            {% elif margin_value|add:'0' >= 30 %}
+                                background: #f7b92820; color: #f7b928;
+                            {% else %}
+                                background: #fa383e20; color: #fa383e;
+                            {% endif %}">
+                            {{ margin_value }}%
                         </div>
-                    </div>
-                </td>
-                <td>{{ product.units_sold }}</td>
-                <td>{{ product.transactions }}</td>
-                <td>${{ product.avg_sale_price|floatformat:2 }}</td>
-                <td>${{ product.avg_cost_price|floatformat:2 }}</td>
-                <td>${{ product.revenue|floatformat:2 }}</td>
-                <td>${{ product.cost|floatformat:2 }}</td>
-                <td style="color: #42b72a; font-weight: 600;">${{ product.profit|floatformat:2 }}</td>
-                <td>
-                    <span style="background: #e7f3ff; padding: 4px 10px; border-radius: 12px;">
-                        {{ product.margin|floatformat:1 }}%
-                    </span>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="9" style="text-align: center; padding: 40px;">
-                    <i class="fas fa-chart-bar" style="font-size: 40px; color: #e4e6eb;"></i>
-                    <p style="margin-top: 10px; color: #606770;">No hay datos para el período seleccionado</p>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="padding: 60px; text-align: center;">
+                        <div style="background: linear-gradient(135deg, #f8f9fa, #f0f2f5); width: 100px; height: 100px; border-radius: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <i class="fas fa-chart-line" style="font-size: 50px; color: #606770;"></i>
+                        </div>
+                        <h3 style="color: #050505; margin-bottom: 10px;">No hay datos disponibles</h3>
+                        <p style="color: #606770; max-width: 400px; margin: 0 auto;">
+                            No se encontraron ventas para el período seleccionado. Prueba con otros filtros.
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<!-- Resumen adicional -->
+<div style="margin-top: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+    <div class="fb-card" style="border-radius: 16px; padding: 20px;">
+        <h4 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-chart-pie" style="color: #4158D0;"></i>
+            Distribución de Ventas
+        </h4>
+        <div style="height: 8px; background: #f0f2f5; border-radius: 4px; overflow: hidden;">
+            {% if totals.total_revenue %}
+            <div style="width: {% widthratio totals.total_profit totals.total_revenue 100 %}%; height: 100%; background: linear-gradient(90deg, #42b72a, #2d8a1f);"></div>
+            {% else %}
+            <div style="width: 0%; height: 100%;"></div>
+            {% endif %}
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span style="color: #606770;">Margen promedio</span>
+            <strong>
+                {% if totals.total_revenue %}
+                    {% widthratio totals.total_profit totals.total_revenue 100 %}%
+                {% else %}
+                    0%
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+
+    <div class="fb-card" style="border-radius: 16px; padding: 20px;">
+        <h4 style="margin: 0 0 15px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-trophy" style="color: #f7b928;"></i>
+            Producto Destacado
+        </h4>
+        {% with products_stats|first as top_product %}
+            {% if top_product %}
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: #f7b92820; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-crown" style="color: #f7b928;"></i>
+                </div>
+                <div>
+                    <strong>{{ top_product.product__name }}</strong>
+                    <div style="color: #42b72a;">${{ top_product.profit|floatformat:2 }} ganancia</div>
+                </div>
+            </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<style>
+    /* Estilos modernos */
+    .modern-select, .modern-input {
+        transition: all 0.3s ease;
+    }
+    
+    .modern-select:focus, .modern-input:focus {
+        border-color: #4158D0 !important;
+        box-shadow: 0 0 0 4px rgba(65, 88, 208, 0.1);
+        outline: none;
+    }
+    
+    .product-row:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    
+    .stat-card {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+    
+    .margin-badge {
+        transition: all 0.3s ease;
+    }
+    
+    .margin-badge:hover {
+        transform: scale(1.1);
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .product-row {
+        animation: fadeIn 0.5s ease;
+        animation-fill-mode: both;
+    }
+    
+    {% for product in products_stats %}
+    .product-row:nth-child({{ forloop.counter }}) {
+        animation-delay: {{ forloop.counter0|add:"0.05" }}s;
+    }
+    {% endfor %}
+</style>
+
+<!-- Font Awesome (si no está en base.html) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}

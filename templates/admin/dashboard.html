@@ -1,4 +1,5 @@
 {% extends 'admin/base.html' %}
+{% load static %}
 
 {% block content %}
 <!-- Header del Dashboard -->
@@ -7,134 +8,328 @@
         <div style="display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-chart-simple" style="font-size:28px;"></i>
+                    <i class="fa-solid fa-chart-simple" style="font-size:28px; color: #1877f2;"></i>
                     Dashboard Administrativo
                 </h2>
                 <p style="color: #606770; margin: 5px 0 0 0;">
-                    Bienvenido de nuevo, {{ request.user.get_full_name|default:request.user.username }}
+                    <i class="fa-solid fa-store"></i> 
+                    Sucursales: <strong>{{ total_branches|default:"0" }}</strong> activas
                 </p>
             </div>
-            <div style="background: #e7f3ff; padding: 8px 16px; border-radius: 20px; color: #1877f2; font-size: 14px;">
-                {{ current_date|date:"l, d F Y" }}
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: #e7f3ff; padding: 8px 16px; border-radius: 20px; color: #1877f2; font-size: 14px;">
+                    <i class="fa-regular fa-calendar"></i> {{ current_date|date:"l, d F Y" }}
+                </div>
+                <div style="background: #1877f2; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px;">
+                    <i class="fa-regular fa-clock"></i> {{ current_date|date:"H:i" }}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Cards de estadísticas -->
+<!-- Estadísticas de Ventas y Cortes -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+    <!-- Ventas del día (todas las sucursales) -->
+    <div class="stat-card" style="border-top-color: #1877f2;">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-chart-line" style="color: #1877f2;"></i> Ventas del Día</h4>
+            <span class="stat-icon"><i class="fa-solid fa-dollar-sign" style="color: #1877f2;"></i></span>
+        </div>
+        <div class="stat-number">${{ total_sales_today|floatformat:2|default:"0.00" }}</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span style="color: #606770; font-size: 13px;">
+                <i class="fa-regular fa-clock"></i> {{ sales_count_today|default:"0" }} ventas
+            </span>
+            <a href="{% url 'sales:admin_sales_list' %}" class="stat-link">
+                Ver todas <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Cortes Activos -->
+    <div class="stat-card" style="border-top-color: #42b72a;">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-cash-register" style="color: #42b72a;"></i> Cortes Activos</h4>
+            <span class="stat-icon"><i class="fa-solid fa-play" style="color: #42b72a;"></i></span>
+        </div>
+        <div class="stat-number">{{ active_cuts_count|default:"0" }}</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span style="color: #606770; font-size: 13px;">
+                <i class="fa-solid fa-store"></i> en {{ active_cuts_branches|default:"0" }} sucursales
+            </span>
+            <a href="{% url 'cashregister:admin_list' %}?estado=ABIERTO" class="stat-link">
+                Ver activos <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Total Ventas del Mes -->
+    <div class="stat-card" style="border-top-color: #f7b928;">
+        <div class="stat-header">
+            <h4><i class="fa-solid fa-calendar" style="color: #f7b928;"></i> Ventas del Mes</h4>
+            <span class="stat-icon"><i class="fa-solid fa-chart-simple" style="color: #f7b928;"></i></span>
+        </div>
+        <div class="stat-number">${{ monthly_sales|floatformat:2|default:"0.00" }}</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <span style="color: #606770; font-size: 13px;">
+                <i class="fa-regular fa-calendar"></i> {{ current_date|date:"F Y" }}
+            </span>
+            <a href="{% url 'earnings:profit_report' %}" class="stat-link">
+                Ver reporte <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de estadísticas generales -->
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-header">
             <h4><i class="fa-solid fa-box"></i> Productos</h4>
-            <span class="stat-icon"><i class="fa-solid fa-box"></i></span>
+            <span class="stat-icon"><i class="fa-solid fa-cube"></i></span>
         </div>
         <div class="stat-number">{{ total_products|default:"0" }}</div>
-        <a href="{% url 'product_list' %}" class="stat-link">
-            Ver todos los productos
-            <span>→</span>
-        </a>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #606770; font-size: 12px;">{{ products_with_price|default:"0" }} con precio</span>
+            <a href="{% url 'product_list' %}" class="stat-link">
+                Ver todos <span>→</span>
+            </a>
+        </div>
     </div>
 
     <div class="stat-card">
         <div class="stat-header">
-            <h4><i class="fa-solid fa-warehouse"></i> Inventario</h4>
+            <h4><i class="fa-solid fa-warehouse"></i> Inventario Total</h4>
             <span class="stat-icon"><i class="fa-solid fa-chart-simple"></i></span>
         </div>
-        <div class="stat-number">{{ total_inventory|default:"0" }}</div>
-        <a href="{% url 'inventory_list' %}" class="stat-link">
-            Ver inventario actual
-            <span>→</span>
-        </a>
+        <div class="stat-number">{{ total_inventory_items|default:"0" }}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #606770; font-size: 12px;">{{ low_stock_count|default:"0" }} con stock bajo</span>
+            <a href="{% url 'inventory_list' %}" class="stat-link">
+                Ver inventario <span>→</span>
+            </a>
+        </div>
     </div>
 
     <div class="stat-card">
         <div class="stat-header">
             <h4><i class="fa-solid fa-right-left"></i> Transferencias</h4>
-            <span class="stat-icon"><i class="fa-solid fa-right-left"></i></span>
+            <span class="stat-icon"><i class="fa-solid fa-arrows-spin"></i></span>
         </div>
         <div class="stat-number">{{ total_transfers|default:"0" }}</div>
-        <a href="{% url 'transfer_list' %}" class="stat-link">
-            Ver transferencias
-            <span>→</span>
-        </a>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #606770; font-size: 12px;">{{ pending_transfers|default:"0" }} pendientes</span>
+            <a href="{% url 'transfer_list' %}" class="stat-link">
+                Ver todas <span>→</span>
+            </a>
+        </div>
     </div>
 
     <div class="stat-card">
         <div class="stat-header">
             <h4><i class="fa-solid fa-drumstick-bite"></i> Dietas</h4>
-            <span class="stat-icon"><i class="fa-solid fa-clipboard"></i></span>
+            <span class="stat-icon"><i class="fa-solid fa-clipboard-list"></i></span>
         </div>
         <div class="stat-number">{{ total_diets|default:"0" }}</div>
-        <a href="{% url 'diets:diet_list' %}" class="stat-link">
-            Ver dietas activas
-            <span>→</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #606770; font-size: 12px;">{{ active_diets|default:"0" }} activas</span>
+            <a href="{% url 'diets:diet_list' %}" class="stat-link">
+                Ver dietas <span>→</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de Cortes de Caja -->
+<div class="fb-card" style="margin-top: 30px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3><i class="fa-solid fa-cash-register" style="color: #1877f2;"></i> Últimos Cortes de Caja</h3>
+        <a href="{% url 'cashregister:admin_list' %}" class="fb-btn fb-btn-primary" style="padding: 8px 16px;">
+            Ver todos los cortes <i class="fa-solid fa-arrow-right"></i>
         </a>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="fb-table" style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Sucursal</th>
+                    <th>Cajero</th>
+                    <th>Apertura</th>
+                    <th>Cierre</th>
+                    <th>Inicial</th>
+                    <th>Ventas</th>
+                    <th>Total</th>
+                    <th>Diferencia</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for corte in recent_cuts %}
+                <tr>
+                    <td><strong>#{{ corte.id }}</strong></td>
+                    <td>
+                        <span style="background: #e7f3ff; color: #1877f2; padding: 4px 8px; border-radius: 4px;">
+                            {{ corte.branch.name }}
+                        </span>
+                    </td>
+                    <td>{{ corte.cajero.get_full_name|default:corte.cajero.username }}</td>
+                    <td>{{ corte.fecha_apertura|date:"d/m H:i" }}</td>
+                    <td>
+                        {% if corte.fecha_cierre %}
+                            {{ corte.fecha_cierre|date:"d/m H:i" }}
+                        {% else %}
+                            <span style="color: #f7b928;">En curso</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ corte.monto_inicial|floatformat:2 }}</td>
+                    <td>
+                        <span style="background: #1877f2; color: white; padding: 2px 8px; border-radius: 12px;">
+                            {{ corte.ventas.count }}
+                        </span>
+                    </td>
+                    <td>${{ corte.monto_final_sistema|default:corte.total_ventas|floatformat:2 }}</td>
+                    <td style="color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
+                        ${{ corte.diferencia|floatformat:2 }}
+                    </td>
+                    <td>
+                        {% if corte.estado == 'ABIERTO' %}
+                        <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            <i class="fa-regular fa-clock"></i> Abierto
+                        </span>
+                        {% else %}
+                        <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                            <i class="fa-regular fa-circle-check"></i> Cerrado
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'cashregister:admin_detail' corte.id %}" class="fb-btn fb-btn-secondary" style="padding: 4px 8px;">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" style="text-align: center; padding: 30px;">
+                        <i class="fa-solid fa-cash-register" style="font-size: 40px; color: #e4e6eb;"></i>
+                        <p style="margin-top: 10px; color: #606770;">No hay cortes de caja registrados</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 <!-- Separador -->
-<hr>
+<hr style="margin: 30px 0;">
 
 <!-- Acciones rápidas -->
 <div class="quick-actions">
-    <h3><i class="fa-solid fa-bolt"></i> Acciones Rápidas</h3>
+    <h3><i class="fa-solid fa-bolt" style="color: #f7b928;"></i> Acciones Rápidas</h3>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
         <a href="{% url 'product_create' %}" class="fb-btn fb-btn-primary" style="justify-content: center; padding: 15px;">
             <i class="fa-solid fa-plus"></i>
-            Crear nuevo producto
+            Nuevo producto
         </a>
         
         <a href="{% url 'inventory_create' %}" class="fb-btn fb-btn-success" style="justify-content: center; padding: 15px;">
             <i class="fa-solid fa-box-arrow-down"></i>
-            Agregar a inventario
+            Agregar stock
         </a>
         
         <a href="{% url 'transfer_create' %}" class="fb-btn" style="justify-content: center; padding: 15px; background: #f5f6f7; color: #050505;">
             <i class="fa-solid fa-right-left"></i>
-            Nueva transferencia
+            Transferir
+        </a>
+        
+        <a href="{% url 'cashregister:admin_list' %}" class="fb-btn" style="justify-content: center; padding: 15px; background: #f5f6f7; color: #050505;">
+            <i class="fa-solid fa-cash-register"></i>
+            Ver cortes
+        </a>
+        
+        <a href="{% url 'earnings:profit_report' %}" class="fb-btn" style="justify-content: center; padding: 15px; background: #f5f6f7; color: #050505;">
+            <i class="fa-solid fa-chart-line"></i>
+            Reporte ventas
         </a>
     </div>
 </div>
 
-<!-- Información adicional -->
+<!-- Información adicional en dos columnas -->
 <div style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
     <!-- Últimos productos -->
     <div class="fb-card">
-        <div class="fb-card-header">
-            <h3><i class="fa-solid fa-circle-plus"></i> Últimos productos</h3>
+        <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3><i class="fa-solid fa-circle-plus" style="color: #1877f2;"></i> Últimos productos</h3>
+            <a href="{% url 'product_list' %}" style="color: #1877f2; font-size: 13px;">Ver todos →</a>
         </div>
         {% if latest_products %}
-            <ul style="list-style: none;">
+            <div style="max-height: 300px; overflow-y: auto;">
                 {% for product in latest_products %}
-                <li style="padding: 10px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between;">
-                    <span>{{ product.name }}</span>
-                    <span style="color: #606770;">${{ product.price }}</span>
-                </li>
+                <div style="padding: 12px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{{ product.name }}</strong>
+                        <div style="font-size: 11px; color: #606770;">{{ product.description|truncatechars:30 }}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        {% if product.price_kg %}
+                        <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; font-size: 11px;">
+                            Kg: ${{ product.price_kg }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
                 {% endfor %}
-            </ul>
+            </div>
         {% else %}
-            <p style="color: #606770;">No hay productos recientes</p>
+            <div style="text-align: center; padding: 30px; color: #606770;">
+                <i class="fa-solid fa-box-open" style="font-size: 40px; margin-bottom: 10px;"></i>
+                <p>No hay productos recientes</p>
+            </div>
         {% endif %}
     </div>
 
-    <!-- Stock bajo -->
+    <!-- Stock bajo por sucursal -->
     <div class="fb-card">
-        <div class="fb-card-header">
-            <h3><i class="fa-solid fa-triangle-exclamation"></i> Stock bajo</h3>
+        <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3><i class="fa-solid fa-triangle-exclamation" style="color: #fa383e;"></i> Stock bajo por sucursal</h3>
+            <a href="{% url 'inventory_list' %}" style="color: #1877f2; font-size: 13px;">Ver todo →</a>
         </div>
-        {% if low_stock %}
-            <ul style="list-style: none;">
-                {% for item in low_stock %}
-                <li style="padding: 10px; border-bottom: 1px solid #e4e6eb; display: flex; justify-content: space-between;">
-                    <span>{{ item.product.name }}</span>
-                    <span style="color: #fa383e;">{{ item.quantity }} unidades</span>
-                </li>
+        {% if low_stock_by_branch %}
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for branch, items in low_stock_by_branch.items %}
+                <div style="margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #050505;">
+                        <i class="fa-solid fa-store"></i> {{ branch }}
+                    </h4>
+                    {% for item in items %}
+                    <div style="padding: 8px 12px; background: #fff4e5; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                        <span>{{ item.product.name }}</span>
+                        <span style="color: #fa383e; font-weight: 600;">{{ item.stock }} uds</span>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% endfor %}
-            </ul>
+            </div>
         {% else %}
-            <p style="color: #606770;">Todo en orden, sin stock bajo</p>
+            <div style="text-align: center; padding: 30px; color: #606770;">
+                <i class="fa-solid fa-circle-check" style="font-size: 40px; color: #42b72a; margin-bottom: 10px;"></i>
+                <p>Todo en orden, sin stock bajo</p>
+            </div>
         {% endif %}
     </div>
 </div>
+
+<!-- Script para actualizar datos en tiempo real (opcional) -->
+<script>
+// Actualizar cada 5 minutos
+setTimeout(function() {
+    location.reload();
+}, 300000); // 5 minutos
+</script>
 {% endblock %}
