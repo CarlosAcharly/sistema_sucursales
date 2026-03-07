@@ -1,25 +1,58 @@
-# Entorno virtual
+# =========================
+# ENTORNOS VIRTUALES
+# =========================
 venv/
 env/
+.venv/
 
-# Python
+# =========================
+# PYTHON
+# =========================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+.Python
 
-# Base de datos
+# =========================
+# DJANGO
+# =========================
 db.sqlite3
+staticfiles/
+media/
 
-# Archivos de entorno
+# =========================
+# MIGRACIONES COMPILADAS
+# =========================
+**/migrations/__pycache__/
+
+# =========================
+# ARCHIVOS DE ENTORNO
+# =========================
 .env
+.env.*
 
-# VS Code
+# =========================
+# BUILD / DISTRIBUCIÓN
+# =========================
+build/
+dist/
+*.egg-info/
+
+# =========================
+# LOGS
+# =========================
+*.log
+
+# =========================
+# EDITORES
+# =========================
 .vscode/
+.idea/
 
-# Sistema
+# =========================
+# SISTEMA
+# =========================
 .DS_Store
 Thumbs.db
-
-# Archivos de logs
-*.log
