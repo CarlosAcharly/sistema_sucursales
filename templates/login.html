@@ -24,6 +24,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             overflow: hidden;
+            padding: 20px;
         }
 
         /* Elementos decorativos de fondo */
@@ -58,15 +59,29 @@
             50% { transform: translateY(-30px) rotate(10deg); }
         }
 
+        /* Contenedor principal - MODIFICADO: scroll sin barra visible */
         .container {
             width: 100%;
             max-width: 450px;
-            padding: 20px;
             position: relative;
             z-index: 10;
+            max-height: 95vh;
+            overflow-y: auto; /* Scroll funcional */
+            padding: 10px;
+            
+            /* Ocultar la barra de scroll en diferentes navegadores */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE y Edge */
         }
 
-        /* Tarjeta Glassmorphism */
+        /* Ocultar scroll en Chrome, Safari y Opera */
+        .container::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            background: transparent;
+        }
+
+        /* Tarjeta Glassmorphism - SIN CAMBIOS */
         .glass-card {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
@@ -91,7 +106,7 @@
             }
         }
 
-        /* Logo o ícono */
+        /* Logo o ícono - SIN CAMBIOS */
         .login-icon {
             text-align: center;
             margin-bottom: 30px;
@@ -130,7 +145,7 @@
             margin-top: 5px;
         }
 
-        /* Estilos del formulario */
+        /* Estilos del formulario - SIN CAMBIOS */
         .form-group {
             margin-bottom: 25px;
         }
@@ -159,7 +174,7 @@
         .input-icon {
             position: absolute;
             left: 15px;
-            color: #667eea; /* Color más visible */
+            color: #667eea;
             font-size: 18px;
             z-index: 1;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -168,10 +183,10 @@
         .glass-input {
             width: 100%;
             padding: 14px 20px 14px 50px;
-            background: rgba(255, 255, 255, 0.95); /* Fondo más claro */
+            background: rgba(255, 255, 255, 0.95);
             border: 2px solid rgba(255, 255, 255, 0.5);
             border-radius: 12px;
-            color: #333; /* Texto más oscuro */
+            color: #333;
             font-size: 15px;
             transition: all 0.3s ease;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -195,7 +210,7 @@
             border-color: rgba(255, 255, 255, 0.8);
         }
 
-        /* Ojo para ver contraseña */
+        /* Ojo para ver contraseña - SIN CAMBIOS */
         .password-toggle {
             position: absolute;
             right: 15px;
@@ -222,7 +237,7 @@
             background: white;
         }
 
-        /* Opciones adicionales */
+        /* Opciones adicionales - SIN CAMBIOS */
         .form-options {
             display: flex;
             justify-content: space-between;
@@ -276,7 +291,7 @@
             color: white;
         }
 
-        /* Botón glass */
+        /* Botón glass - SIN CAMBIOS */
         .glass-button {
             width: 100%;
             padding: 14px;
@@ -312,7 +327,7 @@
             transform: translateY(0);
         }
 
-        /* Mensajes de error */
+        /* Mensajes de error - SIN CAMBIOS */
         .error-message {
             background: rgba(255, 75, 75, 0.2);
             backdrop-filter: blur(5px);
@@ -339,7 +354,7 @@
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        /* Footer */
+        /* Footer - SIN CAMBIOS */
         .login-footer {
             text-align: center;
             margin-top: 25px;
@@ -369,7 +384,7 @@
             margin-right: 3px;
         }
 
-        /* Responsive */
+        /* Responsive - SIN CAMBIOS */
         @media (max-width: 480px) {
             .glass-card {
                 padding: 30px 20px;
@@ -383,6 +398,13 @@
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
+            }
+        }
+
+        /* Ajuste para pantallas muy pequeñas */
+        @media (max-height: 700px) {
+            .container {
+                max-height: 98vh;
             }
         }
     </style>

@@ -23,17 +23,18 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden;
+            padding: 20px; /* Padding para que no toque los bordes */
         }
 
-        /* Elementos decorativos de fondo */
+        /* Elementos decorativos de fondo (más pequeños) */
         .bg-decoration {
-            position: absolute;
+            position: fixed;
             width: 100%;
             height: 100%;
             top: 0;
             left: 0;
             z-index: 0;
+            overflow: hidden;
         }
 
         .bg-circle {
@@ -44,51 +45,71 @@
         }
 
         .circle1 {
-            width: 300px;
-            height: 300px;
-            top: -100px;
-            right: -100px;
+            width: 200px;
+            height: 200px;
+            top: -50px;
+            right: -50px;
         }
 
         .circle2 {
-            width: 400px;
-            height: 400px;
-            bottom: -150px;
-            left: -150px;
+            width: 300px;
+            height: 300px;
+            bottom: -100px;
+            left: -100px;
             animation-delay: -5s;
         }
 
         .circle3 {
-            width: 200px;
-            height: 200px;
-            bottom: 50px;
-            right: 200px;
+            width: 150px;
+            height: 150px;
+            bottom: 20px;
+            right: 100px;
             animation-delay: -10s;
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-30px) rotate(10deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
         }
 
-        /* Contenedor principal */
+        /* Contenedor principal - AHORA CON SCROLL */
         .landing-container {
             position: relative;
             z-index: 1;
-            width: 90%;
-            max-width: 1200px;
+            width: 100%;
+            max-width: 1100px;
+            max-height: 90vh; /* Altura máxima del 90% de la pantalla */
+            overflow-y: auto; /* Scroll vertical cuando sea necesario */
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 40px;
-            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            animation: fadeInUp 1s ease;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        /* Scroll personalizado */
+        .landing-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .landing-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .landing-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .landing-container::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
         }
 
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(50px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -96,16 +117,15 @@
             }
         }
 
-        /* Grid de contenido */
+        /* Grid de contenido - MÁS COMPACTO */
         .content-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            min-height: 600px;
         }
 
-        /* Lado izquierdo - Información */
+        /* Lado izquierdo - Información (MÁS COMPACTO) */
         .info-side {
-            padding: 60px;
+            padding: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             display: flex;
@@ -114,49 +134,49 @@
         }
 
         .logo-area {
-            margin-bottom: 40px;
+            margin-bottom: 25px;
         }
 
         .logo-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
+            font-size: 48px;
+            margin-bottom: 10px;
         }
 
         .sabix-title {
-            font-size: 48px;
+            font-size: 42px;
             font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-            line-height: 1.2;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            line-height: 1.1;
         }
 
         .sabix-subtitle {
-            font-size: 18px;
+            font-size: 16px;
             opacity: 0.9;
             font-weight: 300;
         }
 
         .features {
-            margin-top: 40px;
+            margin-top: 25px;
         }
 
         .feature-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 12px;
+            margin-bottom: 18px;
             animation: slideIn 0.5s ease;
             animation-fill-mode: both;
         }
 
         .feature-item:nth-child(1) { animation-delay: 0.2s; }
-        .feature-item:nth-child(2) { animation-delay: 0.4s; }
-        .feature-item:nth-child(3) { animation-delay: 0.6s; }
+        .feature-item:nth-child(2) { animation-delay: 0.3s; }
+        .feature-item:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateX(-30px);
+                transform: translateX(-20px);
             }
             to {
                 opacity: 1;
@@ -165,29 +185,30 @@
         }
 
         .feature-icon {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
+            flex-shrink: 0;
         }
 
         .feature-text h3 {
-            font-size: 18px;
-            margin-bottom: 5px;
+            font-size: 16px;
+            margin-bottom: 3px;
         }
 
         .feature-text p {
             opacity: 0.8;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* Lado derecho - Acceso */
+        /* Lado derecho - Acceso (MÁS COMPACTO) */
         .access-side {
-            padding: 60px;
+            padding: 40px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -195,50 +216,50 @@
         }
 
         .welcome-message {
-            margin-bottom: 40px;
+            margin-bottom: 25px;
         }
 
         .welcome-message h2 {
             color: #050505;
-            font-size: 32px;
-            margin-bottom: 15px;
+            font-size: 28px;
+            margin-bottom: 10px;
         }
 
         .welcome-message p {
             color: #606770;
-            font-size: 16px;
-            line-height: 1.6;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 12px;
+            margin-bottom: 25px;
         }
 
         .stat-item {
             text-align: center;
-            padding: 20px;
+            padding: 15px 10px;
             background: #f5f6f7;
-            border-radius: 16px;
+            border-radius: 12px;
             transition: transform 0.3s;
         }
 
         .stat-item:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
         }
 
         .stat-number {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
             color: #667eea;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .stat-label {
             color: #606770;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 500;
         }
 
@@ -246,28 +267,28 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             text-decoration: none;
-            padding: 20px 40px;
-            border-radius: 50px;
-            font-size: 18px;
+            padding: 16px 30px;
+            border-radius: 40px;
+            font-size: 16px;
             font-weight: 600;
             transition: all 0.3s;
             border: none;
             cursor: pointer;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
             width: 100%;
         }
 
         .access-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
         }
 
         .access-button i {
-            font-size: 20px;
+            font-size: 18px;
             transition: transform 0.3s;
         }
 
@@ -276,44 +297,21 @@
         }
 
         .footer-note {
-            margin-top: 30px;
+            margin-top: 20px;
             text-align: center;
             color: #606770;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .footer-note i {
             color: #fa383e;
+            font-size: 10px;
         }
 
-        /* Responsive */
-        @media (max-width: 968px) {
+        /* Responsive mejorado */
+        @media (max-width: 900px) {
             .content-grid {
                 grid-template-columns: 1fr;
-            }
-            
-            .info-side {
-                padding: 40px;
-                text-align: center;
-            }
-            
-            .feature-item {
-                justify-content: center;
-            }
-            
-            .sabix-title {
-                font-size: 36px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .landing-container {
-                width: 95%;
-                border-radius: 20px;
             }
             
             .info-side, .access-side {
@@ -321,7 +319,82 @@
             }
             
             .sabix-title {
+                font-size: 36px;
+            }
+            
+            .landing-container {
+                max-height: 95vh;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .landing-container {
+                border-radius: 20px;
+            }
+            
+            .info-side, .access-side {
+                padding: 25px;
+            }
+            
+            .sabix-title {
+                font-size: 32px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .stat-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 15px;
+            }
+            
+            .stat-number {
+                margin-bottom: 0;
+                font-size: 20px;
+            }
+            
+            .feature-item {
+                margin-bottom: 15px;
+            }
+        }
+
+        /* Para pantallas muy pequeñas */
+        @media (max-width: 380px) {
+            .info-side, .access-side {
+                padding: 20px;
+            }
+            
+            .sabix-title {
                 font-size: 28px;
+            }
+            
+            .feature-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .feature-text h3 {
+                font-size: 15px;
+            }
+            
+            .feature-text p {
+                font-size: 12px;
+            }
+        }
+
+        /* Para pantallas muy altas, centrar verticalmente */
+        @media (min-height: 800px) {
+            .landing-container {
+                max-height: 700px;
             }
         }
     </style>
@@ -334,7 +407,7 @@
         <div class="bg-circle circle3"></div>
     </div>
 
-    <!-- Contenedor principal -->
+    <!-- Contenedor principal - AHORA CON SCROLL -->
     <div class="landing-container">
         <div class="content-grid">
             <!-- Lado izquierdo - Información del sistema -->
@@ -383,11 +456,11 @@
             <!-- Lado derecho - Acceso al sistema -->
             <div class="access-side">
                 <div class="welcome-message">
-                    <h2>¡Bienvenido a SABIX!</h2>
-                    <p>El sistema integral para la gestión de tus agrosucursales. Controla ventas, inventario, transferencias y más desde un solo lugar.</p>
+                    <h2>¡Bienvenido!</h2>
+                    <p>Sistema integral para la gestión de agrosucursales. Controla ventas, inventario, transferencias y más.</p>
                 </div>
 
-                <!-- Estadísticas rápidas (opcional, puedes quitarlas si prefieres) -->
+                <!-- Estadísticas rápidas -->
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div class="stat-number">100+</div>
@@ -410,11 +483,7 @@
                 </a>
 
                 <div class="footer-note">
-                    <i class="fas fa-heart"></i> SABIX - Simplificando tu negocio agrícola y ganadero
-                    <br>
-                    <i class="fas fa-heart"></i> SABIX - Correo: <a href="mailto:ch3179694@gmail.com"
-                     style="color: #5538fa; text-decoration: none;">ch3179694@gmail.com</a>
-
+                    <i class="fas fa-heart"></i> SABIX - Simplificando tu negocio agrícola
                 </div>
             </div>
         </div>

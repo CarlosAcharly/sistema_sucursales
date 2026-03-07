@@ -255,7 +255,7 @@
     </div>
 </div>
 
-<!-- MODAL DE CONFIRMACIÓN DE VENTA (AJUSTADO) -->
+<!-- MODAL DE CONFIRMACIÓN DE VENTA -->
 <div id="confirmarVentaModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 550px;">
         <div class="modal-header">
@@ -264,7 +264,6 @@
         </div>
         
         <div class="modal-body">
-            <!-- Todo el contenido existente se mantiene igual -->
             <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                 <h4 style="margin: 0 0 15px 0; color: #050505;">Resumen de la Venta</h4>
                 
@@ -347,9 +346,9 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 10px; justify-content: flex-end; position: sticky; bottom: 0; background: white; padding-top: 10px;">
-                <button onclick="cerrarModalConfirmacion()" class="fb-btn fb-btn-secondary" style="padding: 12px 20px;">Cancelar</button>
-                <button onclick="procesarVenta()" class="fb-btn fb-btn-success" id="btn-procesar-venta" style="padding: 12px 20px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="cerrarModalConfirmacion()" class="fb-btn fb-btn-secondary">Cancelar</button>
+                <button onclick="procesarVenta()" class="fb-btn fb-btn-success" id="btn-procesar-venta">
                     <i class="fas fa-check-circle"></i> Confirmar Venta
                 </button>
             </div>
@@ -357,7 +356,7 @@
     </div>
 </div>
 
-<!-- MODAL DE VENTA EXITOSA (ACTUALIZADO CON CAMBIO) -->
+<!-- MODAL DE VENTA EXITOSA -->
 <div id="ventaExitosaModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 450px;">
         <div class="modal-header" style="background: #42b72a; color: white;">
@@ -400,7 +399,7 @@
     </div>
 </div>
 
-<!-- MODAL DE LIMPIAR TICKET (AJUSTADO) -->
+<!-- MODAL DE LIMPIAR TICKET -->
 <div id="limpiarTicketModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 380px;">
         <div class="modal-header" style="background: #fa383e; color: white;">
@@ -416,64 +415,64 @@
             <p style="color: #606770; margin-bottom: 25px;">Esta acción no se puede deshacer.</p>
             
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="cerrarModalLimpiar()" class="fb-btn fb-btn-secondary" style="padding: 12px 25px; flex: 1;">
-                    Cancelar
-                </button>
-                <button onclick="confirmarLimpiarTicket()" class="fb-btn" style="background: #fa383e; color: white; padding: 12px 25px; border: none; flex: 1;">
+                <button onclick="cerrarModalLimpiar()" class="fb-btn fb-btn-secondary" style="padding: 12px 25px;">Cancelar</button>
+                <button onclick="confirmarLimpiarTicket()" class="fb-btn" style="background: #fa383e; color: white; padding: 12px 25px; border: none;">
                     <i class="fas fa-trash"></i> Limpiar
                 </button>
             </div>
         </div>
     </div>
 </div>
-<!-- Ticket oculto para impresión (ACTUALIZADO CON CAMBIO) -->
+
+<!-- Ticket oculto para impresión - SIN MÁRGENES SUPERIORES -->
 <div id="ticket-print" style="display: none;">
-    <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 5px; margin: 0 auto; background: white; font-size: 10px;">
-        <div style="text-align: center; margin-bottom: 5px;">
-            <h3 style="margin: 0; font-size: 14px;">{{ request.user.branch.name }}</h3>
-            <p style="margin: 2px 0;" id="print-direccion"></p>
-            <p style="margin: 2px 0;" id="print-telefono"></p>
-            <p style="margin: 3px 0;">{{ now|date:"d/m/Y H:i" }}</p>
-            <p style="margin: 2px 0;">Ticket #<span id="print-ticket-number"></span></p>
-            <p style="margin: 2px 0;">Atendió: {{ request.user.get_full_name|default:request.user.username }}</p>
+    <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 0; margin: 0; background: white; font-size: 10px; line-height: 1.2;">
+        <!-- ELIMINADO cualquier margen superior -->
+        <div style="text-align: center; margin: 0; padding: 0;">
+            <h3 style="margin: 0; padding: 0; font-size: 14px; font-weight: bold;">{{ request.user.branch.name }}</h3>
+            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-direccion"></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-telefono"></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-fecha-hora"></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;">Ticket #<span id="print-ticket-number"></span></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;">Atendió: <span id="print-atendio">{{ request.user.get_full_name|default:request.user.username }}</span></p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
         
         <!-- Datos del cliente si existen -->
-        <div id="print-cliente" style="margin: 5px 0;">
-            <p style="margin: 2px 0;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
-            <p style="margin: 2px 0;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
-            <p style="margin: 2px 0;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
+        <div id="print-cliente" style="margin: 0; padding: 0;">
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
         
         <!-- Tabla de productos compacta -->
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
             <thead>
                 <tr>
-                    <th style="text-align: left;">Producto</th>
-                    <th style="text-align: center;">Cant</th>
-                    <th style="text-align: right;">Total</th>
+                    <th style="text-align: left; padding: 1px 0; margin: 0; font-weight: bold;">Producto</th>
+                    <th style="text-align: center; padding: 1px 0; margin: 0; font-weight: bold;">Cant</th>
+                    <th style="text-align: right; padding: 1px 0; margin: 0; font-weight: bold;">Total</th>
                 </tr>
             </thead>
-            <tbody id="print-items">
+            <tbody id="print-items" style="margin: 0; padding: 0;">
                 <!-- Items se insertan aquí -->
             </tbody>
         </table>
         
-        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
         
-        <div style="text-align: right;">
-            <p style="margin: 2px 0;">Total: $<span id="print-total"></span></p>
-            <p style="margin: 2px 0;">Recibido: $<span id="print-recibido"></span></p>
-            <p style="margin: 2px 0;">Cambio: $<span id="print-cambio"></span></p>
+        <div style="text-align: right; margin: 0; padding: 0;">
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Total:</strong> $<span id="print-total"></span></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Recibido:</strong> $<span id="print-recibido"></span></p>
+            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Cambio:</strong> $<span id="print-cambio"></span></p>
         </div>
         
-        <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
         
-        <p style="text-align: center; margin: 5px 0;">¡Gracias por su compra!</p>
+        <p style="text-align: center; margin: 0; padding: 2px 0 0 0; font-size: 10px; font-weight: bold;">¡Gracias por su compra!</p>
     </div>
 </div>
 
@@ -882,7 +881,7 @@ function removeFromCart(id) {
     renderTicket();
 }
 
-// 🔴 NUEVO: Funciones para el modal de limpiar
+// Funciones para el modal de limpiar
 function abrirModalLimpiar() {
     if (Object.keys(cart).length === 0) {
         showNotification('No hay productos en el ticket', 'error');
@@ -909,7 +908,7 @@ function confirmarLimpiarTicket() {
     showNotification('🧹 Ticket limpiado', 'success');
 }
 
-// 🔴 NUEVO: Funciones para el cálculo de cambio
+// Funciones para el cálculo de cambio
 function setMontoSugerido(monto) {
     document.getElementById('monto-recibido').value = monto;
     calcularCambio();
@@ -1022,15 +1021,11 @@ function procesarVenta() {
             document.getElementById('ticket-number').textContent = ventaActualId;
             const totalVenta = document.getElementById('total').innerText;
             
-            // Guardar datos para el modal de éxito
-            const totalNumerico = parseFloat(totalVenta);
-            
             cart = {};
             renderTicket();
             
             cerrarModalConfirmacion();
             
-            // Actualizar modal de éxito
             document.getElementById('exito-venta-id').textContent = ventaActualId;
             document.getElementById('exito-total').textContent = '$' + totalVenta;
             document.getElementById('exito-recibido').textContent = '$' + montoRecibidoGlobal.toFixed(2);
@@ -1065,7 +1060,6 @@ function finalizarVenta() {
     cart = {};
     renderTicket();
     
-    // GENERAR NUEVO NÚMERO ALEATORIO PARA LA SIGUIENTE VENTA
     currentTicketNumber = Math.floor(Math.random() * 10000);
     document.getElementById('ticket-number').textContent = currentTicketNumber;
     
@@ -1102,7 +1096,17 @@ function imprimirTicketVenta() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Agregar datos de pago al ticket
+    // 🔴 OBTENER FECHA Y HORA ACTUAL
+    const now = new Date();
+    const fechaHora = now.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).replace(',', '');
+    document.getElementById('print-fecha-hora').textContent = fechaHora;
+    
     const total = document.getElementById('exito-total').textContent;
     const recibido = document.getElementById('exito-recibido').textContent;
     const cambio = document.getElementById('exito-cambio').textContent;
@@ -1111,61 +1115,137 @@ function imprimirTicketVenta() {
     document.getElementById('print-recibido').textContent = recibido.replace('$', '');
     document.getElementById('print-cambio').textContent = cambio.replace('$', '');
     
-    let itemsHtml = '';
-    // Si hay items en el carrito (por si acaso), mostrarlos
-    if (Object.keys(cart).length > 0) {
-        for (let id in cart) {
-            let item = cart[id];
-            let rowTotal = item.price * item.quantity;
+    fetch(`/sales/api/${ventaActualId}/`)
+        .then(response => response.json())
+        .then(data => {
+            let itemsHtml = '';
             
-            itemsHtml += `
-                <tr>
-                    <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
-                    <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
-                    <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
-                </tr>
-            `;
-        }
-    } else {
-        // Si no hay items, mostrar mensaje genérico
-        itemsHtml = `
-            <tr>
-                <td colspan="3" style="text-align: center; padding: 10px;">Venta #${ventaActualId}</td>
-            </tr>
-        `;
-    }
-    
-    document.getElementById('print-items').innerHTML = itemsHtml;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Ticket de Venta #${ventaActualId}</title>
-                <style>
-                    body { font-family: 'Courier New', monospace; width: 58mm; margin: 0 auto; font-size: 10px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { padding: 2px 0; }
-                    @media print {
-                        body { width: 58mm; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${document.getElementById('ticket-print').innerHTML}
-            </body>
-        </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.focus();
-    
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 500);
-}
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    itemsHtml += `
+                        <tr>
+                            <td style="text-align: left; font-weight: bold;">${item.product_name.substring(0, 18)}${item.product_name.length > 18 ? '…' : ''}</td>
+                            <td style="text-align: center; font-weight: bold;">${item.quantity} ${item.price_type_display}</td>
+                            <td style="text-align: right; font-weight: bold;">$${item.subtotal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('print-items').innerHTML = itemsHtml;
+            
+            // Guardar el contenido original de la página
+            const originalContent = document.body.innerHTML;
+            
+            // Obtener solo el contenido del ticket con estilos
+            // En imprimirTicketVenta() e imprimirTicket(), reemplaza el estilo con esto:
 
+const ticketHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Ticket de Venta #${ventaActualId || currentTicketNumber}</title>
+        <style>
+            * { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-sizing: border-box; 
+            }
+            html, body { 
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto;
+                min-height: 0;
+            }
+            body { 
+                font-family: 'Courier New', monospace; 
+                width: 58mm;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                font-size: 10px;
+                font-weight: bold;
+                line-height: 1.2;
+                background: white;
+                position: relative;
+                top: 0;
+                left: 0;
+            }
+            table { 
+                width:100%; 
+                border-collapse:collapse; 
+                margin: 0;
+                padding: 0;
+            }
+            th, td { 
+                padding: 1px 0; 
+                text-align:left; 
+                font-weight:bold; 
+                font-size:10px; 
+                margin: 0;
+            }
+            th { 
+                border-bottom:1px dashed #000; 
+            }
+            hr { 
+                border:none; 
+                border-top:1px dashed #000; 
+                margin: 2px 0; 
+                padding: 0;
+            }
+            p, div, h3 {
+                margin: 0;
+                padding: 0;
+            }
+            .centered { 
+                text-align:center; 
+            }
+            .right { 
+                text-align:right; 
+            }
+            @media print {
+                html, body { 
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 58mm;
+                }
+                body { 
+                    width: 58mm;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+            }
+        </style>
+    </head>
+    <body style="margin:0;padding:0;">
+        ${document.getElementById('ticket-print').innerHTML}
+    </body>
+    </html>
+`;
+            
+            // Reemplazar el contenido de la página con el ticket
+            document.body.innerHTML = ticketHTML;
+            
+            // Imprimir
+            window.print();
+            
+            // Restaurar el contenido original después de imprimir
+            window.onafterprint = function() {
+                document.body.innerHTML = originalContent;
+                location.reload(); // Recargar para restaurar todas las funcionalidades
+            };
+            
+            // Fallback para navegadores que no soportan onafterprint
+            setTimeout(() => {
+                document.body.innerHTML = originalContent;
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error('Error al cargar los items de la venta:', error);
+            showNotification('Error al generar el ticket', 'error');
+        });
+}
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -1182,6 +1262,7 @@ function showNotification(message, type) {
         display: flex;
         align-items: center;
         gap: 10px;
+        font-weight: bold;
     `;
     notification.innerHTML = `
         <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
@@ -1217,7 +1298,17 @@ function imprimirTicket() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // Limpiar datos de pago (aún no hay venta)
+    // 🔴 OBTENER FECHA Y HORA ACTUAL
+    const now = new Date();
+    const fechaHora = now.toLocaleDateString('es-MX', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).replace(',', '');
+    document.getElementById('print-fecha-hora').textContent = fechaHora;
+    
     document.getElementById('print-recibido').textContent = '0.00';
     document.getElementById('print-cambio').textContent = '0.00';
     
@@ -1231,9 +1322,9 @@ function imprimirTicket() {
         
         itemsHtml += `
             <tr>
-                <td style="text-align: left;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
-                <td style="text-align: center;">${item.quantity} ${item.priceTypeName}</td>
-                <td style="text-align: right;">$${rowTotal.toFixed(2)}</td>
+                <td style="text-align: left; font-weight: bold;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
+                <td style="text-align: center; font-weight: bold;">${item.quantity} ${item.priceTypeName}</td>
+                <td style="text-align: right; font-weight: bold;">$${rowTotal.toFixed(2)}</td>
             </tr>
         `;
     }
@@ -1241,36 +1332,115 @@ function imprimirTicket() {
     document.getElementById('print-items').innerHTML = itemsHtml;
     document.getElementById('print-total').textContent = total.toFixed(2);
     
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Ticket de Venta #${currentTicketNumber}</title>
-                <style>
-                    body { font-family: 'Courier New', monospace; width: 58mm; margin: 0 auto; font-size: 10px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { padding: 2px 0; }
-                    @media print {
-                        body { width: 58mm; }
-                    }
-                </style>
-            </head>
-            <body>
-                ${document.getElementById('ticket-print').innerHTML}
-            </body>
-        </html>
-    `);
+    // Guardar contenido original
+    const originalContent = document.body.innerHTML;
     
-    printWindow.document.close();
-    printWindow.focus();
+    // Crear HTML del ticket
+    // En imprimirTicketVenta() e imprimirTicket(), reemplaza el estilo con esto:
+
+const ticketHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Ticket de Venta #${ventaActualId || currentTicketNumber}</title>
+        <style>
+            * { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-sizing: border-box; 
+            }
+            html, body { 
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto;
+                min-height: 0;
+            }
+            body { 
+                font-family: 'Courier New', monospace; 
+                width: 58mm;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                font-size: 10px;
+                font-weight: bold;
+                line-height: 1.2;
+                background: white;
+                position: relative;
+                top: 0;
+                left: 0;
+            }
+            table { 
+                width:100%; 
+                border-collapse:collapse; 
+                margin: 0;
+                padding: 0;
+            }
+            th, td { 
+                padding: 1px 0; 
+                text-align:left; 
+                font-weight:bold; 
+                font-size:10px; 
+                margin: 0;
+            }
+            th { 
+                border-bottom:1px dashed #000; 
+            }
+            hr { 
+                border:none; 
+                border-top:1px dashed #000; 
+                margin: 2px 0; 
+                padding: 0;
+            }
+            p, div, h3 {
+                margin: 0;
+                padding: 0;
+            }
+            .centered { 
+                text-align:center; 
+            }
+            .right { 
+                text-align:right; 
+            }
+            @media print {
+                html, body { 
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 58mm;
+                }
+                body { 
+                    width: 58mm;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+            }
+        </style>
+    </head>
+    <body style="margin:0;padding:0;">
+        ${document.getElementById('ticket-print').innerHTML}
+    </body>
+    </html>
+`;
     
+    // Reemplazar contenido
+    document.body.innerHTML = ticketHTML;
+    
+    // Imprimir
+    window.print();
+    
+    // Restaurar después de imprimir
+    window.onafterprint = function() {
+        document.body.innerHTML = originalContent;
+        location.reload(); // Recargar para restaurar funcionalidades
+    };
+    
+    // Fallback
     setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 500);
+        document.body.innerHTML = originalContent;
+        location.reload();
+    }, 1000);
 }
 
-// Estilos adicionales para el scroll
+// Estilos adicionales
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
@@ -1306,153 +1476,75 @@ style.textContent = `
         margin: 0;
     }
     
-    .quantity-input:focus {
-        outline: none;
-        border-color: #1877f2 !important;
-        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        animation: fadeIn 0.2s ease;
+        overflow-y: auto;
     }
     
-    .fb-btn-secondary {
-        min-width: 30px;
-        height: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    /* Modal - CORREGIDO para mejor visualización */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    animation: fadeIn 0.2s ease;
-    overflow-y: auto; /* Permite scroll en el fondo si es necesario */
-}
-
-.modal-content {
-    background: white;
-    margin: 20px auto; /* Margen superior e inferior para centrar con espacio */
-    padding: 0;
-    width: 90%;
-    max-width: 500px;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    animation: slideDown 0.3s ease;
-    position: relative;
-    max-height: 90vh; /* Altura máxima del 90% de la pantalla */
-    display: flex;
-    flex-direction: column;
-}
-
-.modal-header {
-    padding: 20px;
-    border-bottom: 1px solid #e4e6eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0; /* No se encoge */
-    border-radius: 16px 16px 0 0;
-}
-
-.modal-header h3 {
-    margin: 0;
-    color: #050505;
-    font-size: 20px;
-}
-
-.modal-body {
-    padding: 20px;
-    overflow-y: auto; /* Scroll interno si el contenido es muy largo */
-    flex: 1; /* Ocupa el espacio disponible */
-    max-height: calc(90vh - 80px); /* Altura máxima menos el header */
-}
-
-.close {
-    color: #606770;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.2s;
-    line-height: 1;
-}
-
-.close:hover {
-    color: #050505;
-}
-
-/* Animaciones mejoradas */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
     .modal-content {
-        margin: 10px auto;
-        max-height: 95vh;
-        width: 95%;
-    }
-    
-    .modal-body {
-        padding: 15px;
+        background: white;
+        margin: 20px auto;
+        padding: 0;
+        width: 90%;
+        max-width: 500px;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: slideDown 0.3s ease;
+        position: relative;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
     }
     
     .modal-header {
-        padding: 15px;
+        padding: 20px;
+        border-bottom: 1px solid #e4e6eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+        border-radius: 16px 16px 0 0;
     }
     
-    .modal-header h3 {
-        font-size: 18px;
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: calc(90vh - 80px);
     }
-}
-
-/* Ajustes específicos para el modal de confirmación (que tiene más contenido) */
-#confirmarVentaModal .modal-content {
-    max-width: 550px; /* Un poco más ancho para el contenido de pago */
-}
-
-/* Ajustes para el modal de limpiar (más pequeño) */
-#limpiarTicketModal .modal-content {
-    max-width: 380px;
-}
-
-/* Estilo para el scroll dentro del modal */
-.modal-body::-webkit-scrollbar {
-    width: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-    background: #f0f2f5;
-    border-radius: 10px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-    background: #1877f2;
-    border-radius: 10px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: #166fe5;
-}
     
-    /* Estilo para el scroll del ticket */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    #confirmarVentaModal .modal-content {
+        max-width: 550px;
+    }
+    
+    #limpiarTicketModal .modal-content {
+        max-width: 380px;
+    }
+    
     #ticket-scroll {
         scrollbar-width: thin;
         scrollbar-color: #1877f2 #f0f2f5;
@@ -1470,10 +1562,6 @@ style.textContent = `
     #ticket-scroll::-webkit-scrollbar-thumb {
         background: #1877f2;
         border-radius: 10px;
-    }
-    
-    #ticket-scroll::-webkit-scrollbar-thumb:hover {
-        background: #166fe5;
     }
 `;
 document.head.appendChild(style);
