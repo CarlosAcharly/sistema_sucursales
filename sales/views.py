@@ -53,7 +53,7 @@ def pos_view(request):
 
         for item in cart:
             product_id = item['id']
-            quantity = int(item['quantity'])
+            quantity = Decimal(str(item['quantity'])) 
             price_type = item.get('price_type', 'kg')
 
             inventory_item = Inventory.objects.filter(
@@ -230,14 +230,17 @@ def sale_detail_api(request, sale_id):
         subtotal = 0
         
         for item in sale.items.all():
-            item_subtotal = item.quantity * float(item.price)
+            # Convertir Decimal a float para JSON
+            quantity = float(item.quantity) if item.quantity else 0
+            price = float(item.price) if item.price else 0
+            item_subtotal = quantity * price
             subtotal += item_subtotal
             
             items.append({
                 'id': item.id,
                 'product_name': item.product.name,
-                'quantity': item.quantity,
-                'price': float(item.price),
+                'quantity': quantity,  # Ya como float
+                'price': price,  # Ya como float
                 'price_type': item.price_type,
                 'price_type_display': item.get_price_type_display(),
                 'subtotal': item_subtotal
@@ -251,7 +254,6 @@ def sale_detail_api(request, sale_id):
             'cashier': sale.cashier.get_full_name() or sale.cashier.username,
             'branch': sale.branch.name,
             'items': items,
-            # ✅ AGREGAR ESTOS CAMPOS
             'status': sale.status,
             'status_display': sale.get_status_display()
         }
@@ -261,6 +263,10 @@ def sale_detail_api(request, sale_id):
     except Sale.DoesNotExist:
         return JsonResponse({'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
+        # Log del error para debugging
+        import traceback
+        print(f"Error en sale_detail_api: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
 
 # =============================

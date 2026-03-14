@@ -636,27 +636,38 @@ function searchProducts(query) {
         return;
     }
 
-    const matches = products.filter(p => 
-        p.name.includes(query) || (p.description && p.description.includes(query))
-    );
+    // Filtrar productos que tengan al menos un precio Y coincidan con la búsqueda
+    const matches = products.filter(p => {
+        const hasPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial;
+        return hasPrice && (p.name.includes(query) || (p.description && p.description.includes(query)));
+    });
 
     if (matches.length > 0) {
         resultsContainer.innerHTML = matches.map(p => {
-            const defaultPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial;
-            const defaultPriceType = p.priceKg ? 'kg' : p.priceBulk ? 'bulk' : p.priceWholesale ? 'wholesale' : p.priceSpecial ? 'special' : null;
+            // Asegurar que defaultPrice siempre tenga un valor
+            const defaultPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial || 0;
+            
+            // Determinar el tipo de precio por defecto
+            let defaultPriceType = 'kg';
+            if (p.priceKg) defaultPriceType = 'kg';
+            else if (p.priceBulk) defaultPriceType = 'bulk';
+            else if (p.priceWholesale) defaultPriceType = 'wholesale';
+            else if (p.priceSpecial) defaultPriceType = 'special';
             
             let priceOptions = '';
-            if (p.priceKg) {
-                priceOptions += `<option value="kg" data-price="${p.priceKg}" ${p.priceKg === defaultPrice ? 'selected' : ''}>Kg: $${p.priceKg.toFixed(2)}</option>`;
+            
+            // Generar opciones SOLO si tienen precio válido
+            if (p.priceKg && !isNaN(p.priceKg) && p.priceKg > 0) {
+                priceOptions += `<option value="kg" data-price="${p.priceKg}" ${defaultPriceType === 'kg' ? 'selected' : ''}>Kg: $${p.priceKg.toFixed(2)}</option>`;
             }
-            if (p.priceBulk) {
-                priceOptions += `<option value="bulk" data-price="${p.priceBulk}" ${p.priceBulk === defaultPrice ? 'selected' : ''}>Bulto: $${p.priceBulk.toFixed(2)}</option>`;
+            if (p.priceBulk && !isNaN(p.priceBulk) && p.priceBulk > 0) {
+                priceOptions += `<option value="bulk" data-price="${p.priceBulk}" ${defaultPriceType === 'bulk' ? 'selected' : ''}>Bulto: $${p.priceBulk.toFixed(2)}</option>`;
             }
-            if (p.priceWholesale) {
-                priceOptions += `<option value="wholesale" data-price="${p.priceWholesale}" ${p.priceWholesale === defaultPrice ? 'selected' : ''}>Mayoreo: $${p.priceWholesale.toFixed(2)}</option>`;
+            if (p.priceWholesale && !isNaN(p.priceWholesale) && p.priceWholesale > 0) {
+                priceOptions += `<option value="wholesale" data-price="${p.priceWholesale}" ${defaultPriceType === 'wholesale' ? 'selected' : ''}>Mayoreo: $${p.priceWholesale.toFixed(2)}</option>`;
             }
-            if (p.priceSpecial) {
-                priceOptions += `<option value="special" data-price="${p.priceSpecial}" ${p.priceSpecial === defaultPrice ? 'selected' : ''}>Especial: $${p.priceSpecial.toFixed(2)}</option>`;
+            if (p.priceSpecial && !isNaN(p.priceSpecial) && p.priceSpecial > 0) {
+                priceOptions += `<option value="special" data-price="${p.priceSpecial}" ${defaultPriceType === 'special' ? 'selected' : ''}>Especial: $${p.priceSpecial.toFixed(2)}</option>`;
             }
             
             return `
@@ -687,7 +698,7 @@ function searchProducts(query) {
                 </div>
                 
                 <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
-                    $${defaultPrice ? defaultPrice.toFixed(2) : '0.00'}
+                    $${defaultPrice.toFixed(2)}
                 </div>
                 
                 <div style="font-size: 12px; color: #606770; text-align: center;">
@@ -748,8 +759,20 @@ function addProductWithPrice(id, name, button) {
         return;
     }
     
-    const price = parseFloat(priceDisplay.dataset.price);
-    const priceType = priceDisplay.dataset.priceType;
+    // Obtener el precio de manera segura
+    let price = parseFloat(priceDisplay.dataset.price);
+    if (isNaN(price) || price <= 0) {
+        // Si no hay precio en dataset, obtenerlo del selector
+        const selectedOption = selector.options[selector.selectedIndex];
+        price = parseFloat(selectedOption.dataset.price);
+    }
+    
+    if (isNaN(price) || price <= 0) {
+        showNotification('❌ El producto no tiene un precio válido', 'error');
+        return;
+    }
+    
+    const priceType = priceDisplay.dataset.priceType || selector.value;
     const selectedOption = selector.options[selector.selectedIndex];
     const priceTypeName = selectedOption.text.split(':')[0];
     
@@ -809,13 +832,12 @@ function renderTicket() {
                             <i class="fas fa-minus"></i>
                         </button>
                         <input type="number" 
-                               value="${item.quantity}" 
-                               min="1" 
-                               step="1"
-                               onchange="setQuantity('${id}', this.value)"
-                               onkeypress="return (event.charCode >= 48 && event.charCode <= 57) || event.key === 'Enter'"
-                               style="width: 60px; text-align: center; padding: 4px; border: 1px solid #dddfe2; border-radius: 4px; font-weight: 600; font-size: 14px;"
-                               class="quantity-input">
+                            value="${item.quantity}" 
+                            min="0.001" 
+                            step="0.1"
+                            onchange="setQuantity('${id}', this.value)"
+                            style="width: 80px; text-align: center; padding: 4px; border: 1px solid #dddfe2; border-radius: 4px; font-weight: 600; font-size: 14px;"
+                            class="quantity-input">
                         <button onclick="updateQuantity('${id}', 1)" class="fb-btn fb-btn-secondary" style="padding: 4px 8px; font-size: 12px; min-width: 30px;">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -846,11 +868,14 @@ function renderTicket() {
 }
 
 function setQuantity(id, value) {
-    let newQuantity = parseInt(value);
+    let newQuantity = parseFloat(value);
     
-    if (isNaN(newQuantity) || newQuantity < 1) {
-        newQuantity = 1;
+    if (isNaN(newQuantity) || newQuantity < 0.001) {
+        newQuantity = 0.001; // Mínimo 1 gramo
     }
+    
+    // Redondear a 3 decimales
+    newQuantity = Math.round(newQuantity * 1000) / 1000;
     
     if (cart[id]) {
         cart[id].quantity = newQuantity;
@@ -860,11 +885,14 @@ function setQuantity(id, value) {
 
 function updateQuantity(id, change) {
     if (cart[id]) {
-        let newQuantity = cart[id].quantity + change;
+        let newQuantity = cart[id].quantity + (change * 0.1); // Cambios de 0.1 kg (100g)
+        if (change === 1) newQuantity = cart[id].quantity + 0.1;
+        if (change === -1) newQuantity = cart[id].quantity - 0.1;
+        
         if (newQuantity <= 0) {
             delete cart[id];
         } else {
-            cart[id].quantity = newQuantity;
+            cart[id].quantity = Math.round(newQuantity * 1000) / 1000;
         }
         renderTicket();
     }

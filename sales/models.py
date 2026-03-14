@@ -34,7 +34,7 @@ class SaleItem(models.Model):
     
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey('products.Product', on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=3, verbose_name="Cantidad")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     price_type = models.CharField(max_length=20, choices=PRICE_TYPE_CHOICES, default='kg')
 
