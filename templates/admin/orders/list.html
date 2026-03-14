@@ -223,6 +223,274 @@
 <div id="toast" style="display: none; position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; border-left: 4px solid #1877f2;"></div>
 
 <style>
+/* Estilos para el modal de edición */
+.edit-products-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.edit-products-table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #606770;
+    border-bottom: 2px solid #e4e6eb;
+}
+
+.edit-products-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e4e6eb;
+    vertical-align: middle;
+}
+
+.edit-products-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.edit-products-table tbody tr.deleted {
+    background: #ffebe9;
+    opacity: 0.7;
+}
+
+.edit-products-table tbody tr.deleted td {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.quantity-input {
+    width: 100px;
+    padding: 8px;
+    border: 2px solid #e4e6eb;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.quantity-input:focus {
+    outline: none;
+    border-color: #1877f2;
+    box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+}
+
+.quantity-input.changed {
+    border-color: #f7b928;
+    background: #fff4e5;
+}
+
+.quantity-input:disabled {
+    background: #f5f6f7;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.pending-badge {
+    display: inline-block;
+    background: #f7b928;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    text-transform: uppercase;
+}
+
+.original-value {
+    font-size: 11px;
+    color: #606770;
+    margin-left: 5px;
+}
+
+.delete-item-btn {
+    background: #ffebe9;
+    color: #b92b27;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.delete-item-btn:hover {
+    background: #fa383e;
+    color: white;
+    transform: scale(1.1);
+}
+
+.delete-item-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.undo-delete-btn {
+    background: #e7f3ff;
+    color: #1877f2;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.undo-delete-btn:hover {
+    background: #1877f2;
+    color: white;
+}
+
+.order-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-label {
+    font-size: 12px;
+    color: #606770;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #050505;
+}
+
+.info-value i {
+    color: #1877f2;
+    margin-right: 8px;
+    width: 20px;
+}
+
+.changes-indicator {
+    background: #f7b92820;
+    color: #bd7b13;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.changes-indicator i {
+    margin-right: 5px;
+    color: #f7b928;
+}
+
+.order-summary-box {
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border: 1px solid #e4e6eb;
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.summary-item span:first-child {
+    color: #606770;
+    font-size: 13px;
+}
+
+.summary-item strong {
+    font-size: 24px;
+    color: #1877f2;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.cancel-edit-btn {
+    background: #e4e6eb;
+    color: #050505;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cancel-edit-btn:hover {
+    background: #d8dadf;
+}
+
+.save-changes-btn {
+    background: linear-gradient(135deg, #42b72a, #2d8a1f);
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.save-changes-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 183, 42, 0.3);
+}
+
+.save-changes-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .edit-products-table {
+        font-size: 12px;
+    }
+    
+    .quantity-input {
+        width: 70px;
+        padding: 6px;
+    }
+    
+    .order-info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .order-summary-box {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
 /* Todos tus estilos existentes se mantienen igual */
 .admin-orders-container {
     max-width: 1400px;
