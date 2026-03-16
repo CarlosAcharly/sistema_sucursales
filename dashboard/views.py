@@ -20,25 +20,28 @@ def superadmin_dashboard(request):
     total_users = User.objects.count()
     total_products = Product.objects.count()
 
-    # Ventas globales
-    total_sales = Sale.objects.count()
-    total_revenue = Sale.objects.aggregate(
+    # ✅ CORREGIDO: Ventas globales (solo activas)
+    total_sales = Sale.objects.filter(status='ACTIVE').count()
+    total_revenue = Sale.objects.filter(status='ACTIVE').aggregate(
         total=Sum('total')
     )['total'] or 0
 
-    # Ventas hoy
+    # ✅ CORREGIDO: Ventas hoy (solo activas)
     sales_today = Sale.objects.filter(
+        status='ACTIVE',
         created_at__date=today
     ).aggregate(total=Sum('total'))['total'] or 0
 
-    # Ventas por sucursal
-    sales_by_branch = Sale.objects.values(
+    # ✅ CORREGIDO: Ventas por sucursal (solo activas)
+    sales_by_branch = Sale.objects.filter(
+        status='ACTIVE'
+    ).values(
         'branch__name'
     ).annotate(
         total=Sum('total')
     ).order_by('-total')
 
-    # Inventario bajo global
+    # Inventario bajo global (sin cambios)
     low_stock = Inventory.objects.filter(stock__lte=5).count()
 
     context = {
@@ -75,37 +78,40 @@ def admin_dashboard(request):
     user_branch = getattr(request.user, 'branch', None)
     
     if user_branch:
-        # Ventas del día (solo de la sucursal del admin)
+        # ✅ CORREGIDO: Ventas del día (solo activas)
         sales_today = Sale.objects.filter(
+            status='ACTIVE',
             branch=user_branch,
             created_at__date=today
         ).aggregate(total=Sum('total'))['total'] or 0
         
         sales_count_today = Sale.objects.filter(
+            status='ACTIVE',
             branch=user_branch,
             created_at__date=today
         ).count()
         
-        # Cortes activos
+        # Cortes activos (sin cambios)
         active_cuts = CorteCaja.objects.filter(
             branch=user_branch,
             estado='ABIERTO'
         )
         active_cuts_count = active_cuts.count()
         
-        # Ventas del mes
+        # ✅ CORREGIDO: Ventas del mes (solo activas)
         monthly_sales = Sale.objects.filter(
+            status='ACTIVE',
             branch=user_branch,
             created_at__date__gte=first_day_month,
             created_at__date__lte=today
         ).aggregate(total=Sum('total'))['total'] or 0
         
-        # Últimos cortes (5 más recientes)
+        # Últimos cortes (5 más recientes) - sin cambios
         recent_cuts = CorteCaja.objects.filter(
             branch=user_branch
         ).select_related('cajero').order_by('-fecha_apertura')[:5]
         
-        # Stock bajo por sucursal
+        # Stock bajo por sucursal - sin cambios
         low_stock_by_branch = {
             user_branch.name: low_stock_items.filter(branch=user_branch)
         }
@@ -114,7 +120,7 @@ def admin_dashboard(request):
             branch=user_branch
         ).aggregate(total=Sum('stock'))['total'] or 0
         
-        # Transferencias de la sucursal
+        # Transferencias de la sucursal - sin cambios
         try:
             from transfers.models import Transfer
             total_transfers = Transfer.objects.filter(
@@ -128,7 +134,7 @@ def admin_dashboard(request):
             total_transfers = 0
             pending_transfers = 0
         
-        # Dietas de la sucursal
+        # Dietas de la sucursal - sin cambios
         try:
             from diets.models import Diet
             total_diets = Diet.objects.filter(
@@ -144,11 +150,14 @@ def admin_dashboard(request):
             
     else:
         # El admin no tiene sucursal asignada - mostrar datos de todas las sucursales
+        # ✅ CORREGIDO: Solo ventas activas
         sales_today = Sale.objects.filter(
+            status='ACTIVE',
             created_at__date=today
         ).aggregate(total=Sum('total'))['total'] or 0
         
         sales_count_today = Sale.objects.filter(
+            status='ACTIVE',
             created_at__date=today
         ).count()
         
@@ -156,7 +165,9 @@ def admin_dashboard(request):
             estado='ABIERTO'
         ).count()
         
+        # ✅ CORREGIDO: Ventas del mes (solo activas)
         monthly_sales = Sale.objects.filter(
+            status='ACTIVE',
             created_at__date__gte=first_day_month,
             created_at__date__lte=today
         ).aggregate(total=Sum('total'))['total'] or 0
@@ -165,7 +176,7 @@ def admin_dashboard(request):
             'branch', 'cajero'
         ).order_by('-fecha_apertura')[:5]
         
-        # Stock bajo agrupado por sucursal
+        # Stock bajo agrupado por sucursal - sin cambios
         low_stock_by_branch = {}
         for item in low_stock_items:
             branch_name = item.branch.name if item.branch else "Sin sucursal"
@@ -177,7 +188,7 @@ def admin_dashboard(request):
             total=Sum('stock')
         )['total'] or 0
         
-        # Transferencias globales
+        # Transferencias globales - sin cambios
         try:
             from transfers.models import Transfer
             total_transfers = Transfer.objects.count()
@@ -186,7 +197,7 @@ def admin_dashboard(request):
             total_transfers = 0
             pending_transfers = 0
         
-        # Dietas globales
+        # Dietas globales - sin cambios
         try:
             from diets.models import Diet
             total_diets = Diet.objects.count()
@@ -195,7 +206,7 @@ def admin_dashboard(request):
             total_diets = 0
             active_diets = 0
     
-    # Conteo de productos con precio (global)
+    # Conteo de productos con precio (global) - sin cambios
     products_with_price = Product.objects.exclude(
         Q(price_kg__isnull=True) & 
         Q(price_bulk__isnull=True) & 
@@ -234,9 +245,3 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin/dashboard.html', context)
-
-@login_required
-@role_required(['CASHIER'])
-def pos_view(request):
-    products = Inventory.objects.filter(branch=request.user.branch)
-    return render(request, 'cajero/pos.html', {'products': products})

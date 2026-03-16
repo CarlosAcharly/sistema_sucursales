@@ -206,7 +206,7 @@ def profit_dashboard(request):
     branch_id = request.GET.get('branch')
     
     # Query base de ventas
-    sales_query = Sale.objects.all()
+    sales_query = Sale.objects.filter(status='ACTIVE')
     if branch_id:
         sales_query = sales_query.filter(branch_id=branch_id)
     
@@ -387,6 +387,7 @@ def profit_report(request):
         if date_from and date_to:
             # Obtener ventas en el rango
             sales_query = Sale.objects.filter(
+                status='ACTIVE',
                 created_at__date__gte=date_from,
                 created_at__date__lte=date_to
             ).order_by('-created_at')
@@ -493,6 +494,7 @@ def profit_by_product(request):
     
     # Obtener ventas en el rango
     sales_query = Sale.objects.filter(
+        status='ACTIVE',
         created_at__date__gte=date_from_obj,
         created_at__date__lte=date_to_obj
     ).prefetch_related('items__product')
