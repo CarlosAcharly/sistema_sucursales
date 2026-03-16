@@ -315,52 +315,70 @@ def admin_sales_list(request):
     else:
         period_label = "Todos los tiempos"
     
+    # ✅ CORREGIDO: Ventas activas para estadísticas
+    ventas_activas = sales.filter(status='ACTIVE')
+    ventas_canceladas = sales.filter(status='CANCELLED')
+    
     # Estadísticas del período
-    total_sales = sales.count()
-    total_amount = sales.aggregate(total=Sum('total'))['total'] or 0
-    active_sales = sales.filter(status='ACTIVE').count()
-    cancelled_sales = sales.filter(status='CANCELLED').count()
+    total_sales = sales.count()  # Total general (para la tabla)
+    total_ventas_activas = ventas_activas.count()
+    total_amount = ventas_activas.aggregate(total=Sum('total'))['total'] or 0
+    active_sales = ventas_activas.count()
+    cancelled_sales = ventas_canceladas.count()  # ✅ CORREGIDO: Usar el queryset directamente
     
-    # Ticket promedio (calculado aquí, no en el template)
-    average_ticket = total_amount / total_sales if total_sales > 0 else 0
+    # Ticket promedio (solo sobre ventas activas)
+    average_ticket = total_amount / total_ventas_activas if total_ventas_activas > 0 else 0
     
-    # Resumen por sucursal
-    branch_summary = sales.values(
-        'branch__name', 'status'
+    # Resumen por sucursal (solo ventas activas)
+    branch_summary = ventas_activas.values(
+        'branch__name'
     ).annotate(
         total_sales=Count('id'),
-        total_amount=Sum('total')
+        total_amount=Sum('total'),
+        active_count=Count('id')  # Todas son activas aquí
     ).order_by('branch__name')
     
-    # Procesar para agrupar por sucursal
+    # Obtener canceladas por sucursal por separado
+    canceladas_por_sucursal = ventas_canceladas.values(
+        'branch__name'
+    ).annotate(
+        cancelled_count=Count('id')
+    ).order_by('branch__name')
+    
+    # Combinar datos
     branch_data = {}
+    
+    # Primero, agregar activas
     for item in branch_summary:
+        branch_data[item['branch__name']] = {
+            'branch__name': item['branch__name'],
+            'total_sales': item['total_sales'],
+            'total_amount': item['total_amount'] or 0,
+            'active_count': item['active_count'],
+            'cancelled_count': 0,
+            'avg_ticket': (item['total_amount'] / item['total_sales']) if item['total_sales'] > 0 else 0
+        }
+    
+    # Luego, agregar canceladas
+    for item in canceladas_por_sucursal:
         branch_name = item['branch__name']
-        if branch_name not in branch_data:
+        if branch_name in branch_data:
+            branch_data[branch_name]['cancelled_count'] = item['cancelled_count']
+            branch_data[branch_name]['total_sales'] += item['cancelled_count']  # Sumar al total de ventas
+        else:
+            # Sucursal con solo canceladas
             branch_data[branch_name] = {
                 'branch__name': branch_name,
-                'total_sales': 0,
+                'total_sales': item['cancelled_count'],
                 'total_amount': 0,
                 'active_count': 0,
-                'cancelled_count': 0
+                'cancelled_count': item['cancelled_count'],
+                'avg_ticket': 0
             }
-        branch_data[branch_name]['total_sales'] += item['total_sales']
-        branch_data[branch_name]['total_amount'] += item['total_amount'] or 0
-        if item['status'] == 'ACTIVE':
-            branch_data[branch_name]['active_count'] = item['total_sales']
-        else:
-            branch_data[branch_name]['cancelled_count'] = item['total_sales']
     
-    # Calcular ticket promedio por sucursal y porcentajes
+    # Calcular porcentajes
     total_period_amount = total_amount
     for branch_name, data in branch_data.items():
-        # Ticket promedio por sucursal
-        if data['total_sales'] > 0:
-            data['avg_ticket'] = data['total_amount'] / data['total_sales']
-        else:
-            data['avg_ticket'] = 0
-        
-        # Porcentaje del total
         if total_period_amount > 0:
             data['percentage'] = (data['total_amount'] / total_period_amount) * 100
         else:
@@ -371,7 +389,7 @@ def admin_sales_list(request):
         'total_sales': total_sales,
         'total_amount': total_amount,
         'active_sales': active_sales,
-        'cancelled_sales': cancelled_sales,
+        'cancelled_sales': cancelled_sales,  # ✅ Ahora muestra el total correcto
         'total_period': total_amount,
         'average_ticket': average_ticket,
         'branches': Branch.objects.filter(is_active=True),
@@ -384,6 +402,7 @@ def admin_sales_list(request):
         'date_from': date_from,
         'date_to': date_to,
     })
+
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
 def admin_sale_detail(request, sale_id):

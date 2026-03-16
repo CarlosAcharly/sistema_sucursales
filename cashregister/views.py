@@ -94,8 +94,8 @@ def detalle_corte(request, corte_id):
         cajero=request.user
     )
     
-    # Obtener ventas del corte
-    ventas = corte.ventas.all()
+    # Obtener ventas del corte (solo activas)
+    ventas = corte.ventas.filter(status='ACTIVE')
     total_ventas = sum(venta.total for venta in ventas)
     cantidad_ventas = ventas.count()
     
@@ -143,22 +143,24 @@ def cerrar_corte(request, corte_id):
             estado='ABIERTO'
         )
         
-        # ✅ Obtener ventas desde la apertura del corte usando Q objects
+        # Obtener SOLO ventas ACTIVAS desde la apertura del corte
         ventas_a_cerrar = Sale.objects.filter(
-            Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
-            Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+            Q(status='ACTIVE') & (
+                Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
+                Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+            )
         ).distinct().order_by('created_at')
         
-        # Calcular total de ventas
+        # Calcular total de ventas (solo activas)
         total_sistema = Decimal('0')
         for venta in ventas_a_cerrar:
             total_sistema += venta.total
         
-        # Calcular total esperado (monto inicial + ventas)
+        # Calcular total esperado (monto inicial + ventas activas)
         total_esperado = corte.monto_inicial + total_sistema
         diferencia = monto_real - total_esperado
         
-        # ✅ CORREGIDO: Asignar las ventas al corte usando el related_name 'cortes'
+        # Asignar las ventas al corte
         for venta in ventas_a_cerrar:
             venta.cortes.add(corte)
         
@@ -203,8 +205,10 @@ def resumen_corte_api(request, corte_id):
         if corte.estado == 'ABIERTO':
             # Para corte abierto: ventas desde apertura y sin asignar
             ventas = Sale.objects.filter(
-                Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
-                Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+                Q(status='ACTIVE') & (
+                    Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
+                    Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+                )
             ).distinct()
         else:
             # Para corte cerrado: ventas ya asignadas
@@ -244,10 +248,12 @@ def contar_dinero(request, corte_id):
         estado='ABIERTO'
     )
     
-    # ✅ Misma lógica que cerrar_corte usando Q objects
+    # ✅ CORREGIDO: Usar Q(status='ACTIVE') & con paréntesis correctos
     ventas_totales = Sale.objects.filter(
-        Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
-        Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+        Q(status='ACTIVE') & (
+            Q(branch=request.user.branch, cashier=request.user, created_at__gte=corte.fecha_apertura) |
+            Q(branch=request.user.branch, cashier=request.user, cortes__isnull=True, created_at__lt=corte.fecha_apertura)
+        )
     ).distinct().order_by('created_at')
     
     total_ventas = sum(venta.total for venta in ventas_totales)
