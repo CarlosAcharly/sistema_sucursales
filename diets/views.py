@@ -23,6 +23,9 @@ def diet_create(request):
         can_delete=True
     )
 
+    # ✅ Obtener productos que son ingredientes
+    products = Product.objects.filter(is_active=True, is_ingredient=True)
+
     if request.method == "POST":
         name = request.POST.get("name")
         description = request.POST.get("description")
@@ -40,7 +43,8 @@ def diet_create(request):
                 messages.error(request, "La suma debe ser exactamente 1000 kg.")
                 return render(request, "admin/diets/form.html", {
                     "formset": formset,
-                    "branches": Branch.objects.all()
+                    "branches": Branch.objects.all(),
+                    "products": products,  # ✅ Agregar productos al contexto
                 })
 
             # Crear dieta base
@@ -60,8 +64,7 @@ def diet_create(request):
                     ingredient.diet = diet
                     ingredient.save()
 
-            # 🔥 CREAR DIETAS PARA CAJEROS 🔥
-            # Por cada sucursal asignada, crear un DietCajero
+            # Crear dietas para cajeros
             for branch_id in branches_ids:
                 branch = Branch.objects.get(id=branch_id)
                 diet_cajero = DietCajero.objects.create(
@@ -70,13 +73,12 @@ def diet_create(request):
                     created_by=request.user
                 )
                 
-                # Copiar los ingredientes base a DietCajeroItem
                 base_ingredients = DietBaseIngredient.objects.filter(diet=diet)
                 for base_ing in base_ingredients:
                     DietCajeroItem.objects.create(
                         diet=diet_cajero,
                         product=base_ing.product,
-                        kilos=float(base_ing.kilos)  # Convertir a float
+                        kilos=float(base_ing.kilos)
                     )
 
             messages.success(request, "Dieta creada correctamente y asignada a cajeros.")
@@ -87,7 +89,8 @@ def diet_create(request):
 
     return render(request, "admin/diets/form.html", {
         "formset": formset,
-        "branches": Branch.objects.all()
+        "branches": Branch.objects.all(),
+        "products": products,  # ✅ Agregar productos al contexto
     })
 
 @login_required
@@ -157,6 +160,9 @@ def diet_edit(request, pk):
         can_delete=True
     )
     
+    # ✅ Obtener productos que son ingredientes
+    products = Product.objects.filter(is_active=True, is_ingredient=True)
+    
     if request.method == "POST":
         name = request.POST.get("name")
         description = request.POST.get("description")
@@ -179,7 +185,7 @@ def diet_edit(request, pk):
                     "diet": diet,
                     "formset": formset,
                     "branches": Branch.objects.filter(is_active=True),
-                    "products": Product.objects.filter(is_active=True, is_ingredient=True)
+                    "products": products,  # ✅ Ya estaba, pero asegurar
                 })
             
             # Actualizar dieta base
@@ -231,5 +237,5 @@ def diet_edit(request, pk):
         "diet": diet,
         "formset": formset,
         "branches": Branch.objects.filter(is_active=True),
-        "products": Product.objects.filter(is_active=True, is_ingredient=True)
+        "products": products,  # ✅ Asegurar que se pasa
     })
