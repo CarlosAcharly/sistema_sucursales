@@ -5,9 +5,8 @@ from branches.models import Branch
 from django.utils import timezone
 
 class PurchasePrice(models.Model):
-    """Historial de precios de compra por producto y sucursal"""
+    """Historial de precios de compra (GLOBAL - aplica a todas las sucursales)"""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='purchase_prices')
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='purchase_prices')
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Precio de compra")
     valid_from = models.DateTimeField(default=timezone.now, verbose_name="Válido desde")
     valid_to = models.DateTimeField(null=True, blank=True, verbose_name="Válido hasta")
@@ -21,18 +20,17 @@ class PurchasePrice(models.Model):
         verbose_name = "Precio de compra"
         verbose_name_plural = "Precios de compra"
         indexes = [
-            models.Index(fields=['product', 'branch', '-valid_from']),
+            models.Index(fields=['product', '-valid_from']),
         ]
 
     def __str__(self):
-        return f"{self.product.name} - ${self.price} ({self.branch.name})"
+        return f"{self.product.name} - ${self.price}"
 
     def save(self, *args, **kwargs):
-        # Si este precio es activo, desactivar otros precios activos del mismo producto/sucursal
+        # Si este precio es activo, desactivar otros precios activos del mismo producto
         if self.is_active:
             PurchasePrice.objects.filter(
                 product=self.product,
-                branch=self.branch,
                 is_active=True
             ).exclude(pk=self.pk).update(
                 is_active=False,

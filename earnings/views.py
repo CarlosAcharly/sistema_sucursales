@@ -26,40 +26,39 @@ from .forms import PurchasePriceForm, DateRangeForm
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
 def purchase_price_list(request):
-    """Lista de precios de compra actuales"""
-    branch_id = request.GET.get('branch')
-    product_id = request.GET.get('product')
+    """Lista de precios de compra actuales (UNO POR PRODUCTO)"""
     
-    prices = PurchasePrice.objects.filter(is_active=True).select_related('product', 'branch', 'created_by')
+    # Obtener todos los productos activos
+    products = Product.objects.filter(is_active=True).order_by('name')
     
-    if branch_id:
-        prices = prices.filter(branch_id=branch_id)
-    if product_id:
-        prices = prices.filter(product_id=product_id)
+    # Obtener precios activos
+    active_prices = PurchasePrice.objects.filter(is_active=True).select_related('product', 'created_by')
     
-    # Agrupar por producto para mostrar el precio actual
-    current_prices = {}
-    for price in prices:
-        key = f"{price.product_id}_{price.branch_id}"
-        if key not in current_prices:
-            current_prices[key] = price
+    # Crear un diccionario para acceso rápido
+    price_dict = {price.product_id: price for price in active_prices}
+    
+    # Lista de productos con su precio (o None si no tiene)
+    product_prices = []
+    for product in products:
+        price = price_dict.get(product.id)
+        product_prices.append({
+            'product': product,
+            'price': price,
+            'has_price': price is not None
+        })
     
     branches = Branch.objects.filter(is_active=True)
-    products = Product.objects.filter(is_active=True)
     
     return render(request, 'admin/earnings/purchase_price_list.html', {
-        'current_prices': current_prices.values(),
+        'product_prices': product_prices,
         'branches': branches,
-        'products': products,
-        'selected_branch': branch_id,
-        'selected_product': product_id,
     })
 
 
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
 def purchase_price_create(request):
-    """Crear nuevo precio de compra"""
+    """Crear nuevo precio de compra (GLOBAL)"""
     if request.method == 'POST':
         form = PurchasePriceForm(request.POST)
         if form.is_valid():
@@ -69,32 +68,77 @@ def purchase_price_create(request):
             messages.success(request, f'Precio de compra actualizado para {price.product.name}')
             return redirect('earnings:purchase_price_list')
     else:
-        form = PurchasePriceForm(initial={
-            'product': request.GET.get('product'),
-            'branch': request.GET.get('branch')
-        })
+        # Si viene un producto por GET, preseleccionarlo
+        product_id = request.GET.get('product')
+        initial = {}
+        if product_id:
+            try:
+                product = Product.objects.get(id=product_id)
+                initial['product'] = product
+            except Product.DoesNotExist:
+                pass
+        form = PurchasePriceForm(initial=initial)
     
     return render(request, 'admin/earnings/purchase_price_form.html', {
         'form': form,
-        'title': 'Nuevo Precio de Compra'
+        'title': 'Nuevo Precio de Compra',
+        'is_edit': False
     })
 
 
 @login_required
 @role_required(['ADMIN', 'SUPERADMIN'])
-def purchase_price_history(request, product_id, branch_id):
-    """Historial de precios de un producto en una sucursal"""
+def purchase_price_edit(request, price_id):
+    """Editar un precio existente (crea nuevo registro histórico)"""
+    old_price = get_object_or_404(PurchasePrice, id=price_id)
+    
+    if request.method == 'POST':
+        # Crear formulario con los datos POST
+        form = PurchasePriceForm(request.POST)
+        if form.is_valid():
+            # Crear nuevo precio activo
+            new_price = form.save(commit=False)
+            new_price.created_by = request.user
+            new_price.save()
+            
+            messages.success(request, f'Precio actualizado para {new_price.product.name}')
+            return redirect('earnings:purchase_price_list')
+        else:
+            # Si hay errores, mostrar el formulario con los errores
+            return render(request, 'admin/earnings/purchase_price_form.html', {
+                'form': form,
+                'title': f'Actualizar Precio - {old_price.product.name}',
+                'old_price': old_price,
+                'is_edit': True
+            })
+    else:
+        # Precargar con los datos del precio anterior
+        form = PurchasePriceForm(initial={
+            'product': old_price.product,
+            'price': old_price.price,
+            'notes': old_price.notes
+        })
+    
+    return render(request, 'admin/earnings/purchase_price_form.html', {
+        'form': form,
+        'title': f'Actualizar Precio - {old_price.product.name}',
+        'old_price': old_price,
+        'is_edit': True  # Flag para indicar que es edición
+    })
+
+
+@login_required
+@role_required(['ADMIN', 'SUPERADMIN'])
+def purchase_price_history(request, product_id):
+    """Historial de precios de un producto"""
     product = get_object_or_404(Product, id=product_id)
-    branch = get_object_or_404(Branch, id=branch_id)
     
     prices = PurchasePrice.objects.filter(
-        product=product,
-        branch=branch
+        product=product
     ).order_by('-valid_from').select_related('created_by')
     
     return render(request, 'admin/earnings/purchase_price_history.html', {
         'product': product,
-        'branch': branch,
         'prices': prices
     })
 
@@ -103,11 +147,13 @@ def purchase_price_history(request, product_id, branch_id):
 # 📊 FUNCIONES AUXILIARES PARA CÁLCULOS
 # =============================
 
-def get_purchase_price_at_date(product_id, branch_id, date):
-    """Obtiene el precio de compra de un producto en una fecha específica"""
+def get_purchase_price_at_date(product_id, date):
+    """
+    Obtiene el precio de compra de un producto en una fecha específica
+    AHORA ES GLOBAL - no depende de la sucursal
+    """
     price = PurchasePrice.objects.filter(
         product_id=product_id,
-        branch_id=branch_id,
         valid_from__lte=date
     ).order_by('-valid_from').first()
     
@@ -115,11 +161,10 @@ def get_purchase_price_at_date(product_id, branch_id, date):
 
 
 def calculate_item_profit(item):
-    """Calcula la ganancia de un item de venta"""
-    # Obtener el precio de compra en la fecha de la venta
+    """Calcula la ganancia de un item de venta (AHORA GLOBAL)"""
+    # Obtener el precio de compra en la fecha de la venta (sin sucursal)
     purchase_price = get_purchase_price_at_date(
         item.product_id,
-        item.sale.branch_id,
         item.sale.created_at
     )
     
@@ -205,7 +250,7 @@ def profit_dashboard(request):
     # Obtener filtros
     branch_id = request.GET.get('branch')
     
-    # Query base de ventas
+    # Query base de ventas (solo activas)
     sales_query = Sale.objects.filter(status='ACTIVE')
     if branch_id:
         sales_query = sales_query.filter(branch_id=branch_id)
@@ -256,7 +301,6 @@ def profit_dashboard(request):
             
             purchase_price = get_purchase_price_at_date(
                 item.product_id,
-                sale.branch_id,
                 sale.created_at
             )
             
@@ -432,7 +476,6 @@ def profit_report(request):
                     
                     purchase_price = get_purchase_price_at_date(
                         item.product_id,
-                        sale.branch_id,
                         sale.created_at
                     )
                     
@@ -528,7 +571,6 @@ def profit_by_product(request):
             
             purchase_price = get_purchase_price_at_date(
                 item.product_id,
-                sale.branch_id,
                 sale.created_at
             )
             

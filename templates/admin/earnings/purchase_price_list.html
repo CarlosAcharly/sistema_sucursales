@@ -9,7 +9,7 @@
                 <i class="fas fa-tags" style="color: #42b72a;"></i>
                 Precios de Compra
             </h2>
-            <p style="color: #606770; margin: 8px 0 0 0;">Gestiona el costo de adquisición de productos por sucursal</p>
+            <p style="color: #606770; margin: 8px 0 0 0;">Gestiona el costo de adquisición de productos (aplica a todas las sucursales)</p>
         </div>
         <a href="{% url 'earnings:purchase_price_create' %}" class="fb-btn" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 14px 28px; border-radius: 50px; font-weight: 600; box-shadow: 0 4px 15px rgba(66, 183, 42, 0.3);">
             <i class="fas fa-plus-circle"></i>
@@ -18,124 +18,129 @@
     </div>
 </div>
 
-<!-- Filtros modernos -->
+<!-- Buscador en tiempo real -->
 <div class="fb-card" style="border-radius: 16px; padding: 20px; margin-bottom: 25px;">
-    <form method="get" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 250px;">
-            <label style="display: block; margin-bottom: 8px; color: #606770; font-weight: 500;">Sucursal</label>
-            <div style="position: relative;">
-                <i class="fas fa-store" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #1877f2;"></i>
-                <select name="branch" class="fb-input" onchange="this.form.submit()" style="padding-left: 45px; border-radius: 12px;">
-                    <option value="">Todas las sucursales</option>
-                    {% for branch in branches %}
-                    <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:"s" %}selected{% endif %}>
-                        {{ branch.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        <div style="flex: 1; min-width: 250px;">
-            <label style="display: block; margin-bottom: 8px; color: #606770; font-weight: 500;">Producto</label>
-            <div style="position: relative;">
-                <i class="fas fa-box" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #42b72a;"></i>
-                <select name="product" class="fb-input" onchange="this.form.submit()" style="padding-left: 45px; border-radius: 12px;">
-                    <option value="">Todos los productos</option>
-                    {% for product in products %}
-                    <option value="{{ product.id }}" {% if selected_product == product.id|stringformat:"s" %}selected{% endif %}>
-                        {{ product.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        <div>
-            <a href="{% url 'earnings:purchase_price_list' %}" class="fb-btn fb-btn-secondary" style="border-radius: 12px; padding: 12px 24px;">
-                <i class="fas fa-undo"></i> Limpiar
-            </a>
-        </div>
-    </form>
+    <div style="position: relative;">
+        <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+        <input type="text" 
+               id="searchInput" 
+               class="fb-input" 
+               placeholder="Buscar producto por nombre o descripción..."
+               style="padding-left: 45px; border-radius: 12px; width: 100%;"
+               autocomplete="off">
+    </div>
 </div>
 
-<!-- Tabla de precios mejorada -->
+<!-- Tabla de precios (UN PRODUCTO POR FILA) -->
 <div class="fb-card" style="padding: 0; border-radius: 20px; overflow: hidden;">
     <table class="earnings-table" style="width: 100%;">
         <thead>
             <tr>
                 <th>Producto</th>
-                <th>Sucursal</th>
-                <th>Precio de Compra</th>
+                <th>Descripción</th>
+                <th>Precio de Compra Actual</th>
                 <th>Última Actualización</th>
                 <th>Actualizado por</th>
+                <th>Estado</th>
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
-            {% for price in current_prices %}
-            <tr>
+        <tbody id="prices-tbody">
+            {% for item in product_prices %}
+            <tr class="price-row" 
+                data-product-name="{{ item.product.name|lower }}"
+                data-product-description="{{ item.product.description|default:''|lower }}">
                 <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-box" style="color: white;"></i>
                         </div>
                         <div>
-                            <strong>{{ price.product.name }}</strong>
-                            {% if price.product.description %}
-                            <div style="font-size: 11px; color: #606770;">{{ price.product.description|truncatechars:30 }}</div>
-                            {% endif %}
+                            <strong class="product-name">{{ item.product.name }}</strong>
                         </div>
                     </div>
                 </td>
                 <td>
-                    <span style="display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-store" style="color: #1877f2;"></i>
-                        {{ price.branch.name }}
-                    </span>
+                    {% if item.product.description %}
+                        <span style="color: #606770;">{{ item.product.description|truncatechars:50 }}</span>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
                 </td>
                 <td>
-                    <span style="font-size: 18px; font-weight: 700; color: #42b72a;">${{ price.price|floatformat:2 }}</span>
+                    {% if item.has_price %}
+                        <span style="font-size: 20px; font-weight: 700; color: #42b72a;">${{ item.price.price|floatformat:2 }}</span>
+                    {% else %}
+                        <span style="background: #ffebe9; color: #fa383e; padding: 6px 14px; border-radius: 30px; font-size: 12px;">
+                            <i class="fas fa-exclamation-circle"></i> Sin precio
+                        </span>
+                    {% endif %}
                 </td>
                 <td>
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-weight: 600;">{{ price.valid_from|date:"d/m/Y" }}</span>
-                        <small style="color: #606770;">{{ price.valid_from|date:"H:i" }}</small>
-                    </div>
-                </td>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <div style="background: #e7f3ff; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-user" style="color: #1877f2; font-size: 14px;"></i>
+                    {% if item.has_price %}
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 600;">{{ item.price.valid_from|date:"d/m/Y" }}</span>
+                            <small style="color: #606770;">{{ item.price.valid_from|date:"H:i" }}</small>
                         </div>
-                        <span>{{ price.created_by.get_full_name|default:price.created_by.username }}</span>
-                    </div>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.has_price %}
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="background: #e7f3ff; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user" style="color: #1877f2; font-size: 14px;"></i>
+                            </div>
+                            <span>{{ item.price.created_by.get_full_name|default:item.price.created_by.username }}</span>
+                        </div>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.has_price %}
+                        <span class="status-badge status-active">
+                            <i class="fas fa-check-circle"></i> Activo
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-inactive">
+                            <i class="fas fa-clock"></i> Pendiente
+                        </span>
+                    {% endif %}
                 </td>
                 <td>
                     <div style="display: flex; gap: 8px;">
-                        <a href="{% url 'earnings:purchase_price_history' price.product.id price.branch.id %}" 
-                           class="action-btn" 
-                           style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                           title="Ver historial">
-                            <i class="fas fa-history"></i>
-                        </a>
-                        <a href="{% url 'earnings:purchase_price_create' %}?product={{ price.product.id }}&branch={{ price.branch.id }}" 
-                           class="action-btn" 
-                           style="background: #fff4e5; color: #f7b928; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                           title="Actualizar precio">
-                            <i class="fas fa-edit"></i>
-                        </a>
+                        {% if item.has_price %}
+                            <a href="{% url 'earnings:purchase_price_history' item.product.id %}" 
+                               class="action-btn" 
+                               style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                               title="Ver historial">
+                                <i class="fas fa-history"></i>
+                            </a>
+                            <a href="{% url 'earnings:purchase_price_edit' item.price.id %}" 
+                               class="action-btn" 
+                               style="background: #fff4e5; color: #f7b928; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                               title="Actualizar precio">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'earnings:purchase_price_create' %}?product={{ item.product.id }}" 
+                               class="action-btn" 
+                               style="background: #42b72a20; color: #42b72a; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                               title="Agregar precio">
+                                <i class="fas fa-plus-circle"></i>
+                            </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 60px;">
+            <tr id="empty-row">
+                <td colspan="7" style="text-align: center; padding: 60px;">
                     <i class="fas fa-tag" style="font-size: 60px; color: #e4e6eb; margin-bottom: 20px;"></i>
-                    <h3 style="color: #050505; margin-bottom: 10px;">No hay precios registrados</h3>
-                    <p style="color: #606770; margin-bottom: 25px;">Comienza agregando el primer precio de compra</p>
-                    <a href="{% url 'earnings:purchase_price_create' %}" class="fb-btn fb-btn-primary" style="padding: 14px 32px; border-radius: 30px;">
-                        <i class="fas fa-plus-circle"></i>
-                        Nuevo Precio
-                    </a>
+                    <h3 style="color: #050505; margin-bottom: 10px;">No hay productos registrados</h3>
+                    <p style="color: #606770;">Primero debes crear productos en el catálogo</p>
                 </td>
             </tr>
             {% endfor %}
@@ -143,7 +148,7 @@
     </table>
 </div>
 
-<!-- Leyenda informativa -->
+<!-- Leyenda informativa actualizada -->
 <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%); border-radius: 16px; display: flex; gap: 20px; align-items: center; border: 1px solid #667eea20;">
     <div style="background: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
         <i class="fas fa-info-circle" style="color: #1877f2; font-size: 24px;"></i>
@@ -151,23 +156,116 @@
     <div>
         <strong style="display: block; margin-bottom: 5px;">Información importante</strong>
         <p style="color: #606770; margin: 0; font-size: 14px;">
-            Los precios de compra son históricos. Cada vez que actualices un precio, se guarda el anterior para mantener el historial y calcular ganancias correctamente.
+            Los precios de compra son <strong>globales</strong> (aplican a todas las sucursales). 
+            Cada vez que actualices un precio, se guarda el historial para calcular ganancias correctamente 
+            basado en el costo que tenía el producto en el momento de la venta.
         </p>
     </div>
 </div>
 
-<style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const rows = document.querySelectorAll('.price-row');
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const productName = row.dataset.productName || '';
+            const productDesc = row.dataset.productDescription || '';
+            
+            const matchesSearch = searchTerm === '' || 
+                                 productName.includes(searchTerm) || 
+                                 productDesc.includes(searchTerm);
+            
+            if (matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Mostrar mensaje de "no resultados"
+        const tbody = document.getElementById('prices-tbody');
+        let noResultsRow = document.getElementById('no-results-row');
+        
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!noResultsRow) {
+                noResultsRow = document.createElement('tr');
+                noResultsRow.id = 'no-results-row';
+                noResultsRow.innerHTML = `
+                    <td colspan="7" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-search" style="font-size: 40px; color: #e4e6eb; margin-bottom: 15px;"></i>
+                        <h3 style="color: #050505; margin-bottom: 5px;">No se encontraron resultados</h3>
+                        <p style="color: #606770;">Intenta con otros términos de búsqueda</p>
+                    </td>
+                `;
+                tbody.appendChild(noResultsRow);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    filterTable(); // Inicializar
+});
+
+// Estilos para los botones de acción
+const style = document.createElement('style');
+style.textContent = `
     .action-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
     .action-btn[title="Ver historial"]:hover {
-        background: #d4e6ff !important;
+        background: #1877f2 !important;
+        color: white !important;
     }
     
     .action-btn[title="Actualizar precio"]:hover {
-        background: #ffe4cc !important;
+        background: #f7b928 !important;
+        color: white !important;
     }
-</style>
+    
+    .action-btn[title="Agregar precio"]:hover {
+        background: #42b72a !important;
+        color: white !important;
+    }
+    
+    .price-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .price-row:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .status-active {
+        background: #e3f2e8;
+        color: #1b7e3f;
+    }
+    
+    .status-inactive {
+        background: #fff4e5;
+        color: #bd7b13;
+    }
+`;
+document.head.appendChild(style);
+</script>
+
 {% endblock %}

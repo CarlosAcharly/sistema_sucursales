@@ -7,7 +7,8 @@ urlpatterns = [
     # Precios de compra
     path('purchase-prices/', views.purchase_price_list, name='purchase_price_list'),
     path('purchase-prices/create/', views.purchase_price_create, name='purchase_price_create'),
-    path('purchase-prices/history/<int:product_id>/<int:branch_id>/', views.purchase_price_history, name='purchase_price_history'),
+    path('purchase-prices/edit/<int:price_id>/', views.purchase_price_edit, name='purchase_price_edit'),
+    path('purchase-prices/history/<int:product_id>/', views.purchase_price_history, name='purchase_price_history'),
     
     # Dashboard de ganancias
     path('dashboard/', views.profit_dashboard, name='profit_dashboard'),

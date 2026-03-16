@@ -6,7 +6,7 @@ from branches.models import Branch
 class PurchasePriceForm(forms.ModelForm):
     class Meta:
         model = PurchasePrice
-        fields = ['product', 'branch', 'price', 'notes']
+        fields = ['product', 'price', 'notes']  # ✅ Eliminado 'branch'
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
@@ -14,7 +14,16 @@ class PurchasePriceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['product'].queryset = Product.objects.filter(is_active=True)
-        self.fields['branch'].queryset = Branch.objects.filter(is_active=True)
+        self.fields['product'].widget.attrs.update({'class': 'product-select'})
+        self.fields['price'].widget.attrs.update({
+            'class': 'price-input',
+            'step': '0.01',
+            'min': '0'
+        })
+        
+        # Si estamos editando (ya hay instancia), mostrar información del precio actual
+        if self.instance and self.instance.pk:
+            self.fields['product'].disabled = True  # No permitir cambiar producto en edición
 
 
 class DateRangeForm(forms.Form):

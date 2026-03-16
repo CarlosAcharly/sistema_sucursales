@@ -16,8 +16,8 @@
                 <span style="background: #e7f3ff; padding: 4px 12px; border-radius: 30px; font-size: 13px;">
                     <i class="fas fa-box"></i> {{ product.name }}
                 </span>
-                <span style="background: #fff4e5; padding: 4px 12px; border-radius: 30px; font-size: 13px;">
-                    <i class="fas fa-store"></i> {{ branch.name }}
+                <span style="background: #42b72a20; color: #42b72a; padding: 4px 12px; border-radius: 30px; font-size: 13px;">
+                    <i class="fas fa-globe"></i> Precio Global
                 </span>
             </p>
         </div>
@@ -80,6 +80,7 @@
                 <th>Registrado por</th>
                 <th>Notas</th>
                 <th>Estado</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -124,10 +125,20 @@
                         </span>
                     {% endif %}
                 </td>
+                <td>
+                    {% if not price.is_active %}
+                    <a href="{% url 'earnings:purchase_price_edit' price.id %}" 
+                       class="action-btn" 
+                       style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;"
+                       title="Usar este precio como base">
+                        <i class="fas fa-copy"></i>
+                    </a>
+                    {% endif %}
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align: center; padding: 60px;">
+                <td colspan="6" style="text-align: center; padding: 60px;">
                     <i class="fas fa-history" style="font-size: 60px; color: #e4e6eb; margin-bottom: 20px;"></i>
                     <h3 style="color: #050505;">No hay historial de precios</h3>
                 </td>
@@ -154,6 +165,26 @@
         color: white !important;
         transform: translateX(-3px);
     }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        background: #1877f2 !important;
+        color: white !important;
+    }
+    
+    .kpi-card {
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -170,60 +201,64 @@ document.addEventListener('DOMContentLoaded', function() {
         {% endfor %}
     ];
     
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: prices.map(p => p.date),
-            datasets: [{
-                label: 'Precio de Compra ($)',
-                data: prices.map(p => p.price),
-                borderColor: '#42b72a',
-                backgroundColor: 'rgba(66, 183, 42, 0.1)',
-                borderWidth: 3,
-                pointBackgroundColor: '#42b72a',
-                pointBorderColor: 'white',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return '$' + context.raw.toFixed(2);
-                        }
-                    }
-                }
+    if (prices.length > 0) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: prices.map(p => p.date),
+                datasets: [{
+                    label: 'Precio de Compra ($)',
+                    data: prices.map(p => p.price),
+                    borderColor: '#42b72a',
+                    backgroundColor: 'rgba(66, 183, 42, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#42b72a',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.4,
+                    fill: true
+                }]
             },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(0,0,0,0.05)'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
                     },
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value;
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '$' + context.raw.toFixed(2);
+                            }
                         }
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } else {
+        document.querySelector('.fb-card:last-child').style.display = 'none';
+    }
 });
 </script>
 {% endblock %}

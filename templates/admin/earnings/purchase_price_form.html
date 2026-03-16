@@ -2,20 +2,26 @@
 {% load static %}
 
 {% block earnings_content %}
-<div class="fb-card" style="border-radius: 20px; padding: 30px; max-width: 700px; margin: 0 auto;">
+<div class="fb-card" style="border-radius: 20px; padding: 30px; max-width: 600px; margin: 0 auto;">
     <div style="text-align: center; margin-bottom: 30px;">
-        <div style="background: linear-gradient(135deg, {% if form.instance.pk %}#f7b928, #f59e0b{% else %}#42b72a, #2d8a1f{% endif %}); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
-            <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %}" style="font-size: 40px; color: white;"></i>
+        <div style="background: linear-gradient(135deg, #42b72a, #2d8a1f); width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+            <i class="fas fa-tag" style="font-size: 40px; color: white;"></i>
         </div>
         <h2 style="margin: 0; font-size: 28px;">{{ title }}</h2>
         <p style="color: #606770; margin-top: 10px;">
-            {% if form.instance.pk %}
-                Actualizando precio de compra existente
-            {% else %}
-                Registra el costo de adquisición del producto
-            {% endif %}
+            Este precio aplicará a <strong>TODAS las sucursales</strong>
         </p>
     </div>
+
+    {% if old_price %}
+    <div style="background: #fff4e5; padding: 16px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 15px;">
+        <i class="fas fa-info-circle" style="color: #f7b928; font-size: 24px;"></i>
+        <div>
+            <strong style="display: block;">Precio anterior: ${{ old_price.price|floatformat:2 }}</strong>
+            <small style="color: #606770;">Válido desde {{ old_price.valid_from|date:"d/m/Y H:i" }}</small>
+        </div>
+    </div>
+    {% endif %}
 
     <form method="POST">
         {% csrf_token %}
@@ -31,35 +37,38 @@
         </div>
         {% endif %}
         
-        <!-- Producto -->
+        <!-- Producto - MOSTRAR COMO TEXTO SI ES EDICIÓN -->
         <div class="form-group" style="margin-bottom: 25px;">
             <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
                 <i class="fas fa-box" style="color: #1877f2; margin-right: 8px;"></i>
                 Producto <span style="color: #fa383e;">*</span>
             </label>
-            <div style="position: relative;">
-                {{ form.product }}
-            </div>
-            {% if form.product.errors %}
-            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
-                <i class="fas fa-exclamation-circle"></i> {{ form.product.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-        
-        <!-- Sucursal -->
-        <div class="form-group" style="margin-bottom: 25px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
-                <i class="fas fa-store" style="color: #42b72a; margin-right: 8px;"></i>
-                Sucursal <span style="color: #fa383e;">*</span>
-            </label>
-            <div style="position: relative;">
-                {{ form.branch }}
-            </div>
-            {% if form.branch.errors %}
-            <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
-                <i class="fas fa-exclamation-circle"></i> {{ form.branch.errors.0 }}
-            </div>
+            
+            {% if is_edit %}
+                <!-- Modo edición: mostrar como texto con campo oculto -->
+                <div style="display: flex; align-items: center; gap: 10px; background: #f5f6f7; padding: 14px; border: 2px solid #e4e6eb; border-radius: 12px;">
+                    <div style="background: linear-gradient(135deg, #667eea, #764ba2); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-box" style="color: white;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <strong style="font-size: 16px;">{{ form.initial.product.name|default:old_price.product.name }}</strong>
+                        <input type="hidden" name="product" value="{{ form.initial.product.id|default:old_price.product.id }}">
+                    </div>
+                    <i class="fas fa-lock" style="color: #606770;" title="El producto no se puede cambiar en edición"></i>
+                </div>
+                <small style="color: #606770; display: block; margin-top: 5px;">
+                    <i class="fas fa-info-circle"></i> El producto no se puede modificar para mantener el historial
+                </small>
+            {% else %}
+                <!-- Modo creación: mostrar select normal -->
+                <div style="position: relative;">
+                    {{ form.product }}
+                </div>
+                {% if form.product.errors %}
+                <div style="color: #fa383e; font-size: 13px; margin-top: 5px;">
+                    <i class="fas fa-exclamation-circle"></i> {{ form.product.errors.0 }}
+                </div>
+                {% endif %}
             {% endif %}
         </div>
         
@@ -102,26 +111,6 @@
             {% endif %}
         </div>
         
-        <!-- Información adicional (solo edición) -->
-        {% if form.instance.pk %}
-        <div style="background: linear-gradient(135deg, #f8f9fa, #f0f2f5); padding: 20px; border-radius: 16px; margin-bottom: 30px;">
-            <h4 style="margin: 0 0 15px 0; color: #050505; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-info-circle" style="color: #1877f2;"></i>
-                Información del registro
-            </h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div style="background: white; padding: 12px; border-radius: 10px;">
-                    <small style="color: #606770; display: block;">Creado por</small>
-                    <strong>{{ form.instance.created_by.get_full_name|default:form.instance.created_by.username }}</strong>
-                </div>
-                <div style="background: white; padding: 12px; border-radius: 10px;">
-                    <small style="color: #606770; display: block;">Fecha</small>
-                    <strong>{{ form.instance.created_at|date:"d/m/Y H:i" }}</strong>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
         <!-- Botones de acción -->
         <div style="display: flex; gap: 15px; border-top: 2px solid #f0f2f5; padding-top: 30px;">
             <button type="submit" class="fb-btn" style="flex: 2; background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 16px; border-radius: 12px; font-weight: 600; font-size: 16px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;">
@@ -157,6 +146,12 @@
         border-color: #1877f2;
         box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.1);
         outline: none;
+    }
+    
+    select:disabled {
+        background: #f5f6f7;
+        color: #606770;
+        cursor: not-allowed;
     }
     
     textarea {
