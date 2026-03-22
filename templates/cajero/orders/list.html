@@ -121,7 +121,9 @@
                         {% else %}
                             <button class="fb-btn fb-btn-success btn-sm add-to-inventory-btn" 
                                     data-order-id="{{ order.id }}"
-                                    onclick="addToInventory(this, {{ order.id }})">
+                                    data-order-total="{{ order.total_kilos|floatformat:2 }}"
+                                    data-order-products="{{ order.items_count }}"
+                                    onclick="openConfirmModal({{ order.id }}, {{ order.total_kilos|floatformat:2 }}, {{ order.items_count }})">
                                 <i class="fas fa-boxes"></i> Agregar a Inventario
                             </button>
                         {% endif %}
@@ -138,6 +140,59 @@
                 </a>
             </div>
             {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ========== MODAL DE CONFIRMACIÓN PARA AGREGAR INVENTARIO ========== -->
+<div id="confirmInventoryModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-boxes"></i> Confirmar Agregar a Inventario
+            </h3>
+            <span class="close" onclick="closeConfirmModal()" style="color: white; font-size: 28px; cursor: pointer;">&times;</span>
+        </div>
+        
+        <div class="modal-body" style="padding: 25px;">
+            <!-- Resumen del pedido -->
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #050505; text-align: center;">
+                    <i class="fas fa-clipboard-list"></i> Pedido #<span id="modal-order-id"></span>
+                </h4>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: #606770;">Productos:</span>
+                    <strong id="modal-products-count" style="color: #1877f2;">0</strong>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #606770;">Total kilos:</span>
+                    <strong id="modal-total-kilos" style="color: #42b72a; font-size: 18px;">0 kg</strong>
+                </div>
+            </div>
+            
+            <!-- Advertencia -->
+            <div style="background: #fff4e5; border-radius: 10px; padding: 15px; margin-bottom: 20px; display: flex; gap: 12px;">
+                <i class="fas fa-exclamation-triangle" style="color: #f7b928; font-size: 24px;"></i>
+                <div>
+                    <strong style="display: block; color: #bd7b13;">¿Estás seguro?</strong>
+                    <p style="margin: 5px 0 0 0; color: #606770; font-size: 13px;">
+                        Los productos se agregarán al inventario de tu sucursal.
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeConfirmModal()" class="fb-btn fb-btn-secondary" style="padding: 10px 20px;">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button onclick="confirmAddToInventory()" class="fb-btn" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 10px 25px; border: none; cursor: pointer;" id="confirm-add-btn">
+                    <i class="fas fa-check-circle"></i> Confirmar
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -545,6 +600,137 @@
 </style>
 
 <script>
+// Variables para el modal de confirmación
+let currentOrderId = null;
+let currentOrderTotal = null;
+let currentOrderProducts = null;
+let originalButton = null;
+
+// Abrir modal de confirmación
+function openConfirmModal(orderId, totalKilos, productsCount) {
+    currentOrderId = orderId;
+    currentOrderTotal = totalKilos;
+    currentOrderProducts = productsCount;
+    
+    // Encontrar el botón original
+    originalButton = document.querySelector(`.add-to-inventory-btn[data-order-id="${orderId}"]`);
+    
+    // Actualizar contenido del modal
+    document.getElementById('modal-order-id').textContent = orderId;
+    document.getElementById('modal-products-count').textContent = productsCount;
+    document.getElementById('modal-total-kilos').textContent = totalKilos + ' kg';
+    
+    // Mostrar modal
+    document.getElementById('confirmInventoryModal').style.display = 'block';
+}
+
+// Cerrar modal de confirmación
+function closeConfirmModal() {
+    document.getElementById('confirmInventoryModal').style.display = 'none';
+    currentOrderId = null;
+    currentOrderTotal = null;
+    currentOrderProducts = null;
+    originalButton = null;
+}
+
+// Confirmar y agregar al inventario
+function confirmAddToInventory() {
+    if (!currentOrderId) return;
+    
+    const confirmBtn = document.getElementById('confirm-add-btn');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    
+    // Obtener el token CSRF
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Hacer la petición AJAX
+    fetch(`/orders/${currentOrderId}/agregar-inventario/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Error al agregar al inventario');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal
+            closeConfirmModal();
+            
+            // Actualizar la UI: reemplazar el botón
+            if (originalButton) {
+                const newButton = document.createElement('button');
+                newButton.className = 'fb-btn btn-sm';
+                newButton.disabled = true;
+                newButton.style.cssText = 'background: #e4e6eb; color: #999; cursor: not-allowed;';
+                newButton.innerHTML = '<i class="fas fa-check"></i> Ya agregado';
+                originalButton.parentNode.replaceChild(newButton, originalButton);
+            }
+            
+            // Mostrar notificación de éxito
+            showToast(`✅ ${data.message}`, 'success');
+            
+            // Recargar estadísticas después de un momento
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('❌ ' + error.message, 'error');
+    })
+    .finally(() => {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar';
+    });
+}
+
+// Función para mostrar toast
+function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" 
+               style="color: ${type === 'success' ? '#42b72a' : '#fa383e'};"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
+    toast.style.display = 'block';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeConfirmModal();
+    }
+});
+
+// Clic fuera del modal
+window.onclick = function(event) {
+    const modal = document.getElementById('confirmInventoryModal');
+    if (event.target == modal) {
+        closeConfirmModal();
+    }
+}
+
 // Filtrado de pedidos
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -580,96 +766,6 @@ document.getElementById('searchOrder').addEventListener('input', function(e) {
     });
 });
 
-// Función para agregar al inventario vía AJAX
-function addToInventory(button, orderId) {
-    if (!confirm('¿Agregar estos productos al inventario?')) {
-        return;
-    }
-    
-    // Deshabilitar el botón y mostrar loading
-    const originalText = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando...';
-    
-    // Obtener el token CSRF
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    // Hacer la petición AJAX
-    fetch(`/orders/${orderId}/agregar-inventario/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrftoken,
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || 'Error al agregar al inventario');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Actualizar la UI
-            const orderCard = button.closest('.order-card');
-            
-            // Reemplazar el botón con uno deshabilitado
-            const newButton = document.createElement('button');
-            newButton.className = 'fb-btn btn-sm';
-            newButton.disabled = true;
-            newButton.style.cssText = 'background: #e4e6eb; color: #999; cursor: not-allowed;';
-            newButton.innerHTML = '<i class="fas fa-check"></i> Ya agregado';
-            
-            button.parentNode.replaceChild(newButton, button);
-            
-            // Mostrar notificación de éxito
-            showToast(`✅ ${data.message}`, 'success');
-            
-            // Mostrar detalles si hay items con advertencias
-            if (data.results) {
-                const warnings = data.results.filter(r => r.status === 'skipped');
-                if (warnings.length > 0) {
-                    console.log('Items omitidos:', warnings);
-                }
-            }
-        } else {
-            throw new Error(data.error || 'Error desconocido');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        
-        // Restaurar el botón
-        button.disabled = false;
-        button.innerHTML = originalText;
-        
-        // Mostrar notificación de error
-        showToast('❌ ' + error.message, 'error');
-    });
-}
-
-// Función para mostrar toast
-function showToast(message, type) {
-    const toast = document.getElementById('toast');
-    toast.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" 
-               style="color: ${type === 'success' ? '#42b72a' : '#fa383e'};"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    toast.style.borderLeftColor = type === 'success' ? '#42b72a' : '#fa383e';
-    toast.style.display = 'block';
-    
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
-}
-
 // Modal de detalles
 const modal = document.getElementById('orderModal');
 const span = document.getElementsByClassName('close')[0];
@@ -699,7 +795,7 @@ function viewOrderDetails(orderId) {
     
     modal.style.display = 'block';
     
-    // Construir URL correctamente (asegurando que no haya espacios)
+    // Construir URL correctamente
     const url = `/orders/api/${orderId}/`;
     console.log('Cargando pedido desde:', url);
     
@@ -814,7 +910,6 @@ function viewOrderDetails(orderId) {
                     <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #fa383e; margin-bottom: 15px;"></i>
                     <p style="color: #050505; font-weight: 600;">Error al cargar los detalles</p>
                     <p style="color: #606770; margin-top: 10px;">${error.message}</p>
-                    <p style="color: #999; font-size: 12px; margin-top: 10px;">URL intentada: /orders/api/${orderId}/</p>
                 </div>
             `;
         });
