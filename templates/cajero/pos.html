@@ -424,55 +424,74 @@
     </div>
 </div>
 
-<!-- Ticket oculto para impresión - SIN MÁRGENES SUPERIORES -->
+<!-- Ticket oculto para impresión - VERSIÓN MEJORADA -->
 <div id="ticket-print" style="display: none;">
-    <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 0; margin: 0; background: white; font-size: 10px; line-height: 1.2;">
-        <!-- ELIMINADO cualquier margen superior -->
-        <div style="text-align: center; margin: 0; padding: 0;">
-            <h3 style="margin: 0; padding: 0; font-size: 14px; font-weight: bold;">{{ request.user.branch.name }}</h3>
-            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-direccion"></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-telefono"></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;" id="print-fecha-hora"></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;">Ticket #<span id="print-ticket-number"></span></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;">Atendió: <span id="print-atendio">{{ request.user.get_full_name|default:request.user.username }}</span></p>
+    <div style="font-family: 'Courier New', monospace; width: 58mm; padding: 4mm 2mm; margin: 0; background: white; font-size: 11px; line-height: 1.4;">
+        
+        <!-- Encabezado -->
+        <div style="text-align: center; margin-bottom: 8px;">
+            <h3 style="margin: 0 0 2px 0; padding: 0; font-size: 16px; font-weight: bold;">{{ request.user.branch.name }}</h3>
+            <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-direccion"></p>
+            <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-telefono"></p>
+            <div style="margin: 4px 0 2px 0;">
+                <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-fecha-hora"></p>
+                <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;">Ticket #<span id="print-ticket-number"></span></p>
+                <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;">Atendió: <span id="print-atendio">{{ request.user.get_full_name|default:request.user.username }}</span></p>
+            </div>
         </div>
         
-        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
+        <hr style="border: none; border-top: 1px dashed #000; margin: 4px 0;">
         
-        <!-- Datos del cliente si existen -->
-        <div id="print-cliente" style="margin: 0; padding: 0;">
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
+        <!-- Datos del cliente -->
+        <div id="print-cliente" style="margin-bottom: 6px;">
+            <p style="margin: 2px 0; font-size: 10px; font-weight: bold;"><strong>Cliente:</strong> <span id="print-cliente-nombre"></span></p>
+            <p style="margin: 2px 0; font-size: 10px; font-weight: bold;"><strong>Dirección:</strong> <span id="print-cliente-direccion"></span></p>
+            <p style="margin: 2px 0; font-size: 10px; font-weight: bold;"><strong>Teléfono:</strong> <span id="print-cliente-telefono"></span></p>
         </div>
         
-        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
+        <hr style="border: none; border-top: 1px dashed #000; margin: 4px 0;">
         
-        <!-- Tabla de productos compacta -->
-        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+        <!-- Tabla de productos con 4 columnas -->
+        <table style="width: 100%; border-collapse: collapse; margin: 4px 0;">
             <thead>
-                <tr>
-                    <th style="text-align: left; padding: 1px 0; margin: 0; font-weight: bold;">Producto</th>
-                    <th style="text-align: center; padding: 1px 0; margin: 0; font-weight: bold;">Cant</th>
-                    <th style="text-align: right; padding: 1px 0; margin: 0; font-weight: bold;">Total</th>
+                <tr style="border-bottom: 1px dashed #000;">
+                    <th style="text-align: left; padding: 4px 2px; font-size: 11px; font-weight: bold;">Producto</th>
+                    <th style="text-align: center; padding: 4px 2px; font-size: 11px; font-weight: bold;">Cant</th>
+                    <th style="text-align: right; padding: 4px 2px; font-size: 11px; font-weight: bold;">Precio</th>
+                    <th style="text-align: right; padding: 4px 2px; font-size: 11px; font-weight: bold;">Total</th>
                 </tr>
             </thead>
-            <tbody id="print-items" style="margin: 0; padding: 0;">
-                <!-- Items se insertan aquí -->
+            <tbody id="print-items">
+                <!-- Items se insertan aquí dinámicamente -->
             </tbody>
         </table>
         
-        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
+        <hr style="border: none; border-top: 1px dashed #000; margin: 4px 0;">
         
-        <div style="text-align: right; margin: 0; padding: 0;">
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Total:</strong> $<span id="print-total"></span></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Recibido:</strong> $<span id="print-recibido"></span></p>
-            <p style="margin: 0; padding: 0; font-weight: bold;"><strong>Cambio:</strong> $<span id="print-cambio"></span></p>
+        <!-- Totales -->
+        <div style="text-align: right; margin: 6px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: bold;">Subtotal:</span>
+                <span style="font-weight: bold;" id="print-subtotal">0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: bold;">Total:</span>
+                <span style="font-weight: bold; font-size: 14px;" id="print-total">0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: bold;">Recibido:</span>
+                <span style="font-weight: bold;" id="print-recibido">0.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: bold;">Cambio:</span>
+                <span style="font-weight: bold; color: #1b7e3f;" id="print-cambio">0.00</span>
+            </div>
         </div>
         
-        <hr style="border: none; border-top: 1px dashed #000; margin: 2px 0; padding: 0;">
+        <hr style="border: none; border-top: 1px dashed #000; margin: 4px 0;">
         
-        <p style="text-align: center; margin: 0; padding: 2px 0 0 0; font-size: 10px; font-weight: bold;">¡Gracias por su compra!</p>
+        <!-- Mensaje de cierre -->
+        <p style="text-align: center; margin: 6px 0 2px 0; font-size: 10px; font-weight: bold;">¡Gracias por su compra!</p>
     </div>
 </div>
 
@@ -636,7 +655,6 @@ function searchProducts(query) {
         return;
     }
 
-    // Filtrar productos que tengan al menos un precio Y coincidan con la búsqueda
     const matches = products.filter(p => {
         const hasPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial;
         return hasPrice && (p.name.includes(query) || (p.description && p.description.includes(query)));
@@ -644,10 +662,7 @@ function searchProducts(query) {
 
     if (matches.length > 0) {
         resultsContainer.innerHTML = matches.map(p => {
-            // Asegurar que defaultPrice siempre tenga un valor
             const defaultPrice = p.priceKg || p.priceBulk || p.priceWholesale || p.priceSpecial || 0;
-            
-            // Determinar el tipo de precio por defecto
             let defaultPriceType = 'kg';
             if (p.priceKg) defaultPriceType = 'kg';
             else if (p.priceBulk) defaultPriceType = 'bulk';
@@ -655,8 +670,6 @@ function searchProducts(query) {
             else if (p.priceSpecial) defaultPriceType = 'special';
             
             let priceOptions = '';
-            
-            // Generar opciones SOLO si tienen precio válido
             if (p.priceKg && !isNaN(p.priceKg) && p.priceKg > 0) {
                 priceOptions += `<option value="kg" data-price="${p.priceKg}" ${defaultPriceType === 'kg' ? 'selected' : ''}>Kg: $${p.priceKg.toFixed(2)}</option>`;
             }
@@ -759,10 +772,8 @@ function addProductWithPrice(id, name, button) {
         return;
     }
     
-    // Obtener el precio de manera segura
     let price = parseFloat(priceDisplay.dataset.price);
     if (isNaN(price) || price <= 0) {
-        // Si no hay precio en dataset, obtenerlo del selector
         const selectedOption = selector.options[selector.selectedIndex];
         price = parseFloat(selectedOption.dataset.price);
     }
@@ -871,10 +882,9 @@ function setQuantity(id, value) {
     let newQuantity = parseFloat(value);
     
     if (isNaN(newQuantity) || newQuantity < 0.001) {
-        newQuantity = 0.001; // Mínimo 1 gramo
+        newQuantity = 0.001;
     }
     
-    // Redondear a 3 decimales
     newQuantity = Math.round(newQuantity * 1000) / 1000;
     
     if (cart[id]) {
@@ -885,7 +895,7 @@ function setQuantity(id, value) {
 
 function updateQuantity(id, change) {
     if (cart[id]) {
-        let newQuantity = cart[id].quantity + (change * 0.1); // Cambios de 0.1 kg (100g)
+        let newQuantity = cart[id].quantity + (change * 0.1);
         if (change === 1) newQuantity = cart[id].quantity + 0.1;
         if (change === -1) newQuantity = cart[id].quantity - 0.1;
         
@@ -909,7 +919,6 @@ function removeFromCart(id) {
     renderTicket();
 }
 
-// Funciones para el modal de limpiar
 function abrirModalLimpiar() {
     if (Object.keys(cart).length === 0) {
         showNotification('No hay productos en el ticket', 'error');
@@ -936,7 +945,6 @@ function confirmarLimpiarTicket() {
     showNotification('🧹 Ticket limpiado', 'success');
 }
 
-// Funciones para el cálculo de cambio
 function setMontoSugerido(monto) {
     document.getElementById('monto-recibido').value = monto;
     calcularCambio();
@@ -947,12 +955,10 @@ function calcularCambio() {
     const montoRecibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
     const cambio = montoRecibido - total;
     
-    // Actualizar previews
     document.getElementById('modal-total-cambio').innerHTML = '$' + total.toFixed(2);
     document.getElementById('modal-recibido-preview').innerHTML = '$' + montoRecibido.toFixed(2);
     document.getElementById('modal-cambio-preview').innerHTML = '$' + (cambio >= 0 ? cambio.toFixed(2) : '0.00');
     
-    // Mostrar/ocultar mensaje de pago insuficiente
     const pagoInsuficiente = document.getElementById('pago-insuficiente');
     if (montoRecibido < total) {
         pagoInsuficiente.style.display = 'block';
@@ -960,7 +966,6 @@ function calcularCambio() {
         pagoInsuficiente.style.display = 'none';
     }
     
-    // Guardar valores globalmente
     montoRecibidoGlobal = montoRecibido;
     cambioGlobal = cambio >= 0 ? cambio : 0;
 }
@@ -986,7 +991,6 @@ function abrirModalConfirmacion() {
     document.getElementById('modal-cliente-direccion').textContent = clienteDireccion;
     document.getElementById('modal-cliente-telefono').textContent = clienteTelefono;
     
-    // Resetear campo de monto
     document.getElementById('monto-recibido').value = '';
     document.getElementById('modal-total-cambio').innerHTML = '$' + total.toFixed(2);
     document.getElementById('modal-recibido-preview').innerHTML = '$0.00';
@@ -1008,14 +1012,12 @@ function procesarVenta() {
         return;
     }
 
-    // Validar que el monto sea suficiente
     const total = parseFloat(document.getElementById('total').innerText);
     if (montoRecibidoGlobal < total) {
         showNotification('❌ El monto recibido es insuficiente', 'error');
         return;
     }
 
-    // ✅ Obtener datos del cliente
     const cliente = {
         nombre: document.getElementById('cliente-nombre').value.trim() || 'Cliente Mostrador',
         direccion: document.getElementById('cliente-direccion').value.trim(),
@@ -1132,7 +1134,6 @@ function imprimirTicketVenta() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // 🔴 OBTENER FECHA Y HORA ACTUAL
     const now = new Date();
     const fechaHora = now.toLocaleDateString('es-MX', {
         day: '2-digit',
@@ -1151,137 +1152,89 @@ function imprimirTicketVenta() {
     document.getElementById('print-recibido').textContent = recibido.replace('$', '');
     document.getElementById('print-cambio').textContent = cambio.replace('$', '');
     
+    let subtotal = 0;
+    
     fetch(`/sales/api/${ventaActualId}/`)
         .then(response => response.json())
         .then(data => {
             let itemsHtml = '';
+            subtotal = 0;
             
             if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
+                    const itemTotal = item.subtotal;
+                    subtotal += itemTotal;
+                    
                     itemsHtml += `
-                        <tr>
-                            <td style="text-align: left; font-weight: bold;">${item.product_name.substring(0, 18)}${item.product_name.length > 18 ? '…' : ''}</td>
-                            <td style="text-align: center; font-weight: bold;">${item.quantity} ${item.price_type_display}</td>
-                            <td style="text-align: right; font-weight: bold;">$${item.subtotal.toFixed(2)}</td>
+                        <tr style="border-bottom: 1px dotted #ccc;">
+                            <td style="text-align: left; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.product_name.substring(0, 18)}${item.product_name.length > 18 ? '…' : ''}</td>
+                            <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity}</td>
+                            <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${item.price.toFixed(2)}</td>
+                            <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${itemTotal.toFixed(2)}</td>
                         </tr>
                     `;
                 });
             }
             
             document.getElementById('print-items').innerHTML = itemsHtml;
+            document.getElementById('print-subtotal').textContent = subtotal.toFixed(2);
             
-            // Guardar el contenido original de la página
             const originalContent = document.body.innerHTML;
             
-            // Obtener solo el contenido del ticket con estilos
-            // En imprimirTicketVenta() e imprimirTicket(), reemplaza el estilo con esto:
-
-const ticketHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Ticket de Venta #${ventaActualId || currentTicketNumber}</title>
-        <style>
-            * { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                box-sizing: border-box; 
-            }
-            html, body { 
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto;
-                min-height: 0;
-            }
-            body { 
-                font-family: 'Courier New', monospace; 
-                width: 58mm;
-                margin: 0 auto !important;
-                padding: 0 !important;
-                font-size: 10px;
-                font-weight: bold;
-                line-height: 1.2;
-                background: white;
-                position: relative;
-                top: 0;
-                left: 0;
-            }
-            table { 
-                width:100%; 
-                border-collapse:collapse; 
-                margin: 0;
-                padding: 0;
-            }
-            th, td { 
-                padding: 1px 0; 
-                text-align:left; 
-                font-weight:bold; 
-                font-size:10px; 
-                margin: 0;
-            }
-            th { 
-                border-bottom:1px dashed #000; 
-            }
-            hr { 
-                border:none; 
-                border-top:1px dashed #000; 
-                margin: 2px 0; 
-                padding: 0;
-            }
-            p, div, h3 {
-                margin: 0;
-                padding: 0;
-            }
-            .centered { 
-                text-align:center; 
-            }
-            .right { 
-                text-align:right; 
-            }
-            @media print {
-                html, body { 
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    width: 58mm;
-                }
-                body { 
-                    width: 58mm;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-            }
-        </style>
-    </head>
-    <body style="margin:0;padding:0;">
-        ${document.getElementById('ticket-print').innerHTML}
-    </body>
-    </html>
-`;
+            const ticketHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Ticket de Venta #${ventaActualId}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            width: 58mm;
+                            margin: 0 auto;
+                            padding: 0;
+                            font-size: 11px;
+                            font-weight: bold;
+                            line-height: 1.4;
+                            background: white;
+                        }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 3px 2px; text-align: left; font-size: 11px; font-weight: bold; }
+                        th { border-bottom: 1px dashed #000; }
+                        hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+                        .centered { text-align: center; }
+                        .right { text-align: right; }
+                        @media print {
+                            body { width: 58mm; margin: 0; padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${document.getElementById('ticket-print').innerHTML}
+                </body>
+                </html>
+            `;
             
-            // Reemplazar el contenido de la página con el ticket
             document.body.innerHTML = ticketHTML;
-            
-            // Imprimir
             window.print();
             
-            // Restaurar el contenido original después de imprimir
             window.onafterprint = function() {
                 document.body.innerHTML = originalContent;
-                location.reload(); // Recargar para restaurar todas las funcionalidades
+                location.reload();
             };
             
-            // Fallback para navegadores que no soportan onafterprint
             setTimeout(() => {
                 document.body.innerHTML = originalContent;
                 location.reload();
             }, 1000);
         })
         .catch(error => {
-            console.error('Error al cargar los items de la venta:', error);
+            console.error('Error:', error);
             showNotification('Error al generar el ticket', 'error');
         });
 }
+
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -1334,7 +1287,6 @@ function imprimirTicket() {
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
     
-    // 🔴 OBTENER FECHA Y HORA ACTUAL
     const now = new Date();
     const fechaHora = now.toLocaleDateString('es-MX', {
         day: '2-digit',
@@ -1345,131 +1297,77 @@ function imprimirTicket() {
     }).replace(',', '');
     document.getElementById('print-fecha-hora').textContent = fechaHora;
     
-    document.getElementById('print-recibido').textContent = '0.00';
-    document.getElementById('print-cambio').textContent = '0.00';
-    
     let itemsHtml = '';
     let total = 0;
+    let subtotal = 0;
     
     for (let id in cart) {
         let item = cart[id];
         let rowTotal = item.price * item.quantity;
         total += rowTotal;
+        subtotal += rowTotal;
         
         itemsHtml += `
-            <tr>
-                <td style="text-align: left; font-weight: bold;">${item.name.substring(0, 15)}${item.name.length > 15 ? '…' : ''}</td>
-                <td style="text-align: center; font-weight: bold;">${item.quantity} ${item.priceTypeName}</td>
-                <td style="text-align: right; font-weight: bold;">$${rowTotal.toFixed(2)}</td>
+            <tr style="border-bottom: 1px dotted #ccc;">
+                <td style="text-align: left; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.name.substring(0, 18)}${item.name.length > 18 ? '…' : ''}</td>
+                <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity}</td>
+                <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${item.price.toFixed(2)}</td>
+                <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${rowTotal.toFixed(2)}</td>
             </tr>
         `;
     }
     
     document.getElementById('print-items').innerHTML = itemsHtml;
     document.getElementById('print-total').textContent = total.toFixed(2);
+    document.getElementById('print-subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('print-recibido').textContent = '0.00';
+    document.getElementById('print-cambio').textContent = '0.00';
     
-    // Guardar contenido original
     const originalContent = document.body.innerHTML;
     
-    // Crear HTML del ticket
-    // En imprimirTicketVenta() e imprimirTicket(), reemplaza el estilo con esto:
-
-const ticketHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Ticket de Venta #${ventaActualId || currentTicketNumber}</title>
-        <style>
-            * { 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                box-sizing: border-box; 
-            }
-            html, body { 
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto;
-                min-height: 0;
-            }
-            body { 
-                font-family: 'Courier New', monospace; 
-                width: 58mm;
-                margin: 0 auto !important;
-                padding: 0 !important;
-                font-size: 10px;
-                font-weight: bold;
-                line-height: 1.2;
-                background: white;
-                position: relative;
-                top: 0;
-                left: 0;
-            }
-            table { 
-                width:100%; 
-                border-collapse:collapse; 
-                margin: 0;
-                padding: 0;
-            }
-            th, td { 
-                padding: 1px 0; 
-                text-align:left; 
-                font-weight:bold; 
-                font-size:10px; 
-                margin: 0;
-            }
-            th { 
-                border-bottom:1px dashed #000; 
-            }
-            hr { 
-                border:none; 
-                border-top:1px dashed #000; 
-                margin: 2px 0; 
-                padding: 0;
-            }
-            p, div, h3 {
-                margin: 0;
-                padding: 0;
-            }
-            .centered { 
-                text-align:center; 
-            }
-            .right { 
-                text-align:right; 
-            }
-            @media print {
-                html, body { 
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    width: 58mm;
-                }
+    const ticketHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Ticket de Venta #${currentTicketNumber}</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { 
+                    font-family: 'Courier New', monospace; 
                     width: 58mm;
-                    margin: 0 !important;
-                    padding: 0 !important;
+                    margin: 0 auto;
+                    padding: 0;
+                    font-size: 11px;
+                    font-weight: bold;
+                    line-height: 1.4;
+                    background: white;
                 }
-            }
-        </style>
-    </head>
-    <body style="margin:0;padding:0;">
-        ${document.getElementById('ticket-print').innerHTML}
-    </body>
-    </html>
-`;
+                table { width: 100%; border-collapse: collapse; }
+                th, td { padding: 3px 2px; text-align: left; font-size: 11px; font-weight: bold; }
+                th { border-bottom: 1px dashed #000; }
+                hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+                .centered { text-align: center; }
+                .right { text-align: right; }
+                @media print {
+                    body { width: 58mm; margin: 0; padding: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            ${document.getElementById('ticket-print').innerHTML}
+        </body>
+        </html>
+    `;
     
-    // Reemplazar contenido
     document.body.innerHTML = ticketHTML;
-    
-    // Imprimir
     window.print();
     
-    // Restaurar después de imprimir
     window.onafterprint = function() {
         document.body.innerHTML = originalContent;
-        location.reload(); // Recargar para restaurar funcionalidades
+        location.reload();
     };
     
-    // Fallback
     setTimeout(() => {
         document.body.innerHTML = originalContent;
         location.reload();
