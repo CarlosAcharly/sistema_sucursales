@@ -39,6 +39,7 @@ def pos_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         cart = data.get('cart', [])
+        cliente_data = data.get('cliente', {})  # ✅ Obtener datos del cliente
 
         if not cart:
             return JsonResponse({'error': 'Carrito vacío'}, status=400)
@@ -46,7 +47,10 @@ def pos_view(request):
         sale = Sale.objects.create(
             branch=branch,
             cashier=request.user,
-            total=0
+            total=0,
+            cliente_nombre=cliente_data.get('nombre', 'Cliente Mostrador'),  # ✅ Guardar nombre
+            cliente_direccion=cliente_data.get('direccion', ''),  # ✅ Guardar dirección
+            cliente_telefono=cliente_data.get('telefono', '')  # ✅ Guardar teléfono
         )
 
         total_sale = 0
@@ -69,7 +73,6 @@ def pos_view(request):
             subtotal = price * quantity
             total_sale += subtotal
 
-            # Crear SaleItem con tipo de precio
             SaleItem.objects.create(
                 sale=sale,
                 product=inventory_item.product,
@@ -78,7 +81,6 @@ def pos_view(request):
                 price_type=price_type
             )
 
-            # Descontar stock
             inventory_item.stock -= quantity
             inventory_item.save()
 
@@ -99,7 +101,6 @@ def pos_view(request):
     return render(request, 'cajero/pos.html', {
         'inventory': inventory
     })
-
 
 @login_required
 @role_required(['CASHIER'])
@@ -230,7 +231,6 @@ def sale_detail_api(request, sale_id):
         subtotal = 0
         
         for item in sale.items.all():
-            # Convertir Decimal a float para JSON
             quantity = float(item.quantity) if item.quantity else 0
             price = float(item.price) if item.price else 0
             item_subtotal = quantity * price
@@ -239,8 +239,8 @@ def sale_detail_api(request, sale_id):
             items.append({
                 'id': item.id,
                 'product_name': item.product.name,
-                'quantity': quantity,  # Ya como float
-                'price': price,  # Ya como float
+                'quantity': quantity,
+                'price': price,
                 'price_type': item.price_type,
                 'price_type_display': item.get_price_type_display(),
                 'subtotal': item_subtotal
@@ -255,7 +255,11 @@ def sale_detail_api(request, sale_id):
             'branch': sale.branch.name,
             'items': items,
             'status': sale.status,
-            'status_display': sale.get_status_display()
+            'status_display': sale.get_status_display(),
+            # ✅ DATOS DEL CLIENTE
+            'cliente_nombre': sale.cliente_nombre,
+            'cliente_direccion': sale.cliente_direccion,
+            'cliente_telefono': sale.cliente_telefono
         }
         
         return JsonResponse(data)
@@ -263,12 +267,12 @@ def sale_detail_api(request, sale_id):
     except Sale.DoesNotExist:
         return JsonResponse({'error': 'Venta no encontrada'}, status=404)
     except Exception as e:
-        # Log del error para debugging
         import traceback
         print(f"Error en sale_detail_api: {str(e)}")
         print(traceback.format_exc())
         return JsonResponse({'error': str(e)}, status=500)
-
+    
+    
 # =============================
 # 🧑‍💼 ADMINISTRADOR
 # =============================

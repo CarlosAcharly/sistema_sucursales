@@ -1015,6 +1015,13 @@ function procesarVenta() {
         return;
     }
 
+    // ✅ Obtener datos del cliente
+    const cliente = {
+        nombre: document.getElementById('cliente-nombre').value.trim() || 'Cliente Mostrador',
+        direccion: document.getElementById('cliente-direccion').value.trim(),
+        telefono: document.getElementById('cliente-telefono').value.trim()
+    };
+
     let cartArray = [];
     for (let id in cart) {
         cartArray.push({
@@ -1038,7 +1045,8 @@ function procesarVenta() {
             "X-CSRFToken": getCSRFToken()
         },
         body: JSON.stringify({
-            cart: cartArray
+            cart: cartArray,
+            cliente: cliente,
         })
     })
     .then(response => response.json())

@@ -538,7 +538,7 @@ function viewSaleDetails(saleId) {
             
             modalContent.innerHTML = `
                 <div style="margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px;">
                         <div>
                             <small style="color: #606770;">Fecha</small>
                             <div><i class="fas fa-calendar-alt"></i> ${data.date}</div>
@@ -551,6 +551,30 @@ function viewSaleDetails(saleId) {
                             <small style="color: #606770;">Sucursal</small>
                             <div><i class="fas fa-store-alt"></i> ${data.branch}</div>
                         </div>
+                    </div>
+                    
+                    <!-- ✅ INFORMACIÓN DEL CLIENTE -->
+                    <div style="background: #e7f3ff; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                        <h4 style="margin: 0 0 10px 0; color: #1877f2;">
+                            <i class="fas fa-user"></i> Datos del Cliente
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <div>
+                                <small style="color: #606770;">Nombre</small>
+                                <div><strong>${data.cliente_nombre || 'Cliente Mostrador'}</strong></div>
+                            </div>
+                            <div>
+                                <small style="color: #606770;">Dirección</small>
+                                <div>${data.cliente_direccion || '-'}</div>
+                            </div>
+                            <div>
+                                <small style="color: #606770;">Teléfono</small>
+                                <div>${data.cliente_telefono || '-'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; background: #f5f6f7; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                         <div>
                             <small style="color: #606770;">Estado</small>
                             <div>
@@ -559,6 +583,10 @@ function viewSaleDetails(saleId) {
                                     ${data.status === 'ACTIVE' ? 'Activa' : 'Cancelada'}
                                 </span>
                             </div>
+                        </div>
+                        <div>
+                            <small style="color: #606770;">Total</small>
+                            <div><strong style="font-size: 18px; color: #1877f2;">$${data.total.toFixed(2)}</strong></div>
                         </div>
                     </div>
                 </div>
