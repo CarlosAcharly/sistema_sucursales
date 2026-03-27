@@ -16,11 +16,14 @@ def diet_list(request):
 @login_required
 @role_required(['ADMIN'])
 def diet_create(request):
+    # ✅ Cambiar extra a 5 y permitir hasta 50 formularios
     IngredientFormSet = modelformset_factory(
         DietBaseIngredient,
         fields=("product", "kilos"),
-        extra=5,
-        can_delete=True
+        extra=10,
+        can_delete=True,
+        max_num=50,
+        validate_max=False
     )
 
     # ✅ Obtener productos que son ingredientes
@@ -35,16 +38,28 @@ def diet_create(request):
 
         if formset.is_valid():
             total = 0
+            valid_ingredients = 0
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
                     total += form.cleaned_data.get("kilos", 0)
+                    valid_ingredients += 1
+
+            print(f"Total: {total}, Ingredientes válidos: {valid_ingredients}")  # Debug
 
             if total != 1000:
-                messages.error(request, "La suma debe ser exactamente 1000 kg.")
+                messages.error(request, f"La suma debe ser exactamente 1000 kg. Actual: {total} kg")
                 return render(request, "admin/diets/form.html", {
                     "formset": formset,
                     "branches": Branch.objects.all(),
-                    "products": products,  # ✅ Agregar productos al contexto
+                    "products": products,
+                })
+
+            if valid_ingredients == 0:
+                messages.error(request, "Debes agregar al menos un ingrediente")
+                return render(request, "admin/diets/form.html", {
+                    "formset": formset,
+                    "branches": Branch.objects.all(),
+                    "products": products,
                 })
 
             # Crear dieta base
@@ -90,7 +105,7 @@ def diet_create(request):
     return render(request, "admin/diets/form.html", {
         "formset": formset,
         "branches": Branch.objects.all(),
-        "products": products,  # ✅ Agregar productos al contexto
+        "products": products,
     })
 
 @login_required
@@ -153,11 +168,14 @@ def diet_edit(request, pk):
     """Editar una dieta existente"""
     diet = get_object_or_404(Diet, pk=pk)
     
+    # ✅ Configurar formset con extra=10 para tener suficientes filas
     IngredientFormSet = modelformset_factory(
         DietBaseIngredient,
         fields=("product", "kilos"),
-        extra=1,
-        can_delete=True
+        extra=10,  # Generar 10 filas vacías para agregar ingredientes
+        can_delete=True,
+        max_num=50,  # Máximo de ingredientes
+        validate_max=False  # No validar máximo para evitar errores
     )
     
     # ✅ Obtener productos que son ingredientes
@@ -175,17 +193,32 @@ def diet_edit(request, pk):
         
         if formset.is_valid():
             total = 0
+            valid_ingredients = 0
+            
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
-                    total += form.cleaned_data.get("kilos", 0)
+                    kilos = form.cleaned_data.get("kilos", 0)
+                    if kilos and kilos > 0:
+                        total += kilos
+                        valid_ingredients += 1
             
-            if total != 1000:
-                messages.error(request, "La suma debe ser exactamente 1000 kg.")
+            # ✅ Permitir una pequeña tolerancia por redondeo (0.01 kg)
+            if abs(total - 1000) > 0.01:
+                messages.error(request, f"La suma debe ser exactamente 1000 kg. Actual: {total:.2f} kg")
                 return render(request, "admin/diets/edit.html", {
                     "diet": diet,
                     "formset": formset,
                     "branches": Branch.objects.filter(is_active=True),
-                    "products": products,  # ✅ Ya estaba, pero asegurar
+                    "products": products,
+                })
+            
+            if valid_ingredients == 0:
+                messages.error(request, "Debes agregar al menos un ingrediente")
+                return render(request, "admin/diets/edit.html", {
+                    "diet": diet,
+                    "formset": formset,
+                    "branches": Branch.objects.filter(is_active=True),
+                    "products": products,
                 })
             
             # Actualizar dieta base
@@ -196,20 +229,19 @@ def diet_edit(request, pk):
             # Actualizar sucursales
             diet.branches.set(branches_ids)
             
-            # Actualizar ingredientes
+            # Actualizar ingredientes (solo los que tienen datos)
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
-                    ingredient = form.save(commit=False)
-                    ingredient.diet = diet
-                    ingredient.save()
+                    if form.cleaned_data.get("product") and form.cleaned_data.get("kilos", 0) > 0:
+                        ingredient = form.save(commit=False)
+                        ingredient.diet = diet
+                        ingredient.save()
                 elif form.cleaned_data.get("DELETE", False) and form.instance.pk:
                     form.instance.delete()
             
             # Actualizar dietas de cajeros
-            # Eliminar dietas de cajero para sucursales que ya no están asignadas
             DietCajero.objects.filter(diet_base=diet).exclude(branch_id__in=branches_ids).delete()
             
-            # Crear o actualizar dietas de cajero para las sucursales asignadas
             for branch_id in branches_ids:
                 branch = Branch.objects.get(id=branch_id)
                 diet_cajero, created = DietCajero.objects.get_or_create(
@@ -219,7 +251,6 @@ def diet_edit(request, pk):
                 )
                 
                 if created:
-                    # Copiar ingredientes base a DietCajeroItem
                     base_ingredients = DietBaseIngredient.objects.filter(diet=diet)
                     for base_ing in base_ingredients:
                         DietCajeroItem.objects.create(
@@ -230,6 +261,14 @@ def diet_edit(request, pk):
             
             messages.success(request, f'Dieta "{diet.name}" actualizada correctamente.')
             return redirect("diets:diet_detail", pk=diet.pk)
+        else:
+            messages.error(request, "Error en los datos del formulario. Verifica los ingredientes.")
+            return render(request, "admin/diets/edit.html", {
+                "diet": diet,
+                "formset": formset,
+                "branches": Branch.objects.filter(is_active=True),
+                "products": products,
+            })
     else:
         formset = IngredientFormSet(queryset=DietBaseIngredient.objects.filter(diet=diet))
     
@@ -237,5 +276,5 @@ def diet_edit(request, pk):
         "diet": diet,
         "formset": formset,
         "branches": Branch.objects.filter(is_active=True),
-        "products": products,  # ✅ Asegurar que se pasa
+        "products": products,
     })
