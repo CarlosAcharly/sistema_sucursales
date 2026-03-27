@@ -29,6 +29,10 @@
                 <small style="color: #606770;">Total kg</small>
                 <strong style="color: #42b72a; display: block;" id="total-kilos-display">0</strong>
             </div>
+            <div style="text-align: center; background: #fff4e5; padding: 8px 16px; border-radius: 8px;">
+                <small style="color: #606770;">Total $</small>
+                <strong style="color: #f7b928; display: block;" id="total-price-display">0.00</strong>
+            </div>
         </div>
     </div>
 </div>
@@ -96,8 +100,7 @@
                     <td>
                         <span style="font-family: monospace; font-weight: 600; font-size: 16px;" 
                               class="base-kilos" 
-                              data-product-id="{{ item.product.id }}"
-                              id="base-{{ item.id }}">
+                              data-product-id="{{ item.product.id }}">
                             {% for base in item.diet.diet_base.base_ingredients.all %}
                                 {% if base.product.id == item.product.id %}
                                     {{ base.kilos }} kg
@@ -116,7 +119,7 @@
     </div>
 </div>
 
-<!-- SECCIÓN 2: Tabla editable con selector de precio (Kg por defecto) -->
+<!-- SECCIÓN 2: Tabla editable con precio y subtotal -->
 <div class="fb-card" style="padding: 0; overflow: hidden;">
     <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 15px 20px; color: white;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -128,6 +131,34 @@
                 <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-right: 10px;">
                     <i class="fas fa-weight"></i> <span id="total-weight">0.00</span> kg
                 </span>
+                <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px;">
+                    <i class="fas fa-dollar-sign"></i> <span id="total-price">0.00</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de control de total deseado -->
+    <div style="background: #f8f9fa; padding: 15px 20px; border-bottom: 1px solid #e4e6eb;">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-dollar-sign" style="color: #42b72a; font-size: 20px;"></i>
+                <strong style="color: #050505;">Total deseado ($):</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="number" 
+                       id="target-total-input" 
+                       class="fb-input" 
+                       step="0.01" 
+                       min="0"
+                       placeholder="Ingresa total deseado"
+                       style="width: 150px; text-align: right;">
+                <button type="button" class="fb-btn fb-btn-primary" onclick="applyTargetTotal()">
+                    <i class="fas fa-magic"></i> Aplicar y recalcular
+                </button>
+            </div>
+            <div style="font-size: 12px; color: #606770;">
+                <i class="fas fa-info-circle"></i> Ajusta los kilos proporcionalmente al total deseado
             </div>
         </div>
     </div>
@@ -138,11 +169,13 @@
                 <th style="width: 5%;">
                     <input type="checkbox" id="select-all" onchange="toggleAll()">
                 </th>
-                <th style="width: 30%;">Ingrediente</th>
-                <th style="width: 15%;">Base (kg)</th>
-                <th style="width: 20%;">Cantidad (kg)</th>
-                <th style="width: 25%;">Tipo de Precio</th>
-                <th style="width: 5%;"></th>
+                <th style="width: 25%;">Ingrediente</th>
+                <th style="width: 10%;">Base (kg)</th>
+                <th style="width: 12%;">Cantidad (kg)</th>
+                <th style="width: 12%;">Precio ($/kg)</th>
+                <th style="width: 12%;">Subtotal ($)</th>
+                <th style="width: 18%;">Tipo de Precio</th>
+                <th style="width: 6%;"></th>
             </tr>
         </thead>
         <tbody id="ingredients-tbody">
@@ -161,14 +194,14 @@
                             <strong>{{ item.product.name }}</strong>
                             {% if item.product.description %}
                             <div style="font-size: 11px; color: #606770;">
-                                <i class="fas fa-align-left"></i> {{ item.product.description|truncatechars:30 }}
+                                {{ item.product.description|truncatechars:30 }}
                             </div>
                             {% endif %}
                         </div>
                     </div>
                 </td>
                 <td>
-                    <span style="font-family: monospace; font-weight: 600;" class="base-kilos-display" 
+                    <span class="base-kilos-display" 
                           data-base-value="{% for base in item.diet.diet_base.base_ingredients.all %}{% if base.product.id == item.product.id %}{{ base.kilos }}{% endif %}{% endfor %}">
                         {% for base in item.diet.diet_base.base_ingredients.all %}
                             {% if base.product.id == item.product.id %}
@@ -195,9 +228,27 @@
                     </div>
                 </td>
                 <td>
-                    <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
+                    <span class="price-per-kg" id="price_{{ item.id }}" data-product-id="{{ item.product.id }}">
                         {% if item.product.price_kg %}
-                        <option value="kg" data-price="{{ item.product.price_kg }}" selected>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
+                            ${{ item.product.price_kg|floatformat:2 }}
+                        {% elif item.product.price_bulk %}
+                            ${{ item.product.price_bulk|floatformat:2 }}
+                        {% elif item.product.price_wholesale %}
+                            ${{ item.product.price_wholesale|floatformat:2 }}
+                        {% elif item.product.price_special %}
+                            ${{ item.product.price_special|floatformat:2 }}
+                        {% else %}
+                            $0.00
+                        {% endif %}
+                    </span>
+                </td>
+                <td>
+                    <span class="subtotal-value" id="subtotal_{{ item.id }}">0.00</span>
+                </td>
+                <td>
+                    <select class="price-type-selector" data-product-id="{{ item.product.id }}" onchange="updateSubtotal({{ item.id }})">
+                        {% if item.product.price_kg %}
+                        <option value="kg" data-price="{{ item.product.price_kg }}" {% if item.product.price_kg %}selected{% endif %}>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
                         {% endif %}
                         {% if item.product.price_bulk %}
                         <option value="bulk" data-price="{{ item.product.price_bulk }}">Bulto: ${{ item.product.price_bulk|floatformat:2 }}</option>
@@ -222,9 +273,9 @@
         </tbody>
         <tfoot style="background: #f5f6f7; font-weight: bold;">
             <tr>
-                <td colspan="2" style="text-align: right;">TOTAL DIETA:</td>
-                <td><span id="total-dieta">0.00</span> kg</td>
-                <td colspan="3"></td>
+                <td colspan="5" style="text-align: right;">TOTAL DIETA:</td>
+                <td><strong id="total-dieta">0.00</strong></td>
+                <td colspan="2"></td>
             </tr>
         </tfoot>
     </table>
@@ -238,10 +289,11 @@
             <strong id="selected-count">0</strong>
             <span style="margin-left: 15px; color: #606770;">Total kg:</span>
             <strong id="selected-kilos">0.00</strong>
+            <span style="margin-left: 15px; color: #606770;">Total $:</span>
+            <strong id="selected-price">0.00</strong>
         </div>
         
         <div style="display: flex; gap: 10px;">
-            <!-- Botón de carrito destacado -->
             <button type="button" class="fb-btn fb-btn-success" onclick="goToCart()" style="display: flex; align-items: center; gap: 8px; padding: 12px 30px; font-size: 16px; background: #42b72a;">
                 <i class="fas fa-shopping-cart"></i>
                 Ir al carrito
@@ -286,25 +338,44 @@ const priceTypeNames = {
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', function() {
-    // Cargar valores base de cada ingrediente
+    // Cargar valores base
     document.querySelectorAll('.kilos-input').forEach(input => {
         const itemId = input.dataset.itemId;
         baseValues[itemId] = parseFloat(input.dataset.baseValue);
     });
     
+    // Calcular subtotales iniciales
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const itemId = row.dataset.id;
+        updateSubtotal(itemId);
+    });
+    
     updateTotalKilos();
+    updateTotalPrice();
     updateSelectedCount();
     updateCartCounter();
     
-    // Inicializar la tabla base como oculta
+    // Inicializar tabla base oculta
     const baseTable = document.getElementById('base-table-container');
     const toggleIcon = document.getElementById('toggle-icon');
-    
     if (baseTable && toggleIcon) {
         baseTable.style.display = 'none';
         toggleIcon.classList.remove('fa-chevron-up');
         toggleIcon.classList.add('fa-chevron-down');
     }
+    
+    // Agregar eventos a los selectores de precio
+    attachPriceSelectorEvents();
+    
+    // Actualizar subtotales cuando cambien los kilos
+    document.querySelectorAll('.kilos-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const row = this.closest('.ingredient-row');
+            const itemId = row.dataset.id;
+            updateSubtotal(itemId);
+            updateTotalPrice();
+        });
+    });
 });
 
 // Función para ocultar/mostrar tabla base
@@ -323,35 +394,134 @@ function toggleBaseTable() {
     }
 }
 
-// Función principal de actualización proporcional
+// Función para obtener el precio actual de un producto
+function getCurrentPrice(itemId) {
+    const row = document.querySelector(`tr[data-id="${itemId}"]`);
+    if (!row) return 0;
+    const selector = row.querySelector('.price-type-selector');
+    const selectedOption = selector.options[selector.selectedIndex];
+    return parseFloat(selectedOption.dataset.price) || 0;
+}
+
+// Función para actualizar subtotal de un ingrediente
+function updateSubtotal(itemId) {
+    const kilosInput = document.getElementById(`kilos_${itemId}`);
+    const price = getCurrentPrice(itemId);
+    const kilos = parseFloat(kilosInput.value) || 0;
+    const subtotal = kilos * price;
+    
+    const subtotalSpan = document.getElementById(`subtotal_${itemId}`);
+    if (subtotalSpan) {
+        subtotalSpan.textContent = subtotal.toFixed(2);
+    }
+    
+    updateTotalPrice();
+    updateSelectedCount();
+}
+
+// Función para actualizar el total en dinero de la dieta
+function updateTotalPrice() {
+    let total = 0;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const itemId = row.dataset.id;
+        const subtotalSpan = document.getElementById(`subtotal_${itemId}`);
+        if (subtotalSpan) {
+            total += parseFloat(subtotalSpan.textContent) || 0;
+        }
+    });
+    
+    document.getElementById('total-price').textContent = total.toFixed(2);
+    document.getElementById('total-price-display').textContent = total.toFixed(2);
+    document.getElementById('total-dieta').textContent = total.toFixed(2);
+}
+
+// Función principal de actualización proporcional (modificada para actualizar subtotales)
 function updateProportionalValues(changedInput, changedItemId) {
     const newValue = parseFloat(changedInput.value) || 0;
     const baseValue = parseFloat(changedInput.dataset.baseValue);
     
     if (baseValue === 0) return;
     
-    // Calcular factor de proporcionalidad
     const factor = newValue / baseValue;
     
     // Actualizar todos los demás inputs
     document.querySelectorAll('.kilos-input').forEach(input => {
         const itemId = input.dataset.itemId;
-        
-        // Si no es el input que cambió
         if (itemId != changedItemId) {
             const otherBaseValue = parseFloat(input.dataset.baseValue);
             const proportionalValue = otherBaseValue * factor;
-            
-            // Actualizar valor redondeado a 2 decimales
             input.value = proportionalValue.toFixed(2);
+            // Actualizar subtotal del ingrediente afectado
+            updateSubtotal(itemId);
         }
     });
     
-    // Actualizar totales
+    // Actualizar subtotal del ingrediente que cambió
+    updateSubtotal(changedItemId);
     updateTotalKilos();
+    updateTotalPrice();
     
-    // Mostrar notificación
     showNotification(`Factor de proporcionalidad: ${factor.toFixed(4)}`, 'info');
+}
+
+// Función para aplicar total deseado
+function applyTargetTotal() {
+    const targetTotal = parseFloat(document.getElementById('target-total-input').value);
+    
+    if (isNaN(targetTotal) || targetTotal <= 0) {
+        showNotification('❌ Ingresa un total válido mayor a 0', 'error');
+        return;
+    }
+    
+    // Obtener total actual
+    let currentTotal = 0;
+    const itemsData = [];
+    
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const itemId = row.dataset.id;
+        const kilosInput = document.getElementById(`kilos_${itemId}`);
+        const kilos = parseFloat(kilosInput.value) || 0;
+        const price = getCurrentPrice(itemId);
+        const subtotal = kilos * price;
+        const baseValue = parseFloat(kilosInput.dataset.baseValue);
+        
+        currentTotal += subtotal;
+        
+        itemsData.push({
+            id: itemId,
+            kilos: kilos,
+            price: price,
+            baseValue: baseValue,
+            input: kilosInput
+        });
+    });
+    
+    if (currentTotal === 0) {
+        showNotification('❌ El total actual es 0, no se puede recalcular', 'error');
+        return;
+    }
+    
+    if (confirm(`¿Aplicar total de $${targetTotal.toFixed(2)}? Esto recalculará todos los kilos proporcionalmente.`)) {
+        const factor = targetTotal / currentTotal;
+        
+        itemsData.forEach(item => {
+            const newKilos = item.kilos * factor;
+            if (item.input) {
+                item.input.value = newKilos.toFixed(2);
+                // Actualizar subtotal del ingrediente
+                updateSubtotal(item.id);
+            }
+        });
+        
+        // Actualizar proporcionalidad basada en el primer ingrediente
+        if (itemsData.length > 0 && itemsData[0].input) {
+            updateProportionalValues(itemsData[0].input, itemsData[0].id);
+        }
+        
+        updateTotalKilos();
+        updateTotalPrice();
+        showNotification(`✅ Total ajustado a $${targetTotal.toFixed(2)} (factor: ${factor.toFixed(4)})`, 'success');
+    }
 }
 
 function updateTotalKilos() {
@@ -362,9 +532,6 @@ function updateTotalKilos() {
     
     document.getElementById('total-kilos-display').textContent = total.toFixed(2);
     document.getElementById('total-weight').textContent = total.toFixed(2);
-    document.getElementById('total-dieta').textContent = total.toFixed(2);
-    
-    // Actualizar selected kilos si hay seleccionados
     updateSelectedCount();
 }
 
@@ -394,18 +561,46 @@ function updateSelectedCount() {
     
     document.getElementById('selected-count').textContent = selectedItems.size;
     
-    // Calcular kilos seleccionados
     let totalKilos = 0;
+    let totalPrice = 0;
+    
     checkboxes.forEach(cb => {
         const row = cb.closest('tr');
-        const kilosInput = row.querySelector('.kilos-input');
+        const itemId = row.dataset.id;
+        const kilosInput = document.getElementById(`kilos_${itemId}`);
+        const subtotalSpan = document.getElementById(`subtotal_${itemId}`);
         totalKilos += parseFloat(kilosInput.value) || 0;
+        totalPrice += parseFloat(subtotalSpan.textContent) || 0;
     });
     
     document.getElementById('selected-kilos').textContent = totalKilos.toFixed(2);
+    document.getElementById('selected-price').textContent = totalPrice.toFixed(2);
 }
 
-// Función para agregar al carrito con tipo de precio seleccionado
+function attachPriceSelectorEvents() {
+    document.querySelectorAll('.price-type-selector').forEach(selector => {
+        selector.removeEventListener('change', handlePriceChange);
+        selector.addEventListener('change', handlePriceChange);
+    });
+}
+
+function handlePriceChange(e) {
+    const selector = e.target;
+    const row = selector.closest('.ingredient-row');
+    const itemId = row.dataset.id;
+    
+    // Actualizar precio mostrado
+    const selectedOption = selector.options[selector.selectedIndex];
+    const price = parseFloat(selectedOption.dataset.price) || 0;
+    const priceSpan = document.getElementById(`price_${itemId}`);
+    if (priceSpan) {
+        priceSpan.textContent = `$${price.toFixed(2)}`;
+    }
+    
+    updateSubtotal(itemId);
+    updateTotalPrice();
+}
+
 function addToCartWithPrice(productId, productName, button) {
     const row = button.closest('tr');
     const kilosInput = row.querySelector('.kilos-input');
@@ -419,7 +614,6 @@ function addToCartWithPrice(productId, productName, button) {
         return;
     }
     
-    // Ya no necesitamos validar si hay opción seleccionada porque siempre hay una por defecto
     const price = parseFloat(selectedOption.dataset.price);
     const priceType = selectedOption.value;
     const priceTypeName = selectedOption.text.split(':')[0];
@@ -442,7 +636,6 @@ function addToCartWithPrice(productId, productName, button) {
     showNotification(`${productName}: ${quantity}kg agregado al carrito (${priceTypeName})`, 'success');
 }
 
-// Función para agregar múltiples ingredientes seleccionados
 function addSelectedToCart() {
     if (selectedItems.size === 0) {
         showNotification('Selecciona al menos un ingrediente', 'warning');
@@ -451,23 +644,25 @@ function addSelectedToCart() {
     
     const items = [];
     let totalKg = 0;
+    let totalPrice = 0;
     
     document.querySelectorAll('.ingredient-check:checked').forEach(cb => {
         const row = cb.closest('tr');
         const productName = row.dataset.productName;
         const productId = row.dataset.productId;
-        const kilosInput = row.querySelector('.kilos-input');
+        const itemId = row.dataset.id;
+        const kilosInput = document.getElementById(`kilos_${itemId}`);
         const priceSelector = row.querySelector('.price-type-selector');
         const selectedOption = priceSelector.options[priceSelector.selectedIndex];
         
         const kilos = parseFloat(kilosInput.value);
-        
-        // Ya no necesitamos validar porque siempre hay opción seleccionada
         const price = parseFloat(selectedOption.dataset.price);
         const priceType = selectedOption.value;
         const priceTypeName = selectedOption.text.split(':')[0];
+        const subtotal = kilos * price;
         
         totalKg += kilos;
+        totalPrice += subtotal;
         
         items.push({
             id: productId,
@@ -489,7 +684,8 @@ function addSelectedToCart() {
     updateCartCounter();
     document.getElementById('cart-modal-message').innerHTML = `
         <strong>${items.length}</strong> ingredientes agregados al carrito<br>
-        Total: <strong>${totalKg.toFixed(2)} kg</strong>
+        Total: <strong>${totalKg.toFixed(2)} kg</strong><br>
+        Total $: <strong>$${totalPrice.toFixed(2)}</strong>
     `;
     document.getElementById('cart-modal').style.display = 'flex';
 }
@@ -543,14 +739,12 @@ function proceedToCheckout() {
     window.location.href = '{% url "sales:pos" %}';
 }
 
-// Tecla ESC para cerrar modal
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeCartModal();
     }
 });
 
-// Estilos para animaciones
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideIn {
@@ -563,41 +757,16 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
     
-    .ingredient-row {
-        transition: background-color 0.2s;
-    }
-    
-    .ingredient-row:hover {
-        background-color: #f5f6f7;
-    }
-    
-    .ingredient-check {
-        transform: scale(1.2);
-        accent-color: #1877f2;
-    }
-    
-    .base-kilos {
-        color: #4a5568;
-    }
-    
-    .price-type-selector {
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .price-type-selector:hover {
-        border-color: #1877f2;
-    }
-    
-    .price-type-selector:focus {
-        outline: none;
-        border-color: #1877f2;
-        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
-    }
+    .ingredient-row { transition: background-color 0.2s; }
+    .ingredient-row:hover { background-color: #f5f6f7; }
+    .ingredient-check { transform: scale(1.2); accent-color: #1877f2; }
+    .base-kilos { color: #4a5568; }
+    .price-type-selector { cursor: pointer; transition: all 0.2s; }
+    .price-type-selector:hover { border-color: #1877f2; }
+    .price-type-selector:focus { outline: none; border-color: #1877f2; box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2); }
 `;
 document.head.appendChild(style);
 </script>
 
-<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
