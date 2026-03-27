@@ -168,17 +168,15 @@ def diet_edit(request, pk):
     """Editar una dieta existente"""
     diet = get_object_or_404(Diet, pk=pk)
     
-    # ✅ Configurar formset con extra=10 para tener suficientes filas
     IngredientFormSet = modelformset_factory(
         DietBaseIngredient,
         fields=("product", "kilos"),
-        extra=10,  # Generar 10 filas vacías para agregar ingredientes
+        extra=10,
         can_delete=True,
-        max_num=50,  # Máximo de ingredientes
-        validate_max=False  # No validar máximo para evitar errores
+        max_num=50,
+        validate_max=False
     )
     
-    # ✅ Obtener productos que son ingredientes
     products = Product.objects.filter(is_active=True, is_ingredient=True)
     
     if request.method == "POST":
@@ -194,6 +192,7 @@ def diet_edit(request, pk):
         if formset.is_valid():
             total = 0
             valid_ingredients = 0
+            saved_ingredients = []  # Lista para almacenar los objetos guardados
             
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
@@ -202,7 +201,6 @@ def diet_edit(request, pk):
                         total += kilos
                         valid_ingredients += 1
             
-            # ✅ Permitir una pequeña tolerancia por redondeo (0.01 kg)
             if abs(total - 1000) > 0.01:
                 messages.error(request, f"La suma debe ser exactamente 1000 kg. Actual: {total:.2f} kg")
                 return render(request, "admin/diets/edit.html", {
@@ -229,19 +227,44 @@ def diet_edit(request, pk):
             # Actualizar sucursales
             diet.branches.set(branches_ids)
             
-            # Actualizar ingredientes (solo los que tienen datos)
+            # Guardar los nuevos ingredientes base y guardar sus IDs
+            saved_product_ids = []  # Lista de IDs de productos guardados
+            
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
                     if form.cleaned_data.get("product") and form.cleaned_data.get("kilos", 0) > 0:
                         ingredient = form.save(commit=False)
                         ingredient.diet = diet
                         ingredient.save()
+                        saved_ingredients.append(ingredient)
+                        saved_product_ids.append(ingredient.product_id)
                 elif form.cleaned_data.get("DELETE", False) and form.instance.pk:
                     form.instance.delete()
             
-            # Actualizar dietas de cajeros
-            DietCajero.objects.filter(diet_base=diet).exclude(branch_id__in=branches_ids).delete()
+            # ========== ACTUALIZAR DIETAS DE CAJEROS ==========
+            # Obtener todas las dietas de cajero asociadas a esta dieta base
+            dietas_cajero = DietCajero.objects.filter(diet_base=diet)
             
+            for diet_cajero in dietas_cajero:
+                # Para cada dieta de cajero, actualizar sus items
+                for base_ing in saved_ingredients:
+                    # Buscar si ya existe un item para este producto en la dieta del cajero
+                    item, created = DietCajeroItem.objects.get_or_create(
+                        diet=diet_cajero,
+                        product=base_ing.product,
+                        defaults={'kilos': float(base_ing.kilos)}
+                    )
+                    if not created:
+                        # Si ya existe, actualizar los kilos
+                        item.kilos = float(base_ing.kilos)
+                        item.save()
+                
+                # Eliminar items de productos que ya no están en la dieta base
+                for item in diet_cajero.items.all():
+                    if item.product_id not in saved_product_ids:
+                        item.delete()
+            
+            # ========== ACTUALIZAR DIETAS PARA NUEVAS SUCURSALES ==========
             for branch_id in branches_ids:
                 branch = Branch.objects.get(id=branch_id)
                 diet_cajero, created = DietCajero.objects.get_or_create(
@@ -251,13 +274,16 @@ def diet_edit(request, pk):
                 )
                 
                 if created:
-                    base_ingredients = DietBaseIngredient.objects.filter(diet=diet)
-                    for base_ing in base_ingredients:
+                    # Si es nueva, crear todos los items
+                    for base_ing in saved_ingredients:
                         DietCajeroItem.objects.create(
                             diet=diet_cajero,
                             product=base_ing.product,
                             kilos=float(base_ing.kilos)
                         )
+            
+            # Eliminar dietas de cajero para sucursales que ya no están asignadas
+            DietCajero.objects.filter(diet_base=diet).exclude(branch_id__in=branches_ids).delete()
             
             messages.success(request, f'Dieta "{diet.name}" actualizada correctamente.')
             return redirect("diets:diet_detail", pk=diet.pk)
