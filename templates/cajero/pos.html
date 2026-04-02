@@ -181,74 +181,75 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;" id="products-grid">
                 {% for item in inventory %}
                 <div class="product-card {% if item.stock < 5 %}low-stock{% endif %}" 
-                     data-product-id="{{ item.product.id }}"
-                     data-product-name="{{ item.product.name|lower }}"
-                     data-product-description="{{ item.product.description|default:''|lower }}"
-                     data-product-price-kg="{{ item.product.price_kg|default:'' }}"
-                     data-product-price-bulk="{{ item.product.price_bulk|default:'' }}"
-                     data-product-price-wholesale="{{ item.product.price_wholesale|default:'' }}"
-                     data-product-price-special="{{ item.product.price_special|default:'' }}"
-                     data-stock="{{ item.stock }}"
-                     style="border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; background: white; transition: all 0.2s; position: relative;"
-                     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+     data-product-id="{{ item.product.id }}"
+     data-product-name="{{ item.product.name|lower }}"
+     data-product-description="{{ item.product.description|default:''|lower }}"
+     data-product-price-kg="{{ item.product.price_kg|default:'' }}"
+     data-product-price-bulk="{{ item.product.price_bulk|default:'' }}"
+     data-product-price-wholesale="{{ item.product.price_wholesale|default:'' }}"
+     data-product-price-special="{{ item.product.price_special|default:'' }}"
+     data-stock="{{ item.stock|stringformat:'f' }}"
+     style="border: 1px solid #e4e6eb; border-radius: 8px; padding: 15px; background: white; transition: all 0.2s; position: relative;"
+     onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
+     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 
-                    {% if item.stock < 5 %}
-                    <span style="position: absolute; top: 10px; right: 10px; color: #fa383e;">
-                        <i class="fas fa-exclamation-circle"></i>
-                    </span>
-                    {% endif %}
+    {% if item.stock < 5 %}
+    <span style="position: absolute; top: 10px; right: 10px; color: #fa383e;">
+        <i class="fas fa-exclamation-circle"></i>
+    </span>
+    {% endif %}
 
-                    <div style="background: #e7f3ff; width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
-                        <i class="fas fa-box" style="font-size: 24px; color: #1877f2;"></i>
-                    </div>
+    <div style="background: #e7f3ff; width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+        <i class="fas fa-box" style="font-size: 24px; color: #1877f2;"></i>
+    </div>
 
-                    <strong style="display: block; margin-bottom: 5px; color: #050505; text-align: center;">{{ item.product.name }}</strong>
-                    
-                    <!-- Selector de tipo de precio -->
-                    <div style="margin: 10px 0;">
-                        <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
-                            {% if item.product.price_kg %}
-                            <option value="kg" data-price="{{ item.product.price_kg }}" selected>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
-                            {% endif %}
-                            {% if item.product.price_bulk %}
-                            <option value="bulk" data-price="{{ item.product.price_bulk }}">Bulto: ${{ item.product.price_bulk|floatformat:2 }}</option>
-                            {% endif %}
-                            {% if item.product.price_wholesale %}
-                            <option value="wholesale" data-price="{{ item.product.price_wholesale }}">Mayoreo: ${{ item.product.price_wholesale|floatformat:2 }}</option>
-                            {% endif %}
-                            {% if item.product.price_special %}
-                            <option value="special" data-price="{{ item.product.price_special }}">Especial: ${{ item.product.price_special|floatformat:2 }}</option>
-                            {% endif %}
-                        </select>
-                    </div>
+    <strong style="display: block; margin-bottom: 5px; color: #050505; text-align: center;">{{ item.product.name }}</strong>
+    
+    <!-- Selector de tipo de precio -->
+    <div style="margin: 10px 0;">
+        <select class="price-type-selector" data-product-id="{{ item.product.id }}" style="width: 100%; padding: 6px; border: 1px solid #dddfe2; border-radius: 4px; font-size: 12px;">
+            {% if item.product.price_kg %}
+            <option value="kg" data-price="{{ item.product.price_kg }}" selected>Kg: ${{ item.product.price_kg|floatformat:2 }}</option>
+            {% endif %}
+            {% if item.product.price_bulk %}
+            <option value="bulk" data-price="{{ item.product.price_bulk }}">Bulto: ${{ item.product.price_bulk|floatformat:2 }}</option>
+            {% endif %}
+            {% if item.product.price_wholesale %}
+            <option value="wholesale" data-price="{{ item.product.price_wholesale }}">Mayoreo: ${{ item.product.price_wholesale|floatformat:2 }}</option>
+            {% endif %}
+            {% if item.product.price_special %}
+            <option value="special" data-price="{{ item.product.price_special }}">Especial: ${{ item.product.price_special|floatformat:2 }}</option>
+            {% endif %}
+        </select>
+    </div>
 
-                    <!-- Precio seleccionado -->
-                    <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
-                        {% if item.product.price_kg %}
-                            ${{ item.product.price_kg|floatformat:2 }}
-                        {% else %}
-                            $0.00
-                        {% endif %}
-                    </div>
-                    
-                    <div style="font-size: 12px; color: #606770; text-align: center;">
-                        <i class="fas fa-cubes"></i> Stock: 
-                        <span style="color: {% if item.stock < 5 %}#fa383e{% else %}#42b72a{% endif %}; font-weight: 600;">
-                            {{ item.stock }}
-                        </span>
-                    </div>
+    <!-- Precio seleccionado -->
+    <div class="selected-price" style="color: #1877f2; font-weight: 700; font-size: 16px; margin-bottom: 5px; text-align: center;">
+        {% if item.product.price_kg %}
+            ${{ item.product.price_kg|floatformat:2 }}
+        {% else %}
+            $0.00
+        {% endif %}
+    </div>
+    
+    <!-- ✅ Stock con 3 decimales -->
+    <div style="font-size: 12px; color: #606770; text-align: center;">
+        <i class="fas fa-cubes"></i> Stock: 
+        <span style="color: {% if item.stock < 5 %}#fa383e{% else %}#42b72a{% endif %}; font-weight: 600;">
+            {{ item.stock|floatformat:3 }}
+        </span>
+    </div>
 
-                    {% if item.product.description %}
-                    <div style="font-size: 10px; color: #606770; margin-top: 5px; text-align: center;">
-                        <i class="fas fa-align-left"></i> {{ item.product.description|truncatechars:30 }}
-                    </div>
-                    {% endif %}
+    {% if item.product.description %}
+    <div style="font-size: 10px; color: #606770; margin-top: 5px; text-align: center;">
+        <i class="fas fa-align-left"></i> {{ item.product.description|truncatechars:30 }}
+    </div>
+    {% endif %}
 
-                    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProductWithPrice('{{ item.product.id }}', '{{ item.product.name|escapejs }}', this)">
-                        <i class="fas fa-plus"></i> Agregar
-                    </button>
-                </div>
+    <button class="fb-btn fb-btn-primary" style="margin-top: 10px; width: 100%; padding: 8px;" onclick="event.stopPropagation(); addProductWithPrice('{{ item.product.id }}', '{{ item.product.name|escapejs }}', this)">
+        <i class="fas fa-plus"></i> Agregar
+    </button>
+</div>
                 {% endfor %}
             </div>
         </div>
@@ -527,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
             priceBulk: card.dataset.productPriceBulk ? parseFloat(card.dataset.productPriceBulk) : null,
             priceWholesale: card.dataset.productPriceWholesale ? parseFloat(card.dataset.productPriceWholesale) : null,
             priceSpecial: card.dataset.productPriceSpecial ? parseFloat(card.dataset.productPriceSpecial) : null,
-            stock: parseInt(card.dataset.stock),
+            stock: parseFloat(card.dataset.stock),
             element: card
         });
         
