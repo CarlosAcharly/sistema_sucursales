@@ -39,7 +39,7 @@ def pos_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         cart = data.get('cart', [])
-        cliente_data = data.get('cliente', {})  # ✅ Obtener datos del cliente
+        cliente_data = data.get('cliente', {})
 
         if not cart:
             return JsonResponse({'error': 'Carrito vacío'}, status=400)
@@ -48,12 +48,12 @@ def pos_view(request):
             branch=branch,
             cashier=request.user,
             total=0,
-            cliente_nombre=cliente_data.get('nombre', 'Cliente Mostrador'),  # ✅ Guardar nombre
-            cliente_direccion=cliente_data.get('direccion', ''),  # ✅ Guardar dirección
-            cliente_telefono=cliente_data.get('telefono', '')  # ✅ Guardar teléfono
+            cliente_nombre=cliente_data.get('nombre', 'Cliente Mostrador'),
+            cliente_direccion=cliente_data.get('direccion', ''),
+            cliente_telefono=cliente_data.get('telefono', '')
         )
 
-        total_sale = 0
+        total_sale = Decimal('0')
 
         for item in cart:
             product_id = item['id']
@@ -65,9 +65,16 @@ def pos_view(request):
                 product_id=product_id
             ).first()
 
-            if not inventory_item or inventory_item.stock < quantity:
+            if not inventory_item:
                 transaction.set_rollback(True)
-                return JsonResponse({'error': f'Stock insuficiente para {inventory_item.product.name}'}, status=400)
+                return JsonResponse({'error': f'Producto no encontrado en inventario'}, status=400)
+            
+            # ✅ Validación correcta para decimales
+            if inventory_item.stock < quantity:
+                transaction.set_rollback(True)
+                return JsonResponse({
+                    'error': f'Stock insuficiente para {inventory_item.product.name}. Disponible: {inventory_item.stock} kg, solicitado: {quantity} kg'
+                }, status=400)
 
             price = Decimal(str(item['price']))
             subtotal = price * quantity
@@ -81,9 +88,11 @@ def pos_view(request):
                 price_type=price_type
             )
 
+            # ✅ Descontar stock con Decimal
             inventory_item.stock -= quantity
             inventory_item.save()
 
+            # ✅ Registrar movimiento con Decimal
             InventoryMovement.objects.create(
                 inventory=inventory_item,
                 quantity=-quantity,
@@ -490,13 +499,15 @@ def cancel_sale(request, sale_id):
             for item in sale.items.all():
                 logger.info(f"Procesando item: {item.product.name}, cantidad: {item.quantity}")
                 
+                # ✅ Usar Decimal para stock
                 inventory, created = Inventory.objects.get_or_create(
                     branch=sale.branch,
                     product=item.product,
-                    defaults={'stock': 0}
+                    defaults={'stock': Decimal('0')}
                 )
                 
                 stock_antes = inventory.stock
+                # ✅ Sumar la cantidad (Decimal)
                 inventory.stock += item.quantity
                 inventory.save()
                 

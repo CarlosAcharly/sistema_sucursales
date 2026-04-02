@@ -3,31 +3,32 @@ from django.db import models
 class Inventory(models.Model):
     branch = models.ForeignKey('branches.Branch', on_delete=models.CASCADE)
     product = models.ForeignKey('products.Product', on_delete=models.CASCADE)
-    stock = models.IntegerField(default=0)
+    stock = models.DecimalField(max_digits=10, decimal_places=3, default=0)  # ✅ Cambiado a DecimalField
 
     class Meta:
         unique_together = ('branch', 'product')
 
     def __str__(self):
-        return f"{self.product.name} - {self.branch.name}"
+        return f"{self.product.name} - {self.branch.name} - {self.stock} kg"
 
 
 class InventoryMovement(models.Model):
     MOVEMENT_TYPES = (
         ('IN', 'Entrada'),
         ('OUT', 'Salida'),
+        ('SALE', 'Venta'),  # ✅ Agregar tipo de movimiento para ventas
         ('TRANSFER_OUT', 'Transferencia Salida'),
         ('TRANSFER_IN', 'Transferencia Entrada'),
     )
 
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name='movements')
-    quantity = models.IntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=3)  # ✅ Cambiado a DecimalField
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
     reference_id = models.IntegerField(null=True, blank=True)  # Para referenciar la transferencia
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.movement_type} - {self.quantity}"
+        return f"{self.movement_type} - {self.quantity} kg"
 
 
 class Transfer(models.Model):
@@ -58,10 +59,10 @@ class Transfer(models.Model):
 class TransferItem(models.Model):
     transfer = models.ForeignKey(Transfer, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey('products.Product', on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=3)  # ✅ Cambiado a DecimalField
     
     class Meta:
         unique_together = ('transfer', 'product')
 
     def __str__(self):
-        return f"{self.product.name} - {self.quantity}"
+        return f"{self.product.name} - {self.quantity} kg"

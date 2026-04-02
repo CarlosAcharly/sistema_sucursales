@@ -99,8 +99,7 @@
                                 <th style="text-align: left; padding: 10px; color: #606770; font-weight: 600;">Producto</th>
                                 <th style="text-align: left; padding: 10px; color: #606770; font-weight: 600;">Kilos</th>
                                 <th style="text-align: center; padding: 10px; color: #606770; font-weight: 600;">Eliminar</th>
-                            </tr>
-                        </thead>
+                            </thead>
                         <tbody id="ingredients-tbody">
                             {% for form in formset %}
                             <tr style="border-bottom: 1px solid #e4e6eb;" class="ingredient-row">
@@ -110,7 +109,7 @@
                                         {{ form.product }}
                                     </div>
                                     {{ form.id }}
-                                </td>
+                                 </td>
                                 <td style="padding: 10px;">
                                     <div style="position: relative; width: 150px;">
                                         <i class="fa-solid fa-scale-unbalanced" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
@@ -120,17 +119,17 @@
                                                style="padding-left: 35px; width: 100%;"
                                                onchange="updateTotal()">
                                     </div>
-                                </td>
+                                 </td>
                                 <td style="padding: 10px; text-align: center;">
                                     <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 8px 12px; background: #ffebe9; border-radius: 8px; transition: all 0.2s;">
                                         {{ form.DELETE }}
                                         <i class="fa-solid fa-trash" style="color: #b92b27;"></i>
                                     </label>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% endfor %}
                         </tbody>
-                    </table>
+                     </table>
 
                     <!-- Botón para agregar más ingredientes -->
                     <button type="button" onclick="addIngredientRow()" class="fb-btn" style="margin-top: 20px; background: white; border: 2px dashed #4158D0; color: #4158D0; padding: 12px 24px; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -161,10 +160,16 @@
 </div>
 
 <script>
-let formCount = {{ formset.total_form_count }};
+// Inicializar variables
+let formCount = parseInt(document.getElementById('id_dietbaseingredient_set-TOTAL_FORMS')?.value) || {{ formset.total_form_count }};
 let maxForms = {{ formset.max_num }};
+let productOptions = `{% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}`;
+
+console.log("Inicializado - formCount:", formCount, "maxForms:", maxForms);
 
 function addIngredientRow() {
+    console.log("Agregando ingrediente - formCount actual:", formCount);
+    
     if (formCount >= maxForms) {
         alert('Máximo de ingredientes alcanzado');
         return;
@@ -181,12 +186,10 @@ function addIngredientRow() {
                 <i class="fa-solid fa-drumstick-bite" style="color: #1877f2;"></i>
                 <select name="dietbaseingredient_set-${formCount}-product" id="id_dietbaseingredient_set-${formCount}-product" style="padding: 8px; border: 2px solid #e4e6eb; border-radius: 8px; width: 100%;">
                     <option value="" selected>---------</option>
-                    {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.name }}</option>
-                    {% endfor %}
+                    ${productOptions}
                 </select>
             </div>
-        </td>
+          </div>
         <td style="padding: 10px;">
             <div style="position: relative; width: 150px;">
                 <i class="fa-solid fa-scale-unbalanced" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
@@ -196,20 +199,27 @@ function addIngredientRow() {
                        style="padding-left: 35px; width: 100%;"
                        onchange="updateTotal()">
             </div>
-        </td>
+          </div>
         <td style="padding: 10px; text-align: center;">
             <label style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 8px 12px; background: #ffebe9; border-radius: 8px;">
                 <input type="checkbox" name="dietbaseingredient_set-${formCount}-DELETE" id="id_dietbaseingredient_set-${formCount}-DELETE">
                 <i class="fa-solid fa-trash" style="color: #b92b27;"></i>
             </label>
-        </td>
+          </div>
     `;
     
     newRow.innerHTML = newFormHtml;
     tbody.appendChild(newRow);
     
     formCount++;
-    document.getElementById('id_dietbaseingredient_set-TOTAL_FORMS').value = formCount;
+    
+    // ✅ ACTUALIZAR TOTAL_FORMS
+    const totalFormsInput = document.getElementById('id_dietbaseingredient_set-TOTAL_FORMS');
+    if (totalFormsInput) {
+        totalFormsInput.value = formCount;
+        console.log("TOTAL_FORMS actualizado a:", formCount);
+    }
+    
     updateTotal();
 }
 
@@ -221,15 +231,16 @@ function updateTotal() {
     });
     
     const totalElement = document.getElementById('total-kilos');
-    totalElement.textContent = total.toFixed(2) + ' kg';
-    
-    // Cambiar color si es 1000
-    if (Math.abs(total - 1000) < 0.01) {
-        totalElement.style.color = '#42b72a';
-        totalElement.style.textShadow = '0 0 10px rgba(66, 183, 42, 0.3)';
-    } else {
-        totalElement.style.color = '#1877f2';
-        totalElement.style.textShadow = 'none';
+    if (totalElement) {
+        totalElement.textContent = total.toFixed(2) + ' kg';
+        
+        if (Math.abs(total - 1000) < 0.01) {
+            totalElement.style.color = '#42b72a';
+            totalElement.style.textShadow = '0 0 10px rgba(66, 183, 42, 0.3)';
+        } else {
+            totalElement.style.color = '#1877f2';
+            totalElement.style.textShadow = 'none';
+        }
     }
 }
 
@@ -240,6 +251,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.kilos-input').forEach(input => {
         input.addEventListener('input', updateTotal);
     });
+    
+    // ✅ FORZAR TOTAL_FORMS AL ENVIAR EL FORMULARIO
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const ingredientRows = document.querySelectorAll('#ingredients-tbody tr.ingredient-row').length;
+            const totalFormsInput = document.getElementById('id_dietbaseingredient_set-TOTAL_FORMS');
+            if (totalFormsInput) {
+                totalFormsInput.value = ingredientRows;
+                console.log("✅ FORMULARIO ENVIADO - TOTAL_FORMS forzado a:", ingredientRows);
+            }
+        });
+    }
 });
 
 // Estilo para los selects
