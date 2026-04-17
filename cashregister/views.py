@@ -99,10 +99,16 @@ def detalle_corte(request, corte_id):
     total_ventas = sum(venta.total for venta in ventas)
     cantidad_ventas = ventas.count()
     
+    # Calcular totales por método de pago
+    total_efectivo = sum(venta.total for venta in ventas if venta.payment_method == 'CASH')
+    total_transferencia = sum(venta.total for venta in ventas if venta.payment_method == 'TRANSFER')
+    
     return render(request, 'cajero/cashregister/detail.html', {
         'corte': corte,
         'ventas': ventas,
         'total_ventas': total_ventas,
+        'total_efectivo': total_efectivo,
+        'total_transferencia': total_transferencia,
         'cantidad_ventas': cantidad_ventas
     })
 
@@ -151,13 +157,20 @@ def cerrar_corte(request, corte_id):
             )
         ).distinct().order_by('created_at')
         
-        # Calcular total de ventas (solo activas)
+        # Calcular totales por método de pago
         total_sistema = Decimal('0')
+        total_efectivo = Decimal('0')
+        total_transferencia = Decimal('0')
+        
         for venta in ventas_a_cerrar:
             total_sistema += venta.total
+            if venta.payment_method == 'CASH':
+                total_efectivo += venta.total
+            else:
+                total_transferencia += venta.total
         
-        # Calcular total esperado (monto inicial + ventas activas)
-        total_esperado = corte.monto_inicial + total_sistema
+        # Calcular total esperado (monto inicial + ventas en EFECTIVO)
+        total_esperado = corte.monto_inicial + total_efectivo
         diferencia = monto_real - total_esperado
         
         # Asignar las ventas al corte
@@ -167,6 +180,8 @@ def cerrar_corte(request, corte_id):
         # Actualizar corte
         corte.fecha_cierre = timezone.now()
         corte.total_ventas = total_sistema
+        corte.total_efectivo = total_efectivo
+        corte.total_transferencia = total_transferencia
         corte.monto_final_sistema = total_esperado
         corte.monto_final_real = monto_real
         corte.diferencia = diferencia
@@ -180,6 +195,8 @@ def cerrar_corte(request, corte_id):
             'total_sistema': float(total_esperado),
             'total_real': float(monto_real),
             'diferencia': float(diferencia),
+            'total_efectivo': float(total_efectivo),
+            'total_transferencia': float(total_transferencia),
             'cantidad_ventas': ventas_a_cerrar.count()
         })
         
@@ -215,8 +232,15 @@ def resumen_corte_api(request, corte_id):
             ventas = corte.ventas.all()
         
         total = Decimal('0')
+        total_efectivo = Decimal('0')
+        total_transferencia = Decimal('0')
+        
         for venta in ventas:
             total += venta.total
+            if venta.payment_method == 'CASH':
+                total_efectivo += venta.total
+            else:
+                total_transferencia += venta.total
         
         cantidad = ventas.count()
         
@@ -226,8 +250,10 @@ def resumen_corte_api(request, corte_id):
             'fecha_apertura': corte.fecha_apertura.strftime('%d/%m/%Y %H:%M'),
             'monto_inicial': float(corte.monto_inicial),
             'total_ventas': float(total),
+            'total_efectivo': float(total_efectivo),
+            'total_transferencia': float(total_transferencia),
             'cantidad_ventas': cantidad,
-            'total_esperado': float(corte.monto_inicial + total)
+            'total_esperado': float(corte.monto_inicial + total_efectivo)
         })
         
     except Exception as e:
@@ -257,14 +283,18 @@ def contar_dinero(request, corte_id):
     ).distinct().order_by('created_at')
     
     total_ventas = sum(venta.total for venta in ventas_totales)
+    total_efectivo = sum(venta.total for venta in ventas_totales if venta.payment_method == 'CASH')
+    total_transferencia = sum(venta.total for venta in ventas_totales if venta.payment_method == 'TRANSFER')
     cantidad_ventas = ventas_totales.count()
     
-    # Calcular total esperado (monto inicial + ventas)
-    total_esperado = corte.monto_inicial + total_ventas
+    # Calcular total esperado (monto inicial + ventas en EFECTIVO)
+    total_esperado = corte.monto_inicial + total_efectivo
     
     return render(request, 'cajero/cashregister/contar_dinero.html', {
         'corte': corte,
         'total_ventas_hoy': total_ventas,
+        'total_efectivo': total_efectivo,
+        'total_transferencia': total_transferencia,
         'cantidad_ventas': cantidad_ventas,
         'total_esperado': total_esperado,
         'ventas': ventas_totales[:10]  # Solo últimas 10 para el template
@@ -309,6 +339,8 @@ def admin_cortes_list(request):
     estadisticas = {
         'total_cortes': cortes.count(),
         'total_ventas': sum(corte.total_ventas for corte in cortes),
+        'total_efectivo': sum(corte.total_efectivo for corte in cortes),
+        'total_transferencia': sum(corte.total_transferencia for corte in cortes),
         'total_diferencia': sum(corte.diferencia for corte in cortes),
         'cortes_abiertos': cortes.filter(estado='ABIERTO').count(),
         'cortes_cerrados': cortes.filter(estado='CERRADO').count(),
@@ -324,6 +356,8 @@ def admin_cortes_list(request):
                 'nombre': sucursal.name,
                 'total_cortes': cortes_sucursal.count(),
                 'total_ventas': sum(c.total_ventas for c in cortes_sucursal),
+                'total_efectivo': sum(c.total_efectivo for c in cortes_sucursal),
+                'total_transferencia': sum(c.total_transferencia for c in cortes_sucursal),
                 'total_diferencia': sum(c.diferencia for c in cortes_sucursal),
                 'abiertos': cortes_sucursal.filter(estado='ABIERTO').count(),
                 'cerrados': cortes_sucursal.filter(estado='CERRADO').count(),
@@ -383,23 +417,32 @@ def admin_corte_detail(request, corte_id):
     
     # Estadísticas detalladas
     total_ventas = sum(venta.total for venta in ventas)
+    total_efectivo = sum(venta.total for venta in ventas if venta.payment_method == 'CASH')
+    total_transferencia = sum(venta.total for venta in ventas if venta.payment_method == 'TRANSFER')
     
     # Agrupar ventas por hora
     ventas_por_hora = {}
     for venta in ventas:
         hora = venta.created_at.strftime('%H:00')
         if hora not in ventas_por_hora:
-            ventas_por_hora[hora] = {'cantidad': 0, 'total': Decimal('0')}
+            ventas_por_hora[hora] = {'cantidad': 0, 'total': Decimal('0'), 'efectivo': Decimal('0'), 'transferencia': Decimal('0')}
         ventas_por_hora[hora]['cantidad'] += 1
         ventas_por_hora[hora]['total'] += venta.total
+        if venta.payment_method == 'CASH':
+            ventas_por_hora[hora]['efectivo'] += venta.total
+        else:
+            ventas_por_hora[hora]['transferencia'] += venta.total
     
-    ventas_por_hora = [{'hora': k, 'cantidad': v['cantidad'], 'total': float(v['total'])} 
+    ventas_por_hora = [{'hora': k, 'cantidad': v['cantidad'], 'total': float(v['total']), 
+                        'efectivo': float(v['efectivo']), 'transferencia': float(v['transferencia'])} 
                       for k, v in sorted(ventas_por_hora.items())]
     
     return render(request, 'admin/cashregister/detail.html', {
         'corte': corte,
         'ventas': ventas,
         'total_ventas': total_ventas,
+        'total_efectivo': total_efectivo,
+        'total_transferencia': total_transferencia,
         'ventas_por_hora': ventas_por_hora,
     })
 

@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # 🧑‍💼 CAJERO
 # =============================
 
+# sales/views.py - Modificar la parte de creación de la venta
 @login_required
 @role_required(['CASHIER'])
 @transaction.atomic
@@ -40,6 +41,7 @@ def pos_view(request):
         data = json.loads(request.body)
         cart = data.get('cart', [])
         cliente_data = data.get('cliente', {})
+        payment_method = data.get('payment_method', 'CASH')  # ✅ Obtener método de pago
 
         if not cart:
             return JsonResponse({'error': 'Carrito vacío'}, status=400)
@@ -50,7 +52,8 @@ def pos_view(request):
             total=0,
             cliente_nombre=cliente_data.get('nombre', 'Cliente Mostrador'),
             cliente_direccion=cliente_data.get('direccion', ''),
-            cliente_telefono=cliente_data.get('telefono', '')
+            cliente_telefono=cliente_data.get('telefono', ''),
+            payment_method=payment_method  # ✅ Guardar método de pago
         )
 
         total_sale = Decimal('0')
@@ -69,7 +72,6 @@ def pos_view(request):
                 transaction.set_rollback(True)
                 return JsonResponse({'error': f'Producto no encontrado en inventario'}, status=400)
             
-            # ✅ Validación correcta para decimales
             if inventory_item.stock < quantity:
                 transaction.set_rollback(True)
                 return JsonResponse({
@@ -88,11 +90,9 @@ def pos_view(request):
                 price_type=price_type
             )
 
-            # ✅ Descontar stock con Decimal
             inventory_item.stock -= quantity
             inventory_item.save()
 
-            # ✅ Registrar movimiento con Decimal
             InventoryMovement.objects.create(
                 inventory=inventory_item,
                 quantity=-quantity,
@@ -110,7 +110,6 @@ def pos_view(request):
     return render(request, 'cajero/pos.html', {
         'inventory': inventory
     })
-
 @login_required
 @role_required(['CASHIER'])
 def sales_list(request):
@@ -227,6 +226,7 @@ def cajero_dashboard(request):
     })
 
 
+# sales/views.py - Agregar payment_method al JSON
 @login_required
 def sale_detail_api(request, sale_id):
     """API para obtener detalles de una venta"""
@@ -265,7 +265,8 @@ def sale_detail_api(request, sale_id):
             'items': items,
             'status': sale.status,
             'status_display': sale.get_status_display(),
-            # ✅ DATOS DEL CLIENTE
+            'payment_method': sale.payment_method,  # ✅ Agregar método de pago
+            'payment_method_display': sale.get_payment_method_display(),  # ✅ Texto del método
             'cliente_nombre': sale.cliente_nombre,
             'cliente_direccion': sale.cliente_direccion,
             'cliente_telefono': sale.cliente_telefono

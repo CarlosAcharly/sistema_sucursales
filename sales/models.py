@@ -9,16 +9,21 @@ class Sale(models.Model):
         ('CANCELLED', 'Cancelada'),
     )
     
+    PAYMENT_CHOICES = (
+        ('CASH', 'Efectivo'),
+        ('TRANSFER', 'Transferencia'),
+    )
+    
     branch = models.ForeignKey('branches.Branch', on_delete=models.CASCADE)
     cashier = models.ForeignKey(User, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default='CASH')  # ✅ NUEVO CAMPO
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancelled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cancelled_sales')
     cancellation_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
-    # ✅ NUEVOS CAMPOS: Datos del cliente
     cliente_nombre = models.CharField(max_length=200, blank=True, default='Cliente Mostrador', verbose_name="Nombre del cliente")
     cliente_direccion = models.CharField(max_length=500, blank=True, verbose_name="Dirección")
     cliente_telefono = models.CharField(max_length=50, blank=True, verbose_name="Teléfono")
