@@ -158,7 +158,7 @@
     </div>
 </div>
 
-<<!-- MODAL BÁSICO: Aprobar Pedido -->
+<!-- MODAL BÁSICO: Aprobar Pedido -->
 <div id="approveModal" class="modal" style="display: none;">
     <div class="modal-content" style="max-width: 400px; animation: slideUp 0.3s ease;">
         <div class="modal-header" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; padding: 20px;">
@@ -179,7 +179,6 @@
                 <p style="color: #1877f2; font-weight: 600; margin-top: 10px;" id="approveTotalKilos">0 kg</p>
             </div>
             
-            <!-- 🔴 CORREGIDO: El action se dejará vacío y se llenará con JavaScript -->
             <form method="post" action="" id="approveForm" style="display: inline;">
                 {% csrf_token %}
                 <div style="display: flex; gap: 10px; justify-content: center;">
@@ -197,7 +196,7 @@
 
 <!-- Modal de Edición de Pedido -->
 <div id="editOrderModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 900px;">
+    <div class="modal-content" style="max-width: 1000px;">
         <div class="modal-header">
             <h3>
                 <i class="fas fa-edit"></i> 
@@ -308,6 +307,16 @@
     font-size: 11px;
     color: #606770;
     margin-left: 5px;
+}
+
+.purchase-price-display {
+    color: #1877f2;
+    font-weight: 600;
+}
+
+.budget-display {
+    color: #42b72a;
+    font-weight: 700;
 }
 
 .delete-item-btn {
@@ -907,6 +916,7 @@ let currentOrderId = null;
 let deletedItems = [];
 let updatedItems = {};
 let originalItems = [];
+let purchasePrices = {};
 
 // Variables para el modal de aprobar
 let currentApproveOrderId = null;
@@ -915,25 +925,20 @@ let currentApproveOrderId = null;
 function openApproveModal(orderId, branchName, totalKilos) {
     currentApproveOrderId = orderId;
     
-    // Actualizar información del modal
     document.getElementById('approveModalOrderInfo').textContent = `Pedido #${orderId} - ${branchName}`;
     document.getElementById('approveTotalKilos').textContent = `${totalKilos.toFixed(2)} kg`;
     
-    // 🔴 CORREGIDO: Usar la URL correcta con 'aprobar'
     const form = document.getElementById('approveForm');
-    form.action = `/orders/admin/${orderId}/aprobar/`;  // Cambiado de 'approve' a 'aprobar'
+    form.action = `/orders/admin/${orderId}/aprobar/`;
     
-    // Mostrar modal
     document.getElementById('approveModal').style.display = 'block';
 }
 
-// Cerrar modal de aprobación
 function closeApproveModal() {
     document.getElementById('approveModal').style.display = 'none';
     currentApproveOrderId = null;
 }
 
-// Prevenir doble envío
 document.getElementById('approveForm')?.addEventListener('submit', function(e) {
     const btn = document.getElementById('confirmApproveBtn');
     btn.disabled = true;
@@ -948,6 +953,7 @@ function openEditModal(orderId) {
     
     deletedItems = [];
     updatedItems = {};
+    purchasePrices = {};
     
     modalBody.innerHTML = `
         <div style="text-align: center; padding: 40px;">
@@ -977,6 +983,10 @@ function openEditModal(orderId) {
             }
             
             originalItems = data.items;
+            // Guardar precios de compra
+            data.items.forEach(item => {
+                purchasePrices[item.id] = item.purchase_price || 0;
+            });
             renderEditModal(data);
         })
         .catch(error => {
@@ -1001,6 +1011,8 @@ function renderEditModal(data) {
         const isDeleted = deletedItems.includes(item.id);
         const newKilos = updatedItems[item.id] !== undefined ? updatedItems[item.id] : item.kilos;
         const hasChanged = updatedItems[item.id] !== undefined && updatedItems[item.id] != item.kilos;
+        const purchasePrice = purchasePrices[item.id] || 0;
+        const budget = newKilos * purchasePrice;
         
         if (hasChanged) hasChanges = true;
         
@@ -1023,6 +1035,12 @@ function renderEditModal(data) {
                         <span>kg</span>
                         <span class="original-value">(original: ${item.kilos} kg)</span>
                     </div>
+                </td>
+                <td>
+                    <span class="purchase-price-display">$${purchasePrice.toFixed(2)}</span>
+                </td>
+                <td>
+                    <span class="budget-display" id="budget-${item.id}">$${budget.toFixed(2)}</span>
                 </td>
                 <td style="text-align: center;">
                     <button class="delete-item-btn" 
@@ -1081,6 +1099,8 @@ function renderEditModal(data) {
                 <tr>
                     <th>Producto</th>
                     <th>Cantidad (kg)</th>
+                    <th>Precio Compra ($/kg)</th>
+                    <th>Presupuesto ($)</th>
                     <th style="text-align: center;">Acciones</th>
                 </tr>
             </thead>
@@ -1097,6 +1117,10 @@ function renderEditModal(data) {
             <div class="summary-item">
                 <span>Total kilos:</span>
                 <span><strong id="modal-total-kilos">${calculateTotalKilos(data.items).toFixed(2)} kg</strong></span>
+            </div>
+            <div class="summary-item">
+                <span>Presupuesto Total:</span>
+                <span><strong id="modal-total-budget">${calculateTotalBudget(data.items).toFixed(2)}</strong></span>
             </div>
         </div>
         
@@ -1131,17 +1155,43 @@ function calculateTotalKilos(items) {
     return total;
 }
 
+// Calcular presupuesto total
+function calculateTotalBudget(items) {
+    let total = 0;
+    items.forEach(item => {
+        if (!deletedItems.includes(item.id)) {
+            const kilos = updatedItems[item.id] !== undefined ? updatedItems[item.id] : item.kilos;
+            const price = purchasePrices[item.id] || 0;
+            total += kilos * price;
+        }
+    });
+    return total;
+}
+
+// Actualizar presupuesto de un item
+function updateItemBudget(itemId, kilos) {
+    const budgetSpan = document.getElementById(`budget-${itemId}`);
+    if (budgetSpan) {
+        const price = purchasePrices[itemId] || 0;
+        const budget = kilos * price;
+        budgetSpan.textContent = `$${budget.toFixed(2)}`;
+    }
+}
+
 // Actualizar totales
 function updateTotals() {
     const items = originalItems;
     
     const totalKilos = calculateTotalKilos(items);
+    const totalBudget = calculateTotalBudget(items);
     const totalItems = items.length - deletedItems.length;
     
     const totalKilosElement = document.getElementById('modal-total-kilos');
+    const totalBudgetElement = document.getElementById('modal-total-budget');
     const totalItemsElement = document.getElementById('modal-items-count');
     
     if (totalKilosElement) totalKilosElement.textContent = totalKilos.toFixed(2) + ' kg';
+    if (totalBudgetElement) totalBudgetElement.textContent = '$' + totalBudget.toFixed(2);
     if (totalItemsElement) totalItemsElement.textContent = totalItems;
     
     const saveBtn = document.getElementById('saveChangesBtn');
@@ -1174,6 +1224,8 @@ function trackQuantityChange(itemId, newValue) {
         updatedItems[itemId] = newKilos;
     }
     
+    // Actualizar presupuesto
+    updateItemBudget(itemId, newKilos);
     updateTotals();
 }
 
@@ -1202,6 +1254,14 @@ function undoDelete(itemId) {
     undoBtn.style.display = 'none';
     
     deletedItems = deletedItems.filter(id => id !== itemId);
+    
+    // Restaurar presupuesto
+    const originalItem = originalItems.find(item => item.id === itemId);
+    if (originalItem) {
+        const currentKilos = updatedItems[itemId] !== undefined ? updatedItems[itemId] : originalItem.kilos;
+        updateItemBudget(itemId, currentKilos);
+    }
+    
     updateTotals();
 }
 
@@ -1284,12 +1344,10 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Obtener CSRF token
 function getCSRFToken() {
     return document.querySelector('[name=csrfmiddlewaretoken]').value;
 }
 
-// Cerrar modal de edición
 function closeEditModal() {
     document.getElementById('editOrderModal').style.display = 'none';
     currentOrderId = null;

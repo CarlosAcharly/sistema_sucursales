@@ -1,0 +1,532 @@
+{% extends 'cajero/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Estilos mejorados para el detalle */
+    .detail-header {
+        background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 25px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .detail-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    
+    .info-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e4e6eb;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .info-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .info-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #1877f2, #42b72a, #f7b928);
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #606770;
+        font-size: 14px;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #050505;
+        font-size: 14px;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .status-pending {
+        background: #fff4e5;
+        color: #bd7b13;
+    }
+    
+    .status-completed {
+        background: #e3f2e8;
+        color: #1b7e3f;
+    }
+    
+    .status-cancelled {
+        background: #ffebe9;
+        color: #b92b27;
+    }
+    
+    .summary-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    }
+    
+    .summary-number {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1877f2;
+        line-height: 1;
+    }
+    
+    .stock-available {
+        color: #42b72a;
+        background: #e3f2e8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .stock-insufficient {
+        color: #fa383e;
+        background: #ffebe9;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .product-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .product-table th {
+        background: #f8f9fa;
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #606770;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e4e6eb;
+    }
+    
+    .product-table td {
+        padding: 15px;
+        border-bottom: 1px solid #f0f2f5;
+        vertical-align: middle;
+    }
+    
+    .product-table tr:hover td {
+        background: #f8f9fa;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #050505;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .product-icon {
+        width: 32px;
+        height: 32px;
+        background: #e7f3ff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1877f2;
+    }
+    
+    .quantity-badge {
+        background: #e7f3ff;
+        color: #1877f2;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 25px;
+    }
+    
+    .btn-process {
+        background: linear-gradient(135deg, #42b72a, #2d8a1f);
+        color: white;
+        padding: 12px 28px;
+        border-radius: 30px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 15px rgba(66, 183, 42, 0.3);
+    }
+    
+    .btn-process:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(66, 183, 42, 0.4);
+    }
+    
+    .btn-cancel {
+        background: #fa383e;
+        color: white;
+        padding: 12px 28px;
+        border-radius: 30px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 15px rgba(250, 56, 62, 0.3);
+    }
+    
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(250, 56, 62, 0.4);
+    }
+    
+    .btn-back {
+        background: white;
+        color: #606770;
+        padding: 12px 28px;
+        border-radius: 30px;
+        font-weight: 600;
+        border: 2px solid #e4e6eb;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-back:hover {
+        background: #f5f6f7;
+        transform: translateY(-2px);
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-card {
+        animation: fadeInUp 0.5s ease forwards;
+    }
+    
+    .info-card:nth-child(1) { animation-delay: 0.1s; }
+    .info-card:nth-child(2) { animation-delay: 0.2s; }
+    .product-card { animation-delay: 0.3s; }
+</style>
+
+<!-- Header -->
+<div class="detail-header animate-card">
+    <div style="display: flex; align-items: center; gap: 20px; color: white; position: relative; z-index: 1;">
+        <a href="{% url 'transfer_list' %}" class="back-btn" style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
+            <i class="fa-solid fa-arrow-left" style="font-size: 20px;"></i>
+        </a>
+        <div>
+            <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Transferencia #{{ transfer.id }}</h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">Detalles completos de la transferencia de productos</p>
+        </div>
+    </div>
+</div>
+
+<!-- Grid de información -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+    <!-- Información General -->
+    <div class="fb-card info-card animate-card" style="padding: 0; overflow: hidden;">
+        <div class="fb-card-header" style="background: linear-gradient(135deg, #1877f2, #166fe5); color: white; margin: 0; padding: 15px 20px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-info-circle"></i>
+                Información General
+            </h3>
+        </div>
+        <div style="padding: 20px;">
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-store" style="color: #1877f2; width: 20px;"></i> Sucursal Origen</span>
+                <span class="info-value">{{ transfer.from_branch.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-arrow-right" style="color: #42b72a; width: 20px;"></i> Sucursal Destino</span>
+                <span class="info-value">{{ transfer.to_branch.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-calendar-alt" style="color: #f7b928; width: 20px;"></i> Fecha de Creación</span>
+                <span class="info-value">{{ transfer.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-user" style="color: #1877f2; width: 20px;"></i> Creado por</span>
+                <span class="info-value">{{ transfer.created_by.get_full_name|default:transfer.created_by.username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-tag" style="color: #f7b928; width: 20px;"></i> Estado Actual</span>
+                <span class="info-value">
+                    {% if transfer.status == 'PENDING' %}
+                        <span class="status-badge status-pending">
+                            <i class="fa-solid fa-clock"></i> Pendiente
+                        </span>
+                    {% elif transfer.status == 'COMPLETED' %}
+                        <span class="status-badge status-completed">
+                            <i class="fa-solid fa-check-circle"></i> Completada
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-cancelled">
+                            <i class="fa-solid fa-ban"></i> Cancelada
+                        </span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if transfer.completed_at %}
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-calendar-check" style="color: #42b72a; width: 20px;"></i> Fecha de Completado</span>
+                <span class="info-value">{{ transfer.completed_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            {% endif %}
+            {% if transfer.notes %}
+            <div class="info-row">
+                <span class="info-label"><i class="fa-solid fa-note-sticky" style="color: #764ba2; width: 20px;"></i> Notas</span>
+                <span class="info-value" style="font-style: italic;">{{ transfer.notes }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Resumen -->
+    <div class="fb-card info-card animate-card" style="padding: 0; overflow: hidden;">
+        <div class="fb-card-header" style="background: linear-gradient(135deg, #42b72a, #2d8a1f); color: white; margin: 0; padding: 15px 20px;">
+            <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-chart-simple"></i>
+                Resumen de la Transferencia
+            </h3>
+        </div>
+        <div style="padding: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; text-align: center; margin-bottom: 20px;">
+                <div>
+                    <div class="summary-number">{{ transfer.total_items }}</div>
+                    <div style="color: #606770; font-size: 13px; margin-top: 5px;">
+                        <i class="fa-solid fa-boxes"></i> Productos
+                    </div>
+                </div>
+                <div>
+                    <div class="summary-number">{{ transfer.total_quantity|floatformat:2 }}</div>
+                    <div style="color: #606770; font-size: 13px; margin-top: 5px;">
+                        <i class="fa-solid fa-weight-hanging"></i> Kilos Totales
+                    </div>
+                </div>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center;">
+                <div style="margin-bottom: 8px;">
+                    <i class="fa-solid fa-boxes-stacked" style="color: #1877f2;"></i>
+                    <span style="color: #606770; margin-left: 8px;">Disponibilidad de Stock:</span>
+                </div>
+                {% if all_available %}
+                    <div class="stock-available" style="display: inline-flex;">
+                        <i class="fa-solid fa-check-circle"></i> Todos los productos disponibles
+                    </div>
+                {% else %}
+                    <div class="stock-insufficient" style="display: inline-flex;">
+                        <i class="fa-solid fa-exclamation-triangle"></i> Stock insuficiente en algunos productos
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Productos -->
+<div class="fb-card info-card animate-card" style="padding: 0; overflow: hidden;">
+    <div class="fb-card-header" style="background: linear-gradient(135deg, #764ba2, #667eea); color: white; margin: 0; padding: 15px 20px;">
+        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-list"></i>
+            Productos a Transferir
+        </h3>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Stock Origen</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for status in stock_status %}
+                <tr>
+                    <td>
+                        <div class="product-name">
+                            <div class="product-icon">
+                                <i class="fa-solid fa-box"></i>
+                            </div>
+                            {{ status.item.product.name }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="quantity-badge">
+                            <i class="fa-solid fa-weight-hanging"></i> {{ status.item.quantity|floatformat:2 }} kg
+                        </span>
+                    </td>
+                    <td>
+                        <span class="quantity-badge" style="background: #f0f2f5; color: #606770;">
+                            <i class="fa-solid fa-cubes"></i> {{ status.available_stock|floatformat:2 }} kg
+                        </span>
+                    </td>
+                    <td>
+                        {% if status.is_available %}
+                            <span style="color: #42b72a; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-check-circle"></i> Disponible
+                            </span>
+                        {% else %}
+                            <span style="color: #fa383e; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-exclamation-circle"></i> 
+                                Faltan {{ status.needs|floatformat:2 }} kg
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 40px;">
+                        <i class="fa-solid fa-box-open" style="font-size: 48px; color: #e4e6eb;"></i>
+                        <p style="margin-top: 15px; color: #606770;">No hay productos en esta transferencia</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Botones de acción -->
+<div class="action-buttons">
+    {% if transfer.status == 'PENDING' %}
+        {% if all_available %}
+            <form method="post" action="{% url 'transfer_process' transfer.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-process" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Procesando...'; this.disabled=true;">
+                    <i class="fa-solid fa-check-circle"></i> Procesar Transferencia
+                </button>
+            </form>
+        {% endif %}
+        
+        <form method="post" action="{% url 'transfer_cancel' transfer.id %}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de cancelar esta transferencia?\n\nEsta acción no se puede deshacer.');">
+            {% csrf_token %}
+            <button type="submit" class="btn-cancel">
+                <i class="fa-solid fa-ban"></i> Cancelar Transferencia
+            </button>
+        </form>
+    {% endif %}
+    
+    <a href="{% url 'transfer_list' %}" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Volver a Transferencias
+    </a>
+</div>
+
+<script>
+    // Animación para los botones
+    document.querySelectorAll('.btn-process, .btn-cancel, .btn-back').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (this.tagName === 'BUTTON' && this.type === 'submit') {
+                if (this.classList.contains('btn-process')) {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+                    this.disabled = true;
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+        transform: translateX(-3px);
+    }
+    
+    /* Scrollbar personalizado para la tabla */
+    .product-table::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .product-table::-webkit-scrollbar-track {
+        background: #f0f2f5;
+        border-radius: 10px;
+    }
+    
+    .product-table::-webkit-scrollbar-thumb {
+        background: #1877f2;
+        border-radius: 10px;
+    }
+    
+    /* Efecto hover para filas de la tabla */
+    .product-table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .product-table tbody tr:hover {
+        background: #f8f9fa;
+        transform: scale(1.01);
+    }
+</style>
+{% endblock %}

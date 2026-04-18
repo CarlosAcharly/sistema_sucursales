@@ -11,6 +11,8 @@ import logging
 import json
 from decimal import Decimal
 
+# ✅ Importar función para obtener precio de compra
+from earnings.views import get_purchase_price_at_date
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +72,7 @@ def create_order(request):
                     branch=branch,
                     created_by=request.user,
                     status="PENDING",
-                    inventory_added=False  # Nuevo pedido, no agregado a inventario
+                    inventory_added=False
                 )
                 
                 # Crear todos los items
@@ -126,7 +128,7 @@ def cashier_orders(request):
 
 @login_required
 def order_detail_api(request, order_id):
-    """API para obtener detalles del pedido en formato JSON"""
+    """API para obtener detalles del pedido en formato JSON (incluyendo presupuesto)"""
     try:
         # Para admin: puede ver cualquier pedido
         if request.user.role == "ADMIN":
@@ -139,14 +141,23 @@ def order_detail_api(request, order_id):
             )
         
         items = []
+        total_budget = Decimal('0')
+        
         for item in order.items.all():
+            # ✅ Obtener precio de compra en la fecha del pedido
+            purchase_price = get_purchase_price_at_date(item.product.id, order.created_at)
+            budget = Decimal(str(item.kilos)) * purchase_price
+            total_budget += budget
+            
             items.append({
                 'id': item.id,
                 'product_id': item.product.id,
                 'name': item.product.name,
                 'kilos': float(item.kilos),
-                'can_delete': order.status == "PENDING",  # Solo se puede eliminar si está pendiente
-                'original_kilos': float(item.kilos)  # Guardar valor original para referencia
+                'purchase_price': float(purchase_price),  # ✅ Precio de compra por kg
+                'budget': float(budget),  # ✅ Presupuesto total para este producto
+                'can_delete': order.status == "PENDING",
+                'original_kilos': float(item.kilos)
             })
         
         data = {
@@ -157,9 +168,10 @@ def order_detail_api(request, order_id):
             'branch': order.branch.name,
             'cashier': order.created_by.get_full_name() or order.created_by.username,
             'total_kilos': float(order.total_kilos()),
+            'total_budget': float(total_budget),  # ✅ Presupuesto total del pedido
             'items_count': order.items_count(),
             'items': items,
-            'can_edit': order.status == "PENDING",  # El pedido se puede editar solo si está pendiente
+            'can_edit': order.status == "PENDING",
             'inventory_added': order.inventory_added
         }
         return JsonResponse(data)
@@ -237,12 +249,8 @@ def add_order_to_inventory(request, order_id):
             try:
                 kilos = float(item.kilos)
                 
-                # IMPORTANTE: El inventario usa IntegerField, así que necesitamos decidir cómo manejar decimales
-                # Opción 1: Redondear al entero más cercano
+                # IMPORTANTE: El inventario usa IntegerField, así que redondeamos al entero más cercano
                 cantidad = int(round(kilos))
-                
-                # Opción 2: Si quieres mantener decimales, tendrías que cambiar el modelo Inventory
-                # cantidad = kilos  # Esto requeriría cambiar stock a DecimalField
                 
                 logger.info(f"Item: {item.product.name}, kilos original: {kilos}, cantidad a agregar: {cantidad}")
                 
@@ -554,7 +562,7 @@ def order_items_api(request, order_id):
             'success': True,
             'items': items,
             'total_items': len(items),
-            'total_kilos': float(order.total_kilos)
+            'total_kilos': float(order.total_kilos())
         })
     except Order.DoesNotExist:
         return JsonResponse({'error': 'Pedido no encontrado'}, status=404)

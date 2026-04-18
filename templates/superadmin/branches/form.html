@@ -132,6 +132,38 @@
             </div>
         </div>
 
+        <!-- ✅ NUEVO CAMPO: Puede hacer transferencias (Checkbox) -->
+        <div class="fb-form-group" style="margin-bottom: 24px;">
+            <div style="background: linear-gradient(135deg, #f5f6f7 0%, #ffffff 100%); padding: 20px; border-radius: 12px; border: 1px solid #e4e6eb;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-exchange-alt" style="color: #1877f2; font-size: 20px;"></i>
+                        </span>
+                        <div>
+                            <label for="{{ form.can_transfer.id_for_label }}" style="font-weight: 600; font-size: 16px; color: #050505; cursor: pointer;">
+                                {{ form.can_transfer.label }}
+                            </label>
+                            <p style="color: #606770; font-size: 13px; margin: 4px 0 0 0;">
+                                <i class="fas fa-info-circle"></i> Permite a los cajeros de esta sucursal realizar transferencias
+                            </p>
+                        </div>
+                    </div>
+                    <div class="fb-checkbox-group" style="transform: scale(1.2);">
+                        {{ form.can_transfer }}
+                    </div>
+                </div>
+                <small style="color: #606770; display: block; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e4e6eb;">
+                    <i class="fas fa-question-circle"></i> Si está activado, los cajeros podrán transferir productos a otras sucursales
+                </small>
+                {% if form.can_transfer.errors %}
+                    <div class="fb-alert fb-alert-danger" style="margin-top: 15px; padding: 10px 14px;">
+                        <i class="fas fa-exclamation-triangle"></i> {{ form.can_transfer.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Campos requeridos note - Mejorado -->
         <div style="margin: 25px 0; padding: 14px; background: linear-gradient(135deg, #e7f3ff 0%, #d9ebff 100%); border-radius: 10px; display: flex; align-items: center; gap: 12px;">
             <span style="background: #1877f2; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
