@@ -458,8 +458,13 @@
         <!-- Encabezado -->
         <div style="text-align: center; margin-bottom: 8px;">
             <h3 style="margin: 0 0 2px 0; padding: 0; font-size: 16px; font-weight: bold;">{{ request.user.branch.name }}</h3>
+            <!-- ✅ Teléfono de la sucursal -->
+            {% if request.user.branch.phone %}
+            <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;">
+                <i class="fas fa-phone-alt"></i> Tel: {{ request.user.branch.phone }}
+            </p>
+            {% endif %}
             <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-direccion"></p>
-            <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-telefono"></p>
             <div style="margin: 4px 0 2px 0;">
                 <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;" id="print-fecha-hora"></p>
                 <p style="margin: 0; padding: 0; font-size: 10px; font-weight: bold;">Ticket #<span id="print-ticket-number"></span></p>
@@ -497,6 +502,10 @@
         
         <!-- Totales -->
         <div style="text-align: right; margin: 6px 0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: bold;">Total Kilos:</span>
+                <span style="font-weight: bold;" id="print-total-kilos">0.00</span>
+            </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                 <span style="font-weight: bold;">Subtotal:</span>
                 <span style="font-weight: bold;" id="print-subtotal">0.00</span>
@@ -1199,7 +1208,6 @@ function imprimirTicketVenta() {
     
     document.getElementById('print-ticket-number').textContent = ventaActualId;
     document.getElementById('print-direccion').textContent = clienteDireccion;
-    document.getElementById('print-telefono').textContent = clienteTelefono;
     document.getElementById('print-cliente-nombre').textContent = clienteNombre;
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
@@ -1223,22 +1231,25 @@ function imprimirTicketVenta() {
     document.getElementById('print-cambio').textContent = selectedPaymentMethod === 'CASH' ? cambio.replace('$', '') : 'N/A';
     
     let subtotal = 0;
+    let totalKilos = 0;
     
     fetch(`/sales/api/${ventaActualId}/`)
         .then(response => response.json())
         .then(data => {
             let itemsHtml = '';
             subtotal = 0;
+            totalKilos = 0;
             
             if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
                     const itemTotal = item.subtotal;
                     subtotal += itemTotal;
+                    totalKilos += item.quantity;  // ✅ Sumar kilos
                     
                     itemsHtml += `
                         <tr style="border-bottom: 1px dotted #ccc;">
                             <td style="text-align: left; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.product_name.substring(0, 18)}${item.product_name.length > 18 ? '…' : ''}</td>
-                            <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity}</td>
+                            <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity}${item.price_type === 'kg' ? ' kg' : ''}</td>
                             <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${item.price.toFixed(2)}</td>
                             <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${itemTotal.toFixed(2)}</td>
                         </tr>
@@ -1248,6 +1259,7 @@ function imprimirTicketVenta() {
             
             document.getElementById('print-items').innerHTML = itemsHtml;
             document.getElementById('print-subtotal').textContent = subtotal.toFixed(2);
+            document.getElementById('print-total-kilos').textContent = totalKilos.toFixed(3);  // ✅ Total kilos con 3 decimales
             
             const originalContent = document.body.innerHTML;
             
@@ -1352,7 +1364,6 @@ function imprimirTicket() {
     
     document.getElementById('print-ticket-number').textContent = currentTicketNumber;
     document.getElementById('print-direccion').textContent = clienteDireccion;
-    document.getElementById('print-telefono').textContent = clienteTelefono;
     document.getElementById('print-cliente-nombre').textContent = clienteNombre;
     document.getElementById('print-cliente-direccion').textContent = clienteDireccion || '-';
     document.getElementById('print-cliente-telefono').textContent = clienteTelefono || '-';
@@ -1370,17 +1381,19 @@ function imprimirTicket() {
     let itemsHtml = '';
     let total = 0;
     let subtotal = 0;
+    let totalKilos = 0;
     
     for (let id in cart) {
         let item = cart[id];
         let rowTotal = item.price * item.quantity;
         total += rowTotal;
         subtotal += rowTotal;
+        totalKilos += item.quantity;  // ✅ Sumar kilos
         
         itemsHtml += `
             <tr style="border-bottom: 1px dotted #ccc;">
                 <td style="text-align: left; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.name.substring(0, 18)}${item.name.length > 18 ? '…' : ''}</td>
-                <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity}</td>
+                <td style="text-align: center; padding: 3px 2px; font-size: 11px; font-weight: bold;">${item.quantity} ${item.priceTypeName || 'uds'}</td>
                 <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${item.price.toFixed(2)}</td>
                 <td style="text-align: right; padding: 3px 2px; font-size: 11px; font-weight: bold;">$${rowTotal.toFixed(2)}</td>
             </tr>
@@ -1390,6 +1403,7 @@ function imprimirTicket() {
     document.getElementById('print-items').innerHTML = itemsHtml;
     document.getElementById('print-total').textContent = total.toFixed(2);
     document.getElementById('print-subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('print-total-kilos').textContent = totalKilos.toFixed(3);  // ✅ Total kilos con 3 decimales
     document.getElementById('print-recibido').textContent = '0.00';
     document.getElementById('print-cambio').textContent = '0.00';
     
@@ -1443,7 +1457,6 @@ function imprimirTicket() {
         location.reload();
     }, 1000);
 }
-
 // Estilos adicionales
 const style = document.createElement('style');
 style.textContent = `
