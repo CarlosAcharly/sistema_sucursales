@@ -69,8 +69,8 @@
     </div>
 </div>
 
-<!-- Resumen Financiero -->
-<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-top: 10px;">
+<!-- ✅ NUEVA SECCIÓN: Resumen de Ventas por Método de Pago -->
+<div class="stats-grid" style="grid-template-columns: repeat(5, 1fr); margin-top: 10px;">
     <div class="stat-card" style="border-top-color: #1877f2;">
         <div class="stat-header">
             <h4>Monto Inicial</h4>
@@ -88,12 +88,24 @@
         <small style="color: #606770;">{{ ventas.count }} ventas</small>
     </div>
 
-    <div class="stat-card" style="border-top-color: #f7b928;">
+    <!-- ✅ NUEVO: Total en Efectivo -->
+    <div class="stat-card" style="border-top-color: #42b72a;">
         <div class="stat-header">
-            <h4>Total Sistema</h4>
-            <i class="fa-solid fa-computer stat-icon" style="color: #f7b928;"></i>
+            <h4>Ventas en Efectivo</h4>
+            <i class="fa-solid fa-money-bill-wave stat-icon" style="color: #42b72a;"></i>
         </div>
-        <div class="stat-number">${{ corte.monto_final_sistema|default:total_ventas|floatformat:2 }}</div>
+        <div class="stat-number">${{ total_efectivo|floatformat:2 }}</div>
+        <small style="color: #606770;">Pagos en efectivo</small>
+    </div>
+
+    <!-- ✅ NUEVO: Total en Transferencia -->
+    <div class="stat-card" style="border-top-color: #1877f2;">
+        <div class="stat-header">
+            <h4>Ventas por Transferencia</h4>
+            <i class="fa-solid fa-university stat-icon" style="color: #1877f2;"></i>
+        </div>
+        <div class="stat-number">${{ total_transferencia|floatformat:2 }}</div>
+        <small style="color: #606770;">Pagos por transferencia</small>
     </div>
 
     <div class="stat-card" style="border-top-color: {% if corte.diferencia >= 0 %}#42b72a{% else %}#fa383e{% endif %};">
@@ -120,12 +132,24 @@
             <h4 style="color: #1877f2;">${{ corte.monto_final_real|floatformat:2 }}</h4>
         </div>
         <div>
+            <p style="color: #606770; margin-bottom: 5px;">Total Sistema (Efectivo)</p>
+            <h4 style="color: #42b72a;">${{ corte.monto_final_sistema|floatformat:2 }}</h4>
+        </div>
+        <div>
             <p style="color: #606770; margin-bottom: 5px;">Fecha de Cierre</p>
             <h4 style="color: #050505;">{{ corte.fecha_cierre|date:"d/m/Y H:i" }}</h4>
         </div>
         <div>
             <p style="color: #606770; margin-bottom: 5px;">Duración del Corte</p>
             <h4 style="color: #050505;">{{ corte.duracion }}</h4>
+        </div>
+        <div>
+            <p style="color: #606770; margin-bottom: 5px;">Total Transferencias</p>
+            <h4 style="color: #1877f2;">${{ corte.total_transferencia|floatformat:2 }}</h4>
+        </div>
+        <div>
+            <p style="color: #606770; margin-bottom: 5px;">Total Efectivo</p>
+            <h4 style="color: #42b72a;">${{ corte.total_efectivo|floatformat:2 }}</h4>
         </div>
         {% if corte.observaciones %}
         <div style="grid-column: 1/-1;">
@@ -139,7 +163,7 @@
 </div>
 {% endif %}
 
-<!-- Ventas del Corte -->
+<!-- Ventas del Corte - ACTUALIZADO CON COLUMNA DE MÉTODO DE PAGO -->
 <div class="fb-card" style="margin-top: 20px;">
     <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
         <h3><i class="fa-solid fa-receipt" style="color: #1877f2;"></i> Ventas del Corte</h3>
@@ -155,8 +179,9 @@
                     <th style="padding: 12px; text-align: left;">ID Venta</th>
                     <th style="padding: 12px; text-align: left;">Fecha</th>
                     <th style="padding: 12px; text-align: left;">Hora</th>
+                    <th style="padding: 12px; text-align: left;">Método de Pago</th>
                     <th style="padding: 12px; text-align: right;">Total</th>
-                </tr>
+                </td>
             </thead>
             <tbody>
                 {% for venta in ventas %}
@@ -164,13 +189,24 @@
                     <td style="padding: 12px;"><strong>#{{ venta.id }}</strong></td>
                     <td style="padding: 12px;">{{ venta.created_at|date:"d/m/Y" }}</td>
                     <td style="padding: 12px;">{{ venta.created_at|date:"H:i" }}</td>
+                    <td style="padding: 12px;">
+                        {% if venta.payment_method == 'CASH' %}
+                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                <i class="fa-solid fa-money-bill-wave"></i> Efectivo
+                            </span>
+                        {% else %}
+                            <span style="background: #e7f3ff; color: #1877f2; padding: 4px 10px; border-radius: 20px; font-size: 12px;">
+                                <i class="fa-solid fa-university"></i> Transferencia
+                            </span>
+                        {% endif %}
+                    </td>
                     <td style="padding: 12px; text-align: right; color: #1877f2; font-weight: 600;">
                         ${{ venta.total|floatformat:2 }}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" style="padding: 40px; text-align: center; color: #606770;">
+                    <td colspan="5" style="padding: 40px; text-align: center; color: #606770;">
                         <i class="fa-solid fa-shopping-cart" style="font-size: 40px; margin-bottom: 10px;"></i>
                         <p>No hay ventas en este corte</p>
                     </td>
@@ -179,7 +215,7 @@
             </tbody>
             <tfoot style="background: #f0f2f5;">
                 <tr>
-                    <td colspan="3" style="padding: 12px; text-align: right; font-weight: 600;">TOTAL:</td>
+                    <td colspan="4" style="padding: 12px; text-align: right; font-weight: 600;">TOTAL:</td>
                     <td style="padding: 12px; text-align: right; font-weight: 700; color: #1877f2; font-size: 16px;">
                         ${{ total_ventas|floatformat:2 }}
                     </td>
