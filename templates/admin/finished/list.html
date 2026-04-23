@@ -1,0 +1,322 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div class="fb-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-industry" style="color: #1877f2;"></i>
+                Recetas de Productos Terminados
+            </h2>
+            <p style="color: #606770; margin: 5px 0 0 0;">
+                <i class="fa-solid fa-chart-line"></i> Gestiona las recetas para producir productos terminados
+            </p>
+        </div>
+        <a href="{% url 'finished:admin_finished_recipe_create' %}" class="fb-btn fb-btn-primary">
+            <i class="fa-solid fa-plus"></i>
+            Nueva Receta
+        </a>
+    </div>
+</div>
+
+<!-- Mensajes -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="fb-alert fb-alert-{{ message.tags }}" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 6px; background: {% if message.tags == 'success' %}#e3f2e8{% elif message.tags == 'error' %}#ffebe9{% else %}#e7f3ff{% endif %}; border: 1px solid {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};">
+            <i class="fa-solid {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}" style="color: {% if message.tags == 'success' %}#42b72a{% elif message.tags == 'error' %}#fa383e{% else %}#1877f2{% endif %};"></i>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Filtros -->
+<div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 250px; position: relative;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+        <input type="text" 
+               id="search-input"
+               placeholder="Buscar receta o producto..." 
+               style="width: 100%; padding: 10px 10px 10px 40px; border: 1px solid #e4e6eb; border-radius: 8px; font-size: 14px;">
+    </div>
+    
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="fb-btn filter-btn active" data-filter="all" onclick="filterRecipes('all')">
+            <i class="fa-solid fa-list"></i> Todas
+        </button>
+        <button class="fb-btn filter-btn" data-filter="active" onclick="filterRecipes('active')">
+            <i class="fa-solid fa-check-circle"></i> Activas
+        </button>
+        <button class="fb-btn filter-btn" data-filter="inactive" onclick="filterRecipes('inactive')">
+            <i class="fa-solid fa-ban"></i> Inactivas
+        </button>
+    </div>
+    
+    <span style="color: #606770; font-size: 14px; margin-left: auto;">
+        <i class="fa-solid fa-cubes"></i> Total: <strong id="total-count">{{ recipes|length }}</strong> recetas
+    </span>
+</div>
+
+<!-- Tabla de recetas -->
+<div class="fb-card" style="padding: 0; overflow-x: auto;">
+    {% if recipes %}
+        <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+            <thead>
+                <tr style="background: #f5f6f7; border-bottom: 2px solid #e4e6eb;">
+                    <th style="padding: 16px; text-align: left;">
+                        <i class="fa-solid fa-recipe"></i> Receta
+                    </th>
+                    <th style="padding: 16px; text-align: left;">
+                        <i class="fa-solid fa-industry"></i> Producto Terminado
+                    </th>
+                    <th style="padding: 16px; text-align: center;">
+                        <i class="fa-solid fa-boxes"></i> Ingredientes
+                    </th>
+                    <th style="padding: 16px; text-align: center;">
+                        <i class="fa-solid fa-weight-hanging"></i> Total (kg)
+                    </th>
+                    <th style="padding: 16px; text-align: center;">
+                        <i class="fa-solid fa-circle"></i> Estado
+                    </th>
+                    <th style="padding: 16px; text-align: center;">
+                        <i class="fa-solid fa-gear"></i> Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recipe in recipes %}
+                <tr class="recipe-row" 
+                    data-status="{% if recipe.is_active %}active{% else %}inactive{% endif %}"
+                    style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;">
+                    
+                    <td style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-recipe" style="color: #1877f2; font-size: 20px;"></i>
+                            </div>
+                            <div>
+                                <strong style="color: #050505;">{{ recipe.name }}</strong>
+                                {% if recipe.description %}
+                                    <br><small style="color: #606770;"><i class="fa-solid fa-align-left"></i> {{ recipe.description|truncatechars:40 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    
+                    <td style="padding: 16px;">
+                        <span style="background: #fff4e5; padding: 4px 12px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-industry" style="color: #f7b928;"></i>
+                            {{ recipe.finished_product.name }}
+                        </span>
+                    </td>
+                    
+                    <td style="padding: 16px; text-align: center;">
+                        <span style="background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-boxes"></i> {{ recipe.ingredients_count }}
+                        </span>
+                    </td>
+                    
+                    <td style="padding: 16px; text-align: center;">
+                        <strong style="color: #050505;">{{ recipe.total_kg|floatformat:2 }} kg</strong>
+                    </td>
+                    
+                    <td style="padding: 16px; text-align: center;">
+                        {% if recipe.is_active %}
+                            <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-check-circle"></i> Activa
+                            </span>
+                        {% else %}
+                            <span style="background: #ffebe9; color: #b92b27; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-ban"></i> Inactiva
+                            </span>
+                        {% endif %}
+                    </td>
+                    
+                    <td style="padding: 16px; text-align: center;">
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <a href="{% url 'finished:admin_finished_recipe_detail' recipe.id %}" 
+                               class="fb-btn" 
+                               style="background: #e7f3ff; color: #1877f2; width: 36px; height: 36px; padding: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;"
+                               title="Ver detalles">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <a href="{% url 'finished:admin_finished_recipe_edit' recipe.id %}" 
+                               class="fb-btn" 
+                               style="background: #fff4e5; color: #f7b928; width: 36px; height: 36px; padding: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;"
+                               title="Editar receta">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <button onclick="toggleRecipeStatus('{{ recipe.id }}', '{{ recipe.name|escapejs }}', {% if recipe.is_active %}false{% else %}true{% endif %})" 
+                                    class="fb-btn" 
+                                    style="background: {% if recipe.is_active %}#ffebe9{% else %}#e3f2e8{% endif %}; color: {% if recipe.is_active %}#fa383e{% else %}#42b72a{% endif %}; width: 36px; height: 36px; padding: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;"
+                                    title="{% if recipe.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                <i class="fa-solid {% if recipe.is_active %}fa-pause{% else %}fa-play{% endif %}"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div style="padding: 60px 20px; text-align: center;">
+            <div style="background: #e7f3ff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-recipe" style="font-size: 40px; color: #1877f2;"></i>
+            </div>
+            <h3 style="color: #050505; margin-bottom: 10px;">No hay recetas registradas</h3>
+            <p style="color: #606770; margin-bottom: 20px;">Crea tu primera receta para productos terminados</p>
+            <a href="{% url 'finished:admin_finished_recipe_create' %}" class="fb-btn fb-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;">
+                <i class="fa-solid fa-plus"></i> Nueva Receta
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal para confirmar cambio de estado -->
+<div id="statusModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 12px; max-width: 400px; width: 90%; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 20px; color: white;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-question-circle" style="font-size: 24px;"></i>
+                <h3 id="statusModalTitle" style="margin: 0; font-size: 18px;">Confirmar</h3>
+            </div>
+        </div>
+        <div style="padding: 25px;">
+            <p id="statusModalMessage" style="color: #050505; margin-bottom: 20px;"></p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeStatusModal()" class="fb-btn fb-btn-secondary" style="flex: 1; padding: 10px;">
+                    <i class="fa-solid fa-times"></i> Cancelar
+                </button>
+                <form method="post" id="statusForm" style="flex: 1;">
+                    {% csrf_token %}
+                    <button type="submit" class="fb-btn" id="statusConfirmBtn" style="width: 100%; padding: 10px;">
+                        Confirmar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let statusModal = document.getElementById('statusModal');
+let statusForm = document.getElementById('statusForm');
+let statusModalMessage = document.getElementById('statusModalMessage');
+let statusModalTitle = document.getElementById('statusModalTitle');
+let statusConfirmBtn = document.getElementById('statusConfirmBtn');
+
+function filterRecipes(filter) {
+    const rows = document.querySelectorAll('.recipe-row');
+    const buttons = document.querySelectorAll('.filter-btn');
+    let visibleCount = 0;
+    
+    buttons.forEach(btn => {
+        btn.style.background = '#e4e6eb';
+        btn.style.color = '#050505';
+    });
+    
+    const activeBtn = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+    if (activeBtn) {
+        activeBtn.style.background = '#1877f2';
+        activeBtn.style.color = 'white';
+    }
+    
+    rows.forEach(row => {
+        if (filter === 'all') {
+            row.style.display = 'table-row';
+            visibleCount++;
+        } else if (filter === 'active') {
+            if (row.dataset.status === 'active') {
+                row.style.display = 'table-row';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        } else if (filter === 'inactive') {
+            if (row.dataset.status === 'inactive') {
+                row.style.display = 'table-row';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+    
+    document.getElementById('total-count').textContent = visibleCount;
+}
+
+function toggleRecipeStatus(recipeId, recipeName, activate) {
+    const action = activate ? 'activar' : 'desactivar';
+    statusModalMessage.textContent = `¿Estás seguro de ${action} la receta "${recipeName}"?`;
+    statusModalTitle.textContent = activate ? 'Activar Receta' : 'Desactivar Receta';
+    statusConfirmBtn.style.background = activate ? '#42b72a' : '#fa383e';
+    statusConfirmBtn.innerHTML = activate ? '<i class="fa-solid fa-check"></i> Activar' : '<i class="fa-solid fa-ban"></i> Desactivar';
+    statusForm.action = `/admin/finished/recipe/${recipeId}/toggle-status/`;
+    statusModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeStatusModal() {
+    statusModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Búsqueda en tiempo real
+document.getElementById('search-input').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.recipe-row');
+    
+    rows.forEach(row => {
+        const recipeName = row.querySelector('td:first-child strong').textContent.toLowerCase();
+        const productName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        
+        if (recipeName.includes(searchTerm) || productName.includes(searchTerm)) {
+            row.style.display = 'table-row';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && statusModal.style.display === 'flex') {
+        closeStatusModal();
+    }
+});
+
+// Cerrar modal al hacer clic fuera
+statusModal.addEventListener('click', function(e) {
+    if (e.target === statusModal) {
+        closeStatusModal();
+    }
+});
+
+// Efecto hover para filas
+document.querySelectorAll('.recipe-row').forEach(row => {
+    row.addEventListener('mouseenter', function() {
+        this.style.background = '#f8f9fa';
+    });
+    row.addEventListener('mouseleave', function() {
+        this.style.background = 'transparent';
+    });
+});
+</script>
+
+<style>
+    .filter-btn {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .filter-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .fb-btn {
+        transition: all 0.2s ease;
+    }
+    .fb-btn:hover {
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}

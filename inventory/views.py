@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 import json
 from django.utils import timezone
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 from django.db.models import Q
 
 
@@ -334,42 +334,52 @@ def transfer_detail(request, transfer_id):
 @transaction.atomic
 def transfer_process(request, transfer_id):
     """Procesar transferencia - Acceso para ADMIN, SUPERADMIN y CAJEROS con permiso"""
+    # Verificar permisos
     if not user_can_transfer(request.user):
         messages.error(request, "No tienes permiso para procesar transferencias.")
         return redirect('transfer_list')
     
+    # Obtener la transferencia
     transfer = get_object_or_404(Transfer, id=transfer_id)
     
+    # Verificar estado
     if transfer.status != 'PENDING':
         messages.error(request, 'Esta transferencia ya ha sido procesada.')
         return redirect('transfer_detail', transfer_id=transfer.id)
     
-    # Verificar que el cajero tenga acceso a esta transferencia
+    # Verificar que el cajero tenga acceso (solo para cajeros)
     if request.user.role == 'CASHIER':
         if transfer.from_branch != request.user.branch:
             messages.error(request, "No tienes permiso para procesar esta transferencia.")
             return redirect('transfer_list')
     
-    if request.method == 'POST':
-        all_available = True
-        for item in transfer.items.all():
-            inventory = Inventory.objects.filter(
-                branch=transfer.from_branch,
-                product=item.product
-            ).first()
-            
-            if not inventory or inventory.stock < item.quantity:
-                all_available = False
-                messages.error(
-                    request, 
-                    f'Stock insuficiente para {item.product.name}. '
-                    f'Disponible: {inventory.stock if inventory else 0}, Requerido: {item.quantity}'
-                )
+    # Verificar que sea método POST
+    if request.method != 'POST':
+        return redirect('transfer_detail', transfer_id=transfer.id)
+    
+    # Verificar stock de todos los productos
+    all_available = True
+    for item in transfer.items.all():
+        inventory = Inventory.objects.filter(
+            branch=transfer.from_branch,
+            product=item.product
+        ).first()
         
-        if not all_available:
-            return redirect('transfer_detail', transfer_id=transfer.id)
-        
+        if not inventory or inventory.stock < item.quantity:
+            all_available = False
+            messages.error(
+                request, 
+                f'Stock insuficiente para {item.product.name}. '
+                f'Disponible: {inventory.stock if inventory else 0} kg, Requerido: {item.quantity} kg'
+            )
+    
+    if not all_available:
+        return redirect('transfer_detail', transfer_id=transfer.id)
+    
+    # Procesar la transferencia
+    try:
         for item in transfer.items.all():
+            # Descontar de la sucursal origen
             from_inventory = Inventory.objects.get(
                 branch=transfer.from_branch,
                 product=item.product
@@ -377,6 +387,7 @@ def transfer_process(request, transfer_id):
             from_inventory.stock -= item.quantity
             from_inventory.save()
             
+            # Registrar movimiento de salida
             InventoryMovement.objects.create(
                 inventory=from_inventory,
                 quantity=item.quantity,
@@ -384,6 +395,7 @@ def transfer_process(request, transfer_id):
                 reference_id=transfer.id
             )
             
+            # Agregar a la sucursal destino
             to_inventory, created = Inventory.objects.get_or_create(
                 branch=transfer.to_branch,
                 product=item.product,
@@ -392,6 +404,7 @@ def transfer_process(request, transfer_id):
             to_inventory.stock += item.quantity
             to_inventory.save()
             
+            # Registrar movimiento de entrada
             InventoryMovement.objects.create(
                 inventory=to_inventory,
                 quantity=item.quantity,
@@ -399,15 +412,17 @@ def transfer_process(request, transfer_id):
                 reference_id=transfer.id
             )
         
+        # Actualizar estado de la transferencia
         transfer.status = 'COMPLETED'
         transfer.completed_at = timezone.now()
         transfer.save()
         
-        messages.success(request, f'Transferencia #{transfer.id} completada exitosamente.')
+        messages.success(request, f'✅ Transferencia #{transfer.id} completada exitosamente.')
         return redirect('transfer_list')
-    
-    return redirect('transfer_detail', transfer_id=transfer.id)
-
+        
+    except Exception as e:
+        messages.error(request, f'Error al procesar la transferencia: {str(e)}')
+        return redirect('transfer_detail', transfer_id=transfer.id)
 
 @login_required
 def transfer_cancel(request, transfer_id):

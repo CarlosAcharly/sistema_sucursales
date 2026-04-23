@@ -1,0 +1,264 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <!-- Header con acciones -->
+    <div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%); border-radius: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="{% url 'finished:admin_finished_recipe_list' %}" class="fb-btn" style="background: rgba(255,255,255,0.2); color: white; padding: 10px 16px;">
+                    <i class="fa-solid fa-arrow-left"></i> Volver
+                </a>
+                <div>
+                    <h1 style="margin: 0; color: white; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-recipe"></i> {{ recipe.name }}
+                    </h1>
+                    <p style="margin: 5px 0 0 0; opacity: 0.9; color: white;">
+                        <i class="fa-solid fa-industry"></i> {{ recipe.finished_product.name }}
+                    </p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'finished:admin_finished_recipe_edit' recipe.id %}" class="fb-btn" style="background: rgba(255,255,255,0.2); color: white;">
+                    <i class="fa-solid fa-pen"></i> Editar
+                </a>
+                <button onclick="toggleStatus()" class="fb-btn" style="background: rgba(255,255,255,0.2); color: white;">
+                    <i class="fa-solid {% if recipe.is_active %}fa-pause{% else %}fa-play{% endif %}"></i>
+                    {% if recipe.is_active %}Desactivar{% else %}Activar{% endif %}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+        <!-- Información general -->
+        <div class="fb-card">
+            <div class="fb-card-header">
+                <h3><i class="fa-solid fa-info-circle" style="color: #1877f2;"></i> Información General</h3>
+            </div>
+            <div style="padding: 10px;">
+                <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e4e6eb;">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <i class="fa-solid fa-align-left" style="color: #606770; margin-top: 3px;"></i>
+                        <div>
+                            <strong style="color: #050505;">Descripción:</strong>
+                            <p style="margin: 5px 0 0 0; color: #606770;">{{ recipe.description|default:"Sin descripción" }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-weight-hanging" style="color: #42b72a;"></i>
+                            <strong style="color: #050505;">Total receta:</strong>
+                        </div>
+                        <span style="color: #1877f2; font-size: 18px; font-weight: 600;">{{ recipe.total_kg|floatformat:3 }} kg</span>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-boxes" style="color: #f7b928;"></i>
+                            <strong style="color: #050505;">Ingredientes:</strong>
+                        </div>
+                        <span style="color: #050505; font-size: 18px; font-weight: 600;">{{ recipe.ingredients_count }}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <i class="fa-solid fa-user" style="color: #1877f2;"></i>
+                        <strong style="color: #050505;">Creada por:</strong>
+                    </div>
+                    <span style="color: #606770;">{{ recipe.created_by.get_full_name|default:recipe.created_by.username }}</span>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <i class="fa-solid fa-calendar-alt" style="color: #f7b928;"></i>
+                        <strong style="color: #050505;">Fecha de creación:</strong>
+                    </div>
+                    <span style="color: #606770;">{{ recipe.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+                
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <i class="fa-solid fa-circle" style="color: {% if recipe.is_active %}#42b72a{% else %}#fa383e{% endif %};"></i>
+                        <strong style="color: #050505;">Estado actual:</strong>
+                    </div>
+                    {% if recipe.is_active %}
+                        <span class="fb-badge fb-badge-success" style="display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-check-circle"></i> Activa
+                        </span>
+                    {% else %}
+                        <span class="fb-badge fb-badge-danger" style="display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-ban"></i> Inactiva
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingredientes -->
+        <div class="fb-card">
+            <div class="fb-card-header">
+                <h3><i class="fa-solid fa-boxes" style="color: #1877f2;"></i> Lista de Ingredientes</h3>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="fb-table">
+                    <thead>
+                        <tr>
+                            <th><i class="fa-solid fa-box"></i> Producto</th>
+                            <th><i class="fa-solid fa-weight-hanging"></i> Cantidad (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ingredient in ingredients %}
+                        <tr>
+                            <td style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-leaf" style="color: #1877f2;"></i>
+                                </div>
+                                {{ ingredient.product.name }}
+                            </td>
+                            <td>
+                                <span class="quantity-badge" style="background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 20px;">
+                                    {{ ingredient.kilos|floatformat:3 }} kg
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" style="text-align: center; padding: 40px;">
+                                <i class="fa-solid fa-box-open" style="font-size: 48px; color: #e4e6eb;"></i>
+                                <p style="margin-top: 10px; color: #606770;">No hay ingredientes registrados</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f5f6f7;">
+                            <th style="font-size: 14px;">
+                                <i class="fa-solid fa-calculator"></i> TOTAL
+                            </th>
+                            <th style="font-size: 14px; color: #1877f2;">
+                                {{ recipe.total_kg|floatformat:3 }} kg
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de producciones -->
+    <div class="fb-card" style="margin-top: 25px;">
+        <div class="fb-card-header">
+            <h3><i class="fa-solid fa-history" style="color: #1877f2;"></i> Historial de Producciones</h3>
+            <p style="color: #606770; margin-top: 5px;">
+                <i class="fa-solid fa-chart-line"></i> Registro de todas las producciones realizadas con esta receta
+            </p>
+        </div>
+        {% if productions %}
+            <div style="overflow-x: auto;">
+                <table class="fb-table">
+                    <thead>
+                        <tr>
+                            <th><i class="fa-solid fa-calendar-day"></i> Fecha</th>
+                            <th><i class="fa-solid fa-store"></i> Sucursal</th>
+                            <th><i class="fa-solid fa-weight-hanging"></i> Cantidad</th>
+                            <th><i class="fa-solid fa-user"></i> Producido por</th>
+                            <th><i class="fa-solid fa-note-sticky"></i> Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prod in productions %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-clock" style="color: #606770;"></i>
+                                    {{ prod.produced_at|date:"d/m/Y H:i" }}
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-location-dot" style="color: #1877f2;"></i>
+                                    {{ prod.branch.name }}
+                                </div>
+                            </td>
+                            <td>
+                                <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-weight-hanging"></i> {{ prod.quantity|floatformat:2 }} kg
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <i class="fa-solid fa-user-circle" style="color: #606770;"></i>
+                                    {{ prod.produced_by.get_full_name|default:prod.produced_by.username }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if prod.notes %}
+                                    <span style="color: #606770; font-style: italic;">
+                                        <i class="fa-solid fa-quote-left"></i> {{ prod.notes|truncatechars:50 }}
+                                    </span>
+                                {% else %}
+                                    <span style="color: #999;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 60px 20px;">
+                <div style="background: #e7f3ff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i class="fa-solid fa-chart-line" style="font-size: 40px; color: #1877f2;"></i>
+                </div>
+                <h4 style="color: #050505; margin-bottom: 10px;">Sin producciones registradas</h4>
+                <p style="color: #606770;">Aún no se ha producido esta receta en ninguna sucursal</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleStatus() {
+    if (confirm('¿Estás seguro de {% if recipe.is_active %}desactivar{% else %}activar{% endif %} esta receta?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "finished:admin_finished_recipe_toggle_status" recipe.id %}';
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<style>
+    .quantity-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .quantity-badge:hover {
+        transform: scale(1.05);
+    }
+    
+    .fb-table tbody tr {
+        transition: background 0.2s ease;
+    }
+    
+    .fb-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    .fb-badge {
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}

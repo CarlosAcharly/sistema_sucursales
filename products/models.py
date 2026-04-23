@@ -11,6 +11,11 @@ class Product(models.Model):
     
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     is_ingredient = models.BooleanField(default=False, verbose_name="Es ingrediente")
+    is_finished = models.BooleanField(  # ✅ NUEVO CAMPO
+        default=False, 
+        verbose_name="Es producto terminado",
+        help_text="Indica si este producto se produce a partir de otros (receta)"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de creación")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Última actualización")
 
@@ -37,3 +42,11 @@ class Product(models.Model):
     def has_any_price(self):
         """Verifica si el producto tiene al menos un precio configurado"""
         return any([self.price_kg, self.price_bulk, self.price_wholesale, self.price_special])
+    
+    def is_raw_material(self):
+        """Verifica si el producto es materia prima (ingrediente)"""
+        return self.is_ingredient and not self.is_finished
+    
+    def is_finished_product(self):
+        """Verifica si el producto es un producto terminado"""
+        return self.is_finished and not self.is_ingredient

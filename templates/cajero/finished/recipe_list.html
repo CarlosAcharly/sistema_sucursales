@@ -1,0 +1,248 @@
+{% extends 'cajero/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Header -->
+<div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; color: white; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h1 style="margin: 0; font-size: 28px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-industry"></i> Productos Terminados
+            </h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">
+                <i class="fas fa-info-circle"></i> Selecciona una receta para producir
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 30px;">
+                <i class="fas fa-cubes"></i> <strong id="total-recipes">{{ recipes|length }}</strong> recetas
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Buscador y filtros -->
+<div class="fb-card" style="margin-bottom: 20px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+        <div style="flex: 1; min-width: 250px; position: relative;">
+            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #606770;"></i>
+            <input type="text" 
+                   id="searchReceta" 
+                   class="fb-input" 
+                   placeholder="Buscar por nombre de receta o producto..."
+                   style="padding: 12px 12px 12px 45px; width: 100%; border: 1px solid #e4e6eb; border-radius: 30px; font-size: 14px;">
+        </div>
+        <div>
+            <select id="filterStatus" class="fb-input" style="padding: 12px 16px; border-radius: 30px; border: 1px solid #e4e6eb; background: white; cursor: pointer;">
+                <option value="all">📋 Todas las recetas</option>
+                <option value="low">⚠️ Bajo stock</option>
+                <option value="available">✅ Stock suficiente</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Grid de recetas -->
+<div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;" id="recipesContainer">
+    {% for recipe in recipes %}
+    <div class="fb-card recipe-card" 
+         data-recipe-name="{{ recipe.name|lower }}" 
+         data-product-name="{{ recipe.finished_product.name|lower }}"
+         data-total-kg="{{ recipe.total_kg }}"
+         style="border-radius: 16px; overflow: hidden; transition: all 0.3s; cursor: pointer;">
+        
+        <!-- Header de la tarjeta -->
+        <div style="background: linear-gradient(135deg, #1877f2, #166fe5); padding: 15px 20px; color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 18px;">
+                    <i class="fas fa-recipe"></i> {{ recipe.name }}
+                </h3>
+                <i class="fas fa-chevron-right" style="opacity: 0.7;"></i>
+            </div>
+            <small style="opacity: 0.9;">
+                <i class="fas fa-industry"></i> {{ recipe.finished_product.name }}
+            </small>
+        </div>
+        
+        <!-- Contenido de la tarjeta -->
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <span style="color: #606770;">
+                    <i class="fas fa-boxes"></i> Ingredientes:
+                </span>
+                <strong style="color: #050505;">{{ recipe.ingredients_count }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <span style="color: #606770;">
+                    <i class="fas fa-weight-hanging"></i> Total receta:
+                </span>
+                <strong style="color: #050505;">{{ recipe.total_kg|floatformat:2 }} kg</strong>
+            </div>
+            
+            <!-- Barra de progreso de stock (simulada) -->
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <small style="color: #606770;"><i class="fas fa-chart-line"></i> Disponibilidad</small>
+                    <small class="stock-status" style="font-weight: 600;">Calculando...</small>
+                </div>
+                <div style="background: #e4e6eb; border-radius: 10px; height: 6px; overflow: hidden;">
+                    <div class="stock-bar" style="width: 0%; background: #42b72a; height: 100%; border-radius: 10px; transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+            
+            <a href="{% url 'finished:recipe_detail' recipe.id %}" class="fb-btn fb-btn-primary" style="width: 100%; text-align: center; justify-content: center;">
+                <i class="fas fa-eye"></i> Ver Receta
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="fb-card" style="text-align: center; padding: 60px; grid-column: 1 / -1;">
+        <i class="fas fa-box-open" style="font-size: 60px; color: #e4e6eb;"></i>
+        <h3 style="margin-top: 20px; color: #050505;">No hay recetas disponibles</h3>
+        <p style="color: #606770;">Contacta al administrador para crear recetas de productos terminados.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchReceta');
+    const filterSelect = document.getElementById('filterStatus');
+    const cards = document.querySelectorAll('.recipe-card');
+    const totalSpan = document.getElementById('total-recipes');
+    
+    // Función para actualizar el contador visible
+    function updateVisibleCount() {
+        let visible = 0;
+        cards.forEach(card => {
+            if (card.style.display !== 'none') visible++;
+        });
+        if (totalSpan) totalSpan.textContent = visible;
+    }
+    
+    // Función para verificar stock (simulada - puedes expandirla con datos reales)
+    function checkStockAvailability(card) {
+        // Esta función puede ser mejorada con datos reales del backend
+        // Por ahora, simulamos disponibilidad basada en el total de la receta
+        const totalKg = parseFloat(card.dataset.totalKg) || 0;
+        // Simulación: si la receta es muy pesada, puede tener bajo stock
+        if (totalKg > 10) {
+            return { available: false, percentage: 30 };
+        } else if (totalKg > 5) {
+            return { available: true, percentage: 70 };
+        } else {
+            return { available: true, percentage: 90 };
+        }
+    }
+    
+    // Actualizar indicadores de stock en cada tarjeta
+    cards.forEach(card => {
+        const stockStatusSpan = card.querySelector('.stock-status');
+        const stockBar = card.querySelector('.stock-bar');
+        
+        if (stockStatusSpan && stockBar) {
+            const stockInfo = checkStockAvailability(card);
+            if (stockInfo.available) {
+                stockStatusSpan.innerHTML = '<i class="fas fa-check-circle" style="color: #42b72a;"></i> Suficiente';
+                stockStatusSpan.style.color = '#1b7e3f';
+                stockBar.style.background = '#42b72a';
+            } else {
+                stockStatusSpan.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #fa383e;"></i> Bajo stock';
+                stockStatusSpan.style.color = '#b92b27';
+                stockBar.style.background = '#fa383e';
+            }
+            stockBar.style.width = stockInfo.percentage + '%';
+        }
+    });
+    
+    // Función de filtrado
+    function filterRecipes() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filterValue = filterSelect.value;
+        
+        cards.forEach(card => {
+            const recipeName = card.dataset.recipeName || '';
+            const productName = card.dataset.productName || '';
+            const totalKg = parseFloat(card.dataset.totalKg) || 0;
+            
+            // Verificar coincidencia de búsqueda
+            const matchesSearch = recipeName.includes(searchTerm) || productName.includes(searchTerm);
+            
+            // Verificar filtro de stock
+            let matchesFilter = true;
+            const stockInfo = checkStockAvailability(card);
+            
+            if (filterValue === 'low') {
+                matchesFilter = !stockInfo.available;
+            } else if (filterValue === 'available') {
+                matchesFilter = stockInfo.available;
+            }
+            
+            // Mostrar u ocultar
+            if (matchesSearch && matchesFilter) {
+                card.style.display = 'block';
+                card.style.animation = 'fadeInUp 0.3s ease forwards';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        updateVisibleCount();
+    }
+    
+    // Event listeners
+    searchInput.addEventListener('input', filterRecipes);
+    filterSelect.addEventListener('change', filterRecipes);
+    
+    // Animación de entrada para las tarjetas
+    cards.forEach((card, index) => {
+        card.style.animation = `fadeInUp 0.3s ease ${index * 0.05}s forwards`;
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+    });
+    
+    updateVisibleCount();
+});
+
+// Estilos adicionales para animaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .recipe-card {
+        transition: all 0.3s ease;
+        cursor: default;
+    }
+    
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .fb-input:focus {
+        outline: none;
+        border-color: #1877f2;
+        box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+    }
+    
+    #filterStatus {
+        cursor: pointer;
+        background-color: white;
+    }
+    
+    #filterStatus:hover {
+        border-color: #1877f2;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

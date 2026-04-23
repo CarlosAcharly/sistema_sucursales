@@ -218,6 +218,12 @@
         box-shadow: 0 6px 20px rgba(66, 183, 42, 0.4);
     }
     
+    .btn-process:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
     .btn-cancel {
         background: #fa383e;
         color: white;
@@ -458,19 +464,23 @@
     </div>
 </div>
 
-<!-- Botones de acción -->
+<!-- Botones de acción - VERSIÓN CORREGIDA -->
 <div class="action-buttons">
     {% if transfer.status == 'PENDING' %}
         {% if all_available %}
-            <form method="post" action="{% url 'transfer_process' transfer.id %}" style="display: inline;">
+            <form method="post" action="{% url 'transfer_process' transfer.id %}" 
+                  style="display: inline;" 
+                  onsubmit="return processTransfer(this);">
                 {% csrf_token %}
-                <button type="submit" class="btn-process" onclick="this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Procesando...'; this.disabled=true;">
+                <button type="submit" class="btn-process" id="processBtn">
                     <i class="fa-solid fa-check-circle"></i> Procesar Transferencia
                 </button>
             </form>
         {% endif %}
         
-        <form method="post" action="{% url 'transfer_cancel' transfer.id %}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de cancelar esta transferencia?\n\nEsta acción no se puede deshacer.');">
+        <form method="post" action="{% url 'transfer_cancel' transfer.id %}" 
+              style="display: inline;" 
+              onsubmit="return confirm('¿Estás seguro de cancelar esta transferencia?\n\nEsta acción no se puede deshacer.');">
             {% csrf_token %}
             <button type="submit" class="btn-cancel">
                 <i class="fa-solid fa-ban"></i> Cancelar Transferencia
@@ -483,19 +493,24 @@
     </a>
 </div>
 
+<!-- SCRIPT CORREGIDO - Un solo event handler -->
 <script>
-    // Animación para los botones
-    document.querySelectorAll('.btn-process, .btn-cancel, .btn-back').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            if (this.tagName === 'BUTTON' && this.type === 'submit') {
-                if (this.classList.contains('btn-process')) {
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
-                    this.disabled = true;
-                }
-            }
-        });
-    });
+    function processTransfer(form) {
+        // Confirmar con el usuario
+        if (!confirm('¿Estás seguro de procesar esta transferencia?\n\nSe descontará el stock de la sucursal origen y se agregará a la sucursal destino.')) {
+            return false;
+        }
+        
+        // Cambiar el texto del botón
+        const btn = form.querySelector('#processBtn');
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            btn.disabled = true;
+        }
+        
+        // Enviar el formulario
+        return true;
+    }
 </script>
 
 <style>

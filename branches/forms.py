@@ -1,11 +1,10 @@
-# branches/forms.py
 from django import forms
 from .models import Branch
 
 class BranchForm(forms.ModelForm):
     class Meta:
         model = Branch
-        fields = ['name', 'address', 'phone', 'is_active', 'can_transfer']
+        fields = ['name', 'address', 'phone', 'is_active', 'can_transfer', 'can_manage_finished']  # ✅ Agregado can_manage_finished
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'facebook-input',
@@ -26,6 +25,9 @@ class BranchForm(forms.ModelForm):
             }),
             'can_transfer': forms.CheckboxInput(attrs={
                 'class': 'facebook-checkbox'
+            }),
+            'can_manage_finished': forms.CheckboxInput(attrs={  # ✅ Nuevo widget
+                'class': 'facebook-checkbox'
             })
         }
         labels = {
@@ -33,5 +35,6 @@ class BranchForm(forms.ModelForm):
             'address': 'Dirección completa',
             'phone': 'Teléfono',
             'is_active': 'Sucursal activa',
-            'can_transfer': 'Permitir transferencias'
+            'can_transfer': 'Permitir transferencias',
+            'can_manage_finished': 'Permitir gestión de productos terminados'  # ✅ Nueva etiqueta
         }

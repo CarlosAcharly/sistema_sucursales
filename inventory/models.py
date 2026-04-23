@@ -19,6 +19,8 @@ class InventoryMovement(models.Model):
         ('SALE', 'Venta'),  # ✅ Agregar tipo de movimiento para ventas
         ('TRANSFER_OUT', 'Transferencia Salida'),
         ('TRANSFER_IN', 'Transferencia Entrada'),
+        ('PRODUCTION_OUT', 'Salida por Producción'), 
+        ('PRODUCTION_IN', 'Entrada por Producción'),
     )
 
     inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, related_name='movements')

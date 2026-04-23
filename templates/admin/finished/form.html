@@ -1,0 +1,338 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <!-- Header -->
+    <div class="fb-card" style="margin-bottom: 20px;">
+        <div class="fb-card-header">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="background: {% if form.instance.pk %}#f59e0b20{% else %}#1877f220{% endif %}; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="{% if form.instance.pk %}fa-solid fa-pen{% else %}fa-solid fa-plus{% endif %}" 
+                       style="font-size: 30px; color: {% if form.instance.pk %}#f59e0b{% else %}#1877f2{% endif %};"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 24px;">
+                        {% if form.instance.pk %}
+                            <i class="fa-solid fa-pen"></i> Editar Receta
+                        {% else %}
+                            <i class="fa-solid fa-plus"></i> Nueva Receta
+                        {% endif %}
+                    </h2>
+                    <p style="color: #606770; margin: 5px 0 0 0;">
+                        {% if form.instance.pk %}
+                            <i class="fa-solid fa-edit"></i> Modifica la receta "{{ form.instance.name }}"
+                        {% else %}
+                            <i class="fa-solid fa-clipboard-list"></i> Define los ingredientes para producir un producto terminado
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario principal -->
+    <div class="fb-card">
+        <form method="POST" id="recipeForm">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger" style="background: #ffebe9; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #fa383e;">
+                    {% for error in form.non_field_errors %}
+                        <div style="color: #b92b27; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <!-- Datos básicos -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                        <i class="fa-solid fa-tag"></i> Nombre de la receta 
+                        <span style="color: #fa383e;">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <small style="color: #fa383e; display: flex; align-items: center; gap: 4px; margin-top: 5px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> {{ form.name.errors.0 }}
+                        </small>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                        <i class="fa-solid fa-industry"></i> Producto Terminado 
+                        <span style="color: #fa383e;">*</span>
+                    </label>
+                    {{ form.finished_product }}
+                    {% if form.finished_product.errors %}
+                        <small style="color: #fa383e; display: flex; align-items: center; gap: 4px; margin-top: 5px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> {{ form.finished_product.errors.0 }}
+                        </small>
+                    {% endif %}
+                    <small style="color: #606770; display: flex; align-items: center; gap: 4px; margin-top: 5px;">
+                        <i class="fa-solid fa-info-circle"></i> Solo productos marcados como "Terminado"
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Descripción -->
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                    <i class="fa-solid fa-align-left"></i> Descripción
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <small style="color: #fa383e; display: flex; align-items: center; gap: 4px; margin-top: 5px;">
+                        <i class="fa-solid fa-circle-exclamation"></i> {{ form.description.errors.0 }}
+                    </small>
+                {% endif %}
+            </div>
+            
+            <!-- Estado Activo -->
+            <div style="margin-bottom: 25px; background: #f5f6f7; padding: 15px; border-radius: 10px;">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    {{ form.is_active }}
+                    <div>
+                        <strong style="color: #050505;">
+                            <i class="fa-solid fa-toggle-on"></i> Receta activa
+                        </strong>
+                        <small style="display: block; color: #606770;">
+                            <i class="fa-solid fa-users"></i> Los cajeros podrán ver y usar esta receta
+                        </small>
+                    </div>
+                </label>
+            </div>
+            
+            <hr style="margin: 25px 0; border-color: #e4e6eb;">
+            
+            <!-- Ingredientes -->
+            <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; color: #050505;">
+                    <i class="fa-solid fa-boxes" style="color: #1877f2;"></i>
+                    Ingredientes
+                </h3>
+                <button type="button" class="fb-btn fb-btn-primary" onclick="addIngredientRow()" style="padding: 6px 12px;">
+                    <i class="fa-solid fa-plus"></i> Agregar
+                </button>
+            </div>
+            
+            <div id="ingredients-container">
+                {{ ingredient_formset.management_form }}
+                {% for form in ingredient_formset %}
+                    <div class="ingredient-row" style="display: grid; grid-template-columns: 1fr 0.5fr auto; gap: 10px; margin-bottom: 10px; align-items: center;">
+                        <div>{{ form.product }}</div>
+                        <div>{{ form.kilos }}</div>
+                        <div>
+                            <button type="button" class="fb-btn" style="background: #ffebe9; color: #fa383e; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="removeIngredientRow(this)">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        {{ form.id }}
+                    </div>
+                    {% if form.errors %}
+                        <div style="color: #fa383e; font-size: 12px; margin-top: -5px; margin-bottom: 10px; display: flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> {{ form.errors }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <!-- Total receta -->
+            <div id="total-kg-display" style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 10px; text-align: right; border-left: 4px solid #1877f2;">
+                <strong style="color: #050505;">
+                    <i class="fa-solid fa-weight-hanging"></i> Total receta: 
+                    <span id="total-kg" style="color: #1877f2; font-size: 18px;">0.00</span> kg
+                </strong>
+            </div>
+            
+            <!-- Botones -->
+            <div style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid #e4e6eb; padding-top: 25px;">
+                <button type="submit" class="fb-btn fb-btn-primary" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px;">
+                    <i class="fa-solid fa-save"></i>
+                    {% if form.instance.pk %}Actualizar Receta{% else %}Guardar Receta{% endif %}
+                </button>
+                <a href="{% url 'finished:admin_finished_recipe_list' %}" class="fb-btn fb-btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; text-decoration: none;">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .ingredient-row select, 
+    .ingredient-row input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #dddfe2;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .ingredient-row select:focus,
+    .ingredient-row input:focus {
+        outline: none;
+        border-color: #1877f2;
+        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.1);
+    }
+    
+    .fb-input, 
+    input[type="text"], 
+    input[type="number"],
+    select, 
+    textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #dddfe2;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .fb-input:focus,
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #1877f2;
+        box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.1);
+    }
+    
+    textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #1877f2;
+    }
+    
+    .ingredient-row {
+        transition: all 0.2s ease;
+    }
+    
+    .ingredient-row:hover {
+        background: #f8f9fa;
+        padding: 5px;
+        margin: -5px;
+        border-radius: 8px;
+    }
+</style>
+
+<script>
+// Obtener el número actual de formularios del management_form
+let ingredientIndex = parseInt(document.querySelector('#id_ingredients-TOTAL_FORMS').value) || 0;
+
+function addIngredientRow() {
+    const container = document.getElementById('ingredients-container');
+    
+    // Crear una nueva fila
+    const newRow = document.createElement('div');
+    newRow.className = 'ingredient-row';
+    newRow.style.display = 'grid';
+    newRow.style.gridTemplateColumns = '1fr 0.5fr auto';
+    newRow.style.gap = '10px';
+    newRow.style.marginBottom = '10px';
+    newRow.style.alignItems = 'center';
+    newRow.style.transition = 'all 0.2s ease';
+    
+    // Crear select de productos
+    const productDiv = document.createElement('div');
+    const selectHtml = `<select name="ingredients-${ingredientIndex}-product" id="id_ingredients-${ingredientIndex}-product">
+        <option value="">---------</option>
+        {% for product in ingredients_list %}
+            <option value="{{ product.id }}">{{ product.name }}</option>
+        {% endfor %}
+    </select>`;
+    productDiv.innerHTML = selectHtml;
+    
+    // Crear input de cantidad
+    const kilosDiv = document.createElement('div');
+    const kilosHtml = `<input type="number" name="ingredients-${ingredientIndex}-kilos" step="0.001" placeholder="Cantidad (kg)" id="id_ingredients-${ingredientIndex}-kilos">`;
+    kilosDiv.innerHTML = kilosHtml;
+    
+    // Crear botón de eliminar
+    const actionsDiv = document.createElement('div');
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'fb-btn';
+    deleteBtn.style.background = '#ffebe9';
+    deleteBtn.style.color = '#fa383e';
+    deleteBtn.style.padding = '8px';
+    deleteBtn.style.borderRadius = '6px';
+    deleteBtn.style.cursor = 'pointer';
+    deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    deleteBtn.onclick = function() { removeIngredientRow(this); };
+    actionsDiv.appendChild(deleteBtn);
+    
+    // Crear input hidden para el ID
+    const hiddenId = document.createElement('input');
+    hiddenId.type = 'hidden';
+    hiddenId.name = `ingredients-${ingredientIndex}-id`;
+    hiddenId.id = `id_ingredients-${ingredientIndex}-id`;
+    
+    // Agregar todo a la fila
+    newRow.appendChild(productDiv);
+    newRow.appendChild(kilosDiv);
+    newRow.appendChild(actionsDiv);
+    newRow.appendChild(hiddenId);
+    
+    // Agregar la fila al contenedor
+    container.appendChild(newRow);
+    
+    // Agregar event listeners para actualizar el total
+    const productSelect = newRow.querySelector('select');
+    const kilosInput = newRow.querySelector('input[type="number"]');
+    
+    if (productSelect) productSelect.addEventListener('change', updateTotalKg);
+    if (kilosInput) kilosInput.addEventListener('input', updateTotalKg);
+    
+    // Incrementar el índice y actualizar TOTAL_FORMS
+    ingredientIndex++;
+    document.querySelector('#id_ingredients-TOTAL_FORMS').value = ingredientIndex;
+    
+    // Actualizar total
+    updateTotalKg();
+}
+
+function removeIngredientRow(button) {
+    const row = button.closest('.ingredient-row');
+    if (row) {
+        row.remove();
+        updateTotalKg();
+    }
+}
+
+function updateTotalKg() {
+    let total = 0;
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+        const kilosInput = row.querySelector('input[type="number"]');
+        if (kilosInput && kilosInput.value) {
+            const value = parseFloat(kilosInput.value);
+            if (!isNaN(value)) {
+                total += value;
+            }
+        }
+    });
+    document.getElementById('total-kg').textContent = total.toFixed(3);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateTotalKg();
+    
+    // Agregar event listeners a los ingredientes existentes
+    document.querySelectorAll('.ingredient-row select, .ingredient-row input[type="number"]').forEach(el => {
+        el.addEventListener('change', updateTotalKg);
+        el.addEventListener('input', updateTotalKg);
+    });
+});
+</script>
+{% endblock %}

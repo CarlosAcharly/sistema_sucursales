@@ -554,7 +554,13 @@
                         Productos
                     </a>
                 </li>
-                <!-- -->
+                <!-- ✅ NUEVO: Productos Terminados -->
+                <li>
+                    <a href="{% url 'finished:admin_finished_recipe_list' %}" {% if 'finished' in request.path %}class="active"{% endif %}>
+                        <i class="fa-solid fa-industry menu-icon"></i>
+                        Productos Terminados
+                    </a>
+                </li>
                 <li>
                     <a href="{% url 'sales:admin_sales_list' %}" {% if 'sales' in request.path %}class="active"{% endif %}>
                         <i class="fa-solid fa-shopping-cart menu-icon"></i>
@@ -651,6 +657,13 @@
                     <a href="{% url 'earnings:purchase_price_create' %}">
                         <i class="fa-solid fa-circle-plus menu-icon"></i>
                         Nuevo Precio Compra
+                    </a>
+                </li>
+                <!-- ✅ NUEVO: Acceso rápido para crear receta -->
+                <li>
+                    <a href="{% url 'finished:admin_finished_recipe_create' %}">
+                        <i class="fa-solid fa-plus-circle menu-icon"></i>
+                        Nueva Receta
                     </a>
                 </li>
             </ul>

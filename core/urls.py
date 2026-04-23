@@ -40,7 +40,7 @@ urlpatterns = [
     path("orders/", include("orders.urls")),
     path('cashregister/', include('cashregister.urls')),
     path("earnings/", include("earnings.urls")),
-
+    path('finished/', include('finished.urls')),
 
 
     path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),

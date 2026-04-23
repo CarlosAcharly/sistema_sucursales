@@ -1,0 +1,264 @@
+{% extends 'cajero/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Header -->
+<div class="fb-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #1877f2 0%, #166fe5 100%); border-radius: 20px; padding: 30px;">
+    <div style="display: flex; align-items: center; gap: 20px; color: white;">
+        <a href="{% url 'finished:recipe_list' %}" class="back-btn" style="background: rgba(255,255,255,0.2); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 style="margin: 0; font-size: 28px; display: flex; align-items: center; gap: 12px;">
+                <i class="fas fa-recipe"></i> {{ recipe.name }}
+            </h1>
+            <p style="margin: 8px 0 0 0; opacity: 0.9;">
+                <i class="fas fa-industry"></i> Producto: <strong>{{ recipe.finished_product.name }}</strong>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+    <!-- Ingredientes -->
+    <div class="fb-card">
+        <div class="fb-card-header">
+            <h3><i class="fas fa-boxes" style="color: #1877f2;"></i> Ingredientes necesarios</h3>
+            <p style="color: #606770; margin-top: 5px;">
+                <i class="fas fa-info-circle"></i> Verifica la disponibilidad de cada ingrediente
+            </p>
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table class="fb-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-box"></i> Producto</th>
+                        <th><i class="fas fa-weight-hanging"></i> Cantidad (kg)</th>
+                        <th><i class="fas fa-cubes"></i> Stock disponible</th>
+                        <th><i class="fas fa-chart-line"></i> Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stock_status %}
+                    <tr style="transition: background 0.2s;">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="background: #e7f3ff; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-leaf" style="color: #1877f2;"></i>
+                                </div>
+                                <strong style="color: #050505;">{{ item.product.name }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="quantity-badge" style="background: #e7f3ff; color: #1877f2; padding: 4px 12px; border-radius: 20px;">
+                                {{ item.required|floatformat:3 }} kg
+                            </span>
+                        </td>
+                        <td class="{% if item.available < item.required %}text-danger{% endif %}">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-warehouse" style="color: #606770;"></i>
+                                <span style="font-weight: 500;">{{ item.available|floatformat:3 }} kg</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.is_available %}
+                                <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-check-circle"></i> Suficiente
+                                </span>
+                            {% else %}
+                                <span style="background: #ffebe9; color: #b92b27; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-exclamation-circle"></i> Insuficiente
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f5f6f7;">
+                        <th style="font-size: 14px;">
+                            <i class="fas fa-calculator"></i> TOTAL:
+                        </th>
+                        <th style="font-size: 14px; color: #1877f2;">
+                            {{ total_kg|floatformat:2 }} kg
+                        </th>
+                        <th colspan="2"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Producción -->
+    <div class="fb-card">
+        <div class="fb-card-header">
+            <h3><i class="fas fa-industry" style="color: #42b72a;"></i> Producción</h3>
+            <p style="color: #606770; margin-top: 5px;">
+                <i class="fas fa-clock"></i> Una vez producido, se descontará el stock de ingredientes
+            </p>
+        </div>
+        
+        <div style="padding: 10px;">
+            <!-- Resumen de producción -->
+            <div style="background: linear-gradient(135deg, #e7f3ff 0%, #d9ebff 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                    <span style="color: #606770;">
+                        <i class="fas fa-weight-hanging"></i> Cantidad a producir:
+                    </span>
+                    <strong style="color: #1877f2; font-size: 18px;">{{ total_kg|floatformat:2 }} kg</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #606770;">
+                        <i class="fas fa-industry"></i> Producto generado:
+                    </span>
+                    <strong style="color: #050505;">{{ recipe.finished_product.name }}</strong>
+                </div>
+            </div>
+            
+            {% if all_available %}
+                <form method="post" action="{% url 'finished:produce_recipe' recipe.id %}" id="produceForm" onsubmit="return confirmProduction(this);">
+                    {% csrf_token %}
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #050505;">
+                            <i class="fas fa-note-sticky"></i> Notas (opcional)
+                        </label>
+                        <textarea name="notes" class="fb-input" rows="3" placeholder="Ej: Producción para lote #15, pedido especial..." 
+                                  style="width: 100%; padding: 12px; border: 1px solid #e4e6eb; border-radius: 8px; resize: vertical;"></textarea>
+                    </div>
+                    <button type="submit" class="fb-btn fb-btn-success" id="produceBtn" style="width: 100%; padding: 14px; font-size: 16px;">
+                        <i class="fas fa-play-circle"></i> Producir ahora
+                    </button>
+                </form>
+            {% else %}
+                <div class="alert alert-danger" style="background: #ffebe9; padding: 20px; border-radius: 12px; border-left: 4px solid #fa383e;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #b92b27;"></i>
+                        <div>
+                            <strong style="color: #b92b27;">No hay suficiente stock</strong>
+                            <p style="margin: 5px 0 0 0; color: #606770;">No es posible producir esta receta hasta que haya suficiente stock de todos los ingredientes.</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Historial de producciones -->
+{% if productions %}
+<div class="fb-card" style="margin-top: 25px;">
+    <div class="fb-card-header">
+        <h3><i class="fas fa-history" style="color: #1877f2;"></i> Historial de producciones</h3>
+        <p style="color: #606770; margin-top: 5px;">
+            <i class="fas fa-chart-line"></i> Últimas 10 producciones realizadas en esta sucursal
+        </p>
+    </div>
+    
+    <div style="overflow-x: auto;">
+        <table class="fb-table">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-calendar-day"></i> Fecha</th>
+                    <th><i class="fas fa-weight-hanging"></i> Cantidad</th>
+                    <th><i class="fas fa-user"></i> Producido por</th>
+                    <th><i class="fas fa-note-sticky"></i> Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in productions %}
+                <tr style="transition: background 0.2s;">
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-clock" style="color: #606770;"></i>
+                            {{ prod.produced_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </td>
+                    <td>
+                        <span style="background: #e3f2e8; color: #1b7e3f; padding: 4px 12px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-weight-hanging"></i> {{ prod.quantity|floatformat:2 }} kg
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-circle" style="color: #1877f2;"></i>
+                            {{ prod.produced_by.get_full_name|default:prod.produced_by.username }}
+                        </div>
+                    </td>
+                    <td>
+                        {% if prod.notes %}
+                            <span style="color: #606770; font-style: italic;">
+                                <i class="fas fa-quote-left"></i> {{ prod.notes|truncatechars:50 }}
+                            </span>
+                        {% else %}
+                            <span style="color: #999;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    function confirmProduction(form) {
+        const totalKg = {{ total_kg|floatformat:2 }};
+        const productName = "{{ recipe.finished_product.name }}";
+        
+        if (confirm(`¿Estás seguro de producir esta receta?\n\n📦 Se producirán ${totalKg} kg de ${productName}\n⚠️ Se descontarán los ingredientes del inventario.\n\n¿Deseas continuar?`)) {
+            const btn = form.querySelector('#produceBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Produciendo...';
+            btn.disabled = true;
+            return true;
+        }
+        return false;
+    }
+    
+    // Efecto hover para filas de la tabla
+    document.querySelectorAll('.fb-table tbody tr').forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.background = '#f8f9fa';
+        });
+        row.addEventListener('mouseleave', function() {
+            this.style.background = 'transparent';
+        });
+    });
+</script>
+
+<style>
+    .back-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+        transform: translateX(-3px);
+    }
+    
+    .text-danger {
+        color: #fa383e !important;
+        font-weight: bold;
+    }
+    
+    .quantity-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .quantity-badge:hover {
+        transform: scale(1.05);
+    }
+    
+    .fb-table tbody tr {
+        transition: background 0.2s ease;
+    }
+    
+    .fb-input:focus {
+        outline: none;
+        border-color: #1877f2;
+        box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.1);
+    }
+    
+    .fb-btn-success:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}

@@ -43,6 +43,7 @@
         <button class="fb-btn filter-btn" data-filter="active" onclick="filterProducts('active')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Activos</button>
         <button class="fb-btn filter-btn" data-filter="inactive" onclick="filterProducts('inactive')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Inactivos</button>
         <button class="fb-btn filter-btn" data-filter="ingredient" onclick="filterProducts('ingredient')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Ingredientes</button>
+        <button class="fb-btn filter-btn" data-filter="finished" onclick="filterProducts('finished')" style="background: #e4e6eb; color: #050505; border: none; padding: 8px 16px;">Terminados</button>
     </div>
     
     <span style="color: #606770; font-size: 14px; margin-left: auto;">
@@ -78,20 +79,26 @@
                 <tr class="product-row" 
                     data-status="{% if product.is_active %}active{% else %}inactive{% endif %}"
                     data-ingredient="{{ product.is_ingredient|yesno:'true,false' }}"
+                    data-finished="{{ product.is_finished|yesno:'true,false' }}"
                     style="border-bottom: 1px solid #e4e6eb; transition: background 0.2s;" 
                     onmouseover="this.style.background='#f5f6f7'" 
                     onmouseout="this.style.background='transparent'">
                     
                     <td style="padding: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="background: #e7f3ff; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #1877f2; font-size: 20px;">
-                                <i class="fa-solid fa-box"></i>
+                            <div style="background: {% if product.is_finished %}#fff4e5{% else %}#e7f3ff{% endif %}; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: {% if product.is_finished %}#f7b928{% else %}#1877f2{% endif %}; font-size: 20px;">
+                                <i class="fa-solid {% if product.is_finished %}fa-industry{% else %}fa-box{% endif %}"></i>
                             </div>
                             <div>
                                 <strong style="color: #050505;">{{ product.name }}</strong>
                                 {% if product.is_ingredient %}
                                     <span style="background: #e3f2e8; color: #1b7e3f; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px;">
                                         <i class="fa-solid fa-leaf"></i> Ingrediente
+                                    </span>
+                                {% endif %}
+                                {% if product.is_finished %}
+                                    <span style="background: #fff4e5; color: #bd7b13; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-industry"></i> Terminado
                                     </span>
                                 {% endif %}
                             </div>
@@ -283,6 +290,8 @@ function filterProducts(filter) {
             row.style.display = row.dataset.status === 'inactive' ? 'table-row' : 'none';
         } else if (filter === 'ingredient') {
             row.style.display = row.dataset.ingredient === 'true' ? 'table-row' : 'none';
+        } else if (filter === 'finished') {
+            row.style.display = row.dataset.finished === 'true' ? 'table-row' : 'none';
         }
     });
 }

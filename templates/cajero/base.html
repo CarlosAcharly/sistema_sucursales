@@ -623,7 +623,7 @@
                 </div>
             </div>
 
-            <!-- ✅ NUEVO: Menú desplegable de Transferencias (solo para sucursales con permiso) -->
+            <!-- Menú desplegable de Transferencias (solo para sucursales con permiso) -->
             {% if request.user.branch and request.user.branch.can_transfer %}
             <div class="dropdown">
                 <div class="dropdown-toggle {% if 'transfer' in request.path %}active{% endif %}" onclick="toggleDropdown('transfersDropdown', event)">
@@ -639,6 +639,23 @@
                     <a href="{% url 'transfer_create' %}" {% if request.resolver_match.url_name == 'transfer_create' %}class="active"{% endif %}>
                         <i class="fas fa-plus-circle"></i>
                         <span>Nueva Transferencia</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ✅ NUEVO: Menú desplegable de Productos Terminados (solo para sucursales con permiso) -->
+            {% if request.user.branch and request.user.branch.can_manage_finished %}
+            <div class="dropdown">
+                <div class="dropdown-toggle {% if 'finished' in request.path %}active{% endif %}" onclick="toggleDropdown('finishedDropdown', event)">
+                    <i class="fas fa-industry"></i>
+                    <span>Terminados</span>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </div>
+                <div class="dropdown-menu" id="finishedDropdown">
+                    <a href="{% url 'finished:recipe_list' %}" {% if request.resolver_match.url_name == 'recipe_list' %}class="active"{% endif %}>
+                        <i class="fas fa-list"></i>
+                        <span>Preparar</span>
                     </a>
                 </div>
             </div>
