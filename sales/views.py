@@ -294,17 +294,20 @@ def admin_sales_list(request):
     user = request.user
     
     # Obtener filtros de período
-    period = request.GET.get('period', 'day')  # ✅ Cambiado de 'all' a 'day'
+    period = request.GET.get('period', 'day')
     selected_date = request.GET.get('date', '')
     selected_month = request.GET.get('month', '')
     selected_year = request.GET.get('year', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     
-    # ✅ Si no hay fecha seleccionada y es período por día, usar fecha actual
+    # ✅ Obtener fecha actual en la zona horaria configurada
+    from django.utils import timezone
+    today = timezone.localtime(timezone.now()).date()
+    
+    # ✅ Si no hay fecha seleccionada y es período por día, usar fecha actual local
     if not selected_date and period == 'day':
-        from django.utils import timezone
-        selected_date = timezone.now().date().isoformat()
+        selected_date = today.isoformat()
     
     # Base queryset
     sales = Sale.objects.select_related(
@@ -332,12 +335,10 @@ def admin_sales_list(request):
         )
         period_label = f"Del {date_from} al {date_to}"
     else:
-        # ✅ Si no hay filtros válidos, mostrar día actual
-        from django.utils import timezone
-        today = timezone.now().date().isoformat()
+        # ✅ Si no hay filtros válidos, mostrar día actual local
         sales = sales.filter(created_at__date=today)
-        period_label = f"Día: {today}"
-        selected_date = today
+        period_label = f"Día: {today.isoformat()}"
+        selected_date = today.isoformat()
         period = 'day'
     
     # Ventas activas para estadísticas
@@ -425,6 +426,7 @@ def admin_sales_list(request):
         'selected_year': selected_year,
         'date_from': date_from,
         'date_to': date_to,
+        'today': today.isoformat(),  # ✅ Pasar la fecha actual al template
     })
 
 @login_required

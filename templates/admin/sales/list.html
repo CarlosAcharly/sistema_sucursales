@@ -490,13 +490,16 @@ function toggleDateInputs() {
 document.addEventListener('DOMContentLoaded', function() {
     toggleDateInputs();
     
-    // ✅ Si el select está en 'day' y el input de fecha está vacío, llenarlo con la fecha actual
+    // ✅ Usar la fecha del servidor (desde Django) para evitar problemas de zona horaria
     const periodSelect = document.getElementById('period-select');
     const dateInput = document.getElementById('date-input');
     
+    // Si está en modo día y el input está vacío, usar la fecha del servidor
     if (periodSelect.value === 'day' && dateInput && !dateInput.value) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.value = today;
+        const serverDate = '{{ today|default:"" }}';
+        if (serverDate) {
+            dateInput.value = serverDate;
+        }
     }
 });
 
