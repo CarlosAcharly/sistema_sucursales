@@ -294,12 +294,17 @@ def admin_sales_list(request):
     user = request.user
     
     # Obtener filtros de período
-    period = request.GET.get('period', 'all')
+    period = request.GET.get('period', 'day')  # ✅ Cambiado de 'all' a 'day'
     selected_date = request.GET.get('date', '')
     selected_month = request.GET.get('month', '')
     selected_year = request.GET.get('year', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
+    
+    # ✅ Si no hay fecha seleccionada y es período por día, usar fecha actual
+    if not selected_date and period == 'day':
+        from django.utils import timezone
+        selected_date = timezone.now().date().isoformat()
     
     # Base queryset
     sales = Sale.objects.select_related(
@@ -327,18 +332,24 @@ def admin_sales_list(request):
         )
         period_label = f"Del {date_from} al {date_to}"
     else:
-        period_label = "Todos los tiempos"
+        # ✅ Si no hay filtros válidos, mostrar día actual
+        from django.utils import timezone
+        today = timezone.now().date().isoformat()
+        sales = sales.filter(created_at__date=today)
+        period_label = f"Día: {today}"
+        selected_date = today
+        period = 'day'
     
-    # ✅ CORREGIDO: Ventas activas para estadísticas
+    # Ventas activas para estadísticas
     ventas_activas = sales.filter(status='ACTIVE')
     ventas_canceladas = sales.filter(status='CANCELLED')
     
     # Estadísticas del período
-    total_sales = sales.count()  # Total general (para la tabla)
+    total_sales = sales.count()
     total_ventas_activas = ventas_activas.count()
     total_amount = ventas_activas.aggregate(total=Sum('total'))['total'] or 0
     active_sales = ventas_activas.count()
-    cancelled_sales = ventas_canceladas.count()  # ✅ CORREGIDO: Usar el queryset directamente
+    cancelled_sales = ventas_canceladas.count()
     
     # Ticket promedio (solo sobre ventas activas)
     average_ticket = total_amount / total_ventas_activas if total_ventas_activas > 0 else 0
@@ -349,7 +360,7 @@ def admin_sales_list(request):
     ).annotate(
         total_sales=Count('id'),
         total_amount=Sum('total'),
-        active_count=Count('id')  # Todas son activas aquí
+        active_count=Count('id')
     ).order_by('branch__name')
     
     # Obtener canceladas por sucursal por separado
@@ -378,9 +389,8 @@ def admin_sales_list(request):
         branch_name = item['branch__name']
         if branch_name in branch_data:
             branch_data[branch_name]['cancelled_count'] = item['cancelled_count']
-            branch_data[branch_name]['total_sales'] += item['cancelled_count']  # Sumar al total de ventas
+            branch_data[branch_name]['total_sales'] += item['cancelled_count']
         else:
-            # Sucursal con solo canceladas
             branch_data[branch_name] = {
                 'branch__name': branch_name,
                 'total_sales': item['cancelled_count'],
@@ -403,7 +413,7 @@ def admin_sales_list(request):
         'total_sales': total_sales,
         'total_amount': total_amount,
         'active_sales': active_sales,
-        'cancelled_sales': cancelled_sales,  # ✅ Ahora muestra el total correcto
+        'cancelled_sales': cancelled_sales,
         'total_period': total_amount,
         'average_ticket': average_ticket,
         'branches': Branch.objects.filter(is_active=True),

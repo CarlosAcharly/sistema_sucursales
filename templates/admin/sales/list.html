@@ -39,7 +39,7 @@
                     <i class="fas fa-calendar-day" style="margin-right: 5px; color: #C850C0;"></i>
                     Fecha
                 </label>
-                <input type="date" name="date" value="{{ selected_date }}" class="fb-input">
+                <input type="date" name="date" value="{{ selected_date }}" class="fb-input" id="date-input">
             </div>
             
             <div id="month-input" style="display: none;">
@@ -148,7 +148,7 @@
     </div>
 </div>
 
-<!--  NUEVO: Resumen por sucursal (justo debajo de estadísticas globales) -->
+<!-- Resumen por sucursal -->
 <div class="fb-card" style="margin-bottom: 25px; padding: 20px; border-radius: 16px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
@@ -202,15 +202,16 @@
                 </div>
             </div>
             
-            <!-- Barra de progreso del total -->
-            {% if total_percentages %}
+            {% if total_period_amount %}
             <div style="margin-top: 12px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                     <span style="color: #606770; font-size: 10px;">% del total</span>
                     <span style="font-weight: 600; font-size: 11px;">{{ branch_data.percentage|floatformat:1 }}%</span>
                 </div>
                 <div style="height: 4px; background: #e4e6eb; border-radius: 2px; overflow: hidden;">
-<div style="width: {{ branch_data.percentage|floatformat:0 }}%; height: 100%; background: linear-gradient(90deg, #4158D0, #C850C0);"></div>            </div>
+                    <div style="width: {{ branch_data.percentage|floatformat:0 }}%; height: 100%; background: linear-gradient(90deg, #4158D0, #C850C0);"></div>
+                </div>
+            </div>
             {% endif %}
         </div>
         {% empty %}
@@ -488,6 +489,15 @@ function toggleDateInputs() {
 // Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     toggleDateInputs();
+    
+    // ✅ Si el select está en 'day' y el input de fecha está vacío, llenarlo con la fecha actual
+    const periodSelect = document.getElementById('period-select');
+    const dateInput = document.getElementById('date-input');
+    
+    if (periodSelect.value === 'day' && dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
 });
 
 let currentSaleId = null;
@@ -555,25 +565,29 @@ function getCSRFToken() {
 }
 
 // Filtros de búsqueda
-document.getElementById('search-input').addEventListener('input', filterTable);
-document.getElementById('branch-filter').addEventListener('change', filterTable);
-document.getElementById('status-filter').addEventListener('change', filterTable);
+const searchInput = document.getElementById('search-input');
+const branchFilter = document.getElementById('branch-filter');
+const statusFilter = document.getElementById('status-filter');
+
+if (searchInput) searchInput.addEventListener('input', filterTable);
+if (branchFilter) branchFilter.addEventListener('change', filterTable);
+if (statusFilter) statusFilter.addEventListener('change', filterTable);
 
 function filterTable() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const branchFilter = document.getElementById('branch-filter').value;
-    const statusFilter = document.getElementById('status-filter').value;
+    const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+    const branchFilterValue = document.getElementById('branch-filter')?.value || 'all';
+    const statusFilterValue = document.getElementById('status-filter')?.value || 'all';
     
     const rows = document.querySelectorAll('.sale-row');
     
     rows.forEach(row => {
-        const id = row.dataset.id;
-        const branch = row.dataset.branch;
-        const status = row.dataset.status;
+        const id = row.dataset.id?.toString() || '';
+        const branch = row.dataset.branch || '';
+        const status = row.dataset.status || '';
         
         const matchesSearch = id.includes(searchTerm);
-        const matchesBranch = branchFilter === 'all' || branch === branchFilter;
-        const matchesStatus = statusFilter === 'all' || status === statusFilter;
+        const matchesBranch = branchFilterValue === 'all' || branch === branchFilterValue;
+        const matchesStatus = statusFilterValue === 'all' || status === statusFilterValue;
         
         if (matchesSearch && matchesBranch && matchesStatus) {
             row.style.display = '';
@@ -584,9 +598,13 @@ function filterTable() {
 }
 
 function clearFilters() {
-    document.getElementById('search-input').value = '';
-    document.getElementById('branch-filter').value = 'all';
-    document.getElementById('status-filter').value = 'all';
+    const searchInputEl = document.getElementById('search-input');
+    const branchFilterEl = document.getElementById('branch-filter');
+    const statusFilterEl = document.getElementById('status-filter');
+    
+    if (searchInputEl) searchInputEl.value = '';
+    if (branchFilterEl) branchFilterEl.value = 'all';
+    if (statusFilterEl) statusFilterEl.value = 'all';
     filterTable();
 }
 
